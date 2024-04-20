@@ -1,0 +1,66 @@
+openapi: 3.0.1
+info:
+  title: Script Management API
+  description: |
+    An API designed to manage scripts and their integral components, including Section Headings. This system facilitates the management of complex scripts, enhancing scriptwriting and editing workflows.
+  version: "1.0.0"
+servers:
+  - url: 'https://sectionheading.fountain.coach'
+    description: Main server for the Script Management API, handling section headings.
+
+paths:
+  /sectionHeadings:
+    get:
+      summary: Retrieve Section Headings
+      operationId: listSectionHeadings
+      description: Fetches a list of all Section Headings across scripts, providing an overview of script structures.
+      responses:
+        '200':
+          description: Successfully retrieved a JSON array of Section Headings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SectionHeading'
+    post:
+      summary: Create Section Heading
+      operationId: createSectionHeading
+      description: Creates a new Section Heading within a script, specifying its sequence, title, and associated script ID.
+      requestBody:
+        required: true
+        description: Data required to create a new Section Heading.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionHeading'
+      responses:
+        '201':
+          description: Successfully created a new Section Heading.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionHeading'
+
+components:
+  schemas:
+    SectionHeading:
+      type: object
+      description: Represents a structural element within a script, marking the beginning of a new section.
+      properties:
+        headingId:
+          type: integer
+          description: Unique identifier for the Section Heading.
+        scriptId:
+          type: integer
+          description: Identifier of the script this Section Heading belongs to.
+        title:
+          type: string
+          description: Title of the Section Heading.
+        sequence:
+          type: integer
+          description: Order sequence of the Section Heading within the script.
+      required:
+        - scriptId
+        - title
+        - sequence

@@ -1,0 +1,144 @@
+openapi: 3.0.1
+info:
+  title: Script Notes API
+  description: This API allows clients to manage notes within scripts, facilitating note creation, retrieval, updating, and deletion within a scriptwriting or editing environment.
+  version: 1.0.0
+servers:
+  - url: 'https://note.fountain.coach'
+    description: Primary server for the Script Notes API.
+paths:
+  /notes:
+    post:
+      summary: Create a Note
+      operationId: createNote
+      description: Creates a new note associated with a script, identified by a script ID, and includes the note's text and its sequence within the script.
+      requestBody:
+        required: true
+        description: The required details for creating a new note, including the script ID, note text, and its sequence order.
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scriptId
+                - text
+                - sequence
+              properties:
+                scriptId:
+                  type: integer
+                  description: The ID of the script to which the note belongs.
+                text:
+                  type: string
+                  description: The textual content of the note.
+                sequence:
+                  type: integer
+                  description: The sequence number of the note within the script, determining its order.
+      responses:
+        '201':
+          description: The note was successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: The request contains invalid input data.
+
+  /notes/{noteId}:
+    get:
+      summary: Retrieve a Note by ID
+      operationId: getNoteById
+      description: Retrieves the details of a specific note by its unique identifier (noteId).
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the note to retrieve.
+      responses:
+        '200':
+          description: The requested note was successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '404':
+          description: The note with the specified ID was not found.
+
+    put:
+      summary: Update a Note
+      operationId: updateNote
+      description: Updates the content and/or sequence of an existing note, identified by its noteId.
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the note to update.
+      requestBody:
+        required: true
+        description: The updated note content and/or sequence.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: The updated textual content of the note.
+                sequence:
+                  type: integer
+                  description: The updated sequence number of the note within the script.
+      responses:
+        '200':
+          description: The note was successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: The request contains invalid input data.
+        '404':
+          description: The note with the specified ID was not found.
+
+    delete:
+      summary: Delete a Note
+      operationId: deleteNote
+      description: Deletes a specific note from the system, identified by its noteId.
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the note to delete.
+      responses:
+        '204':
+          description: The note was successfully deleted.
+        '404':
+          description: The note with the specified ID was not found.
+
+components:
+  schemas:
+    Note:
+      type: object
+      description: Represents a note within a script, containing its ID, associated script ID, textual content, and sequence order.
+      required:
+        - noteId
+        - scriptId
+        - text
+        - sequence
+      properties:
+        noteId:
+          type: integer
+          description: The unique identifier of the note.
+        scriptId:
+          type: integer
+          description: The ID of the script to which the note is associated.
+        text:
+          type: string
+          description: The textual content of the note.
+        sequence:
+          type: integer
+          description: The sequence number of the note within its script, determining its order.

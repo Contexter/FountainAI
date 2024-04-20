@@ -1,0 +1,149 @@
+openapi: 3.0.1
+info:
+  title: Script Management API
+  description: API for managing screenplay scripts, including creation, retrieval, updating, and deletion.
+  version: "1.0.0"
+servers:
+  - url: 'https://script.fountain.coach'
+    description: Main server for Script Management API services.
+paths:
+  /scripts:
+    get:
+      summary: Retrieve All Scripts
+      operationId: listScripts
+      description: Lists all screenplay scripts stored within the system.
+      responses:
+        '200':
+          description: An array of scripts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Script'
+    post:
+      summary: Create a New Script
+      operationId: createScript
+      description: Creates a new screenplay script record in the system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptCreateRequest'
+      responses:
+        '201':
+          description: Script successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Script'
+
+  /scripts/{scriptId}:
+    get:
+      summary: Retrieve a Script by ID
+      operationId: getScriptById
+      description: Retrieves the details of a specific screenplay script by its unique identifier (scriptId).
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          description: Unique identifier of the screenplay script to retrieve.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detailed information about the requested script.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Script'
+    put:
+      summary: Update a Script by ID
+      operationId: updateScript
+      description: Updates an existing screenplay script with new details.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          description: Unique identifier of the screenplay script to update.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptUpdateRequest'
+      responses:
+        '200':
+          description: Script successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Script'
+    delete:
+      summary: Delete a Script by ID
+      operationId: deleteScript
+      description: Deletes a specific screenplay script from the system.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          description: Unique identifier of the screenplay script to delete.
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Script successfully deleted.
+
+components:
+  schemas:
+    Script:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+          description: Unique identifier for the screenplay script.
+        title:
+          type: string
+          description: Title of the screenplay script.
+        description:
+          type: string
+          description: Brief description or summary of the screenplay script.
+        author:
+          type: string
+          description: Author of the screenplay script.
+        sequence:
+          type: integer
+          description: Sequence number representing the script's order or version.
+      required:
+        - title
+        - author
+
+    ScriptCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        author:
+          type: string
+        sequence:
+          type: integer
+      required:
+        - title
+        - author
+
+    ScriptUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        author:
+          type: string
+        sequence:
+          type: integer

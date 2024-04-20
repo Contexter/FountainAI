@@ -1,0 +1,132 @@
+openapi: 3.0.1
+info:
+  title: SpokenWord API
+  description: |
+    An API designed to manage SpokenWord entities in a scriptwriting application. This includes operations to list, create, retrieve, update, and delete SpokenWord entities, as well as manage their paraphrases.
+  version: "1.0.0"
+servers:
+  - url: 'https://spokenwords.fountain.coach'
+    description: Main server for the SpokenWord API, managing spoken word entries.
+
+paths:
+  /spokenWords:
+    get:
+      summary: Retrieve All SpokenWords
+      operationId: getSpokenWords
+      description: Fetches a list of all SpokenWords entities in the system, providing an overview of spoken dialogues.
+      responses:
+        '200':
+          description: Successfully retrieved a list of SpokenWords.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpokenWord'
+    post:
+      summary: Create SpokenWord
+      operationId: createSpokenWord
+      description: Creates a new SpokenWord entity with provided dialogue text and sequence within the script.
+      requestBody:
+        required: true
+        description: Details for the new SpokenWord entity to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpokenWord'
+      responses:
+        '201':
+          description: Successfully created a new SpokenWord entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpokenWord'
+
+  /spokenWords/{id}/paraphrases:
+    get:
+      summary: Retrieve All Paraphrases for a SpokenWord
+      operationId: listSpokenWordParaphrases
+      description: Retrieves all paraphrases linked to a specific SpokenWord, including a commentary on why each paraphrase is connected to the original dialogue.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the SpokenWord whose paraphrases are to be retrieved.
+      responses:
+        '200':
+          description: A JSON array of paraphrases for the specified SpokenWord.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Paraphrase'
+    post:
+      summary: Create a New Paraphrase for a SpokenWord
+      operationId: createSpokenWordParaphrase
+      description: Allows for the creation of a new paraphrase linked to a SpokenWord. Clients must provide the paraphrased text and a commentary explaining the link to the original dialogue.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the SpokenWord to which the paraphrase will be linked.
+      requestBody:
+        required: true
+        description: A JSON object containing the new paraphrase's details and its link commentary.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Paraphrase'
+      responses:
+        '201':
+          description: The paraphrase has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+
+components:
+  schemas:
+    SpokenWord:
+      type: object
+      description: Represents a dialogue or spoken word within the script, identified by a unique ID, text, and sequence order.
+      required:
+        - dialogueId
+        - text
+        - sequence
+      properties:
+        dialogueId:
+          type: integer
+          description: Unique identifier for the SpokenWord entity.
+        text:
+          type: string
+          description: The dialogue text of the SpokenWord entity.
+        sequence:
+          type: integer
+          description: Order sequence of the SpokenWord within the script.
+
+    Paraphrase:
+      type: object
+      description: Represents a paraphrased version of a dialogue or spoken word, including textual paraphrase and commentary on the connection to the original.
+      required:
+        - originalId
+        - text
+        - commentary
+      properties:
+        paraphraseId:
+          type: integer
+          format: int64
+          description: The unique identifier for the Paraphrase, automatically generated upon creation.
+        originalId:
+          type: integer
+          description: The ID of the original SpokenWord to which this paraphrase is linked.
+        text:
+          type: string
+          description: The paraphrased text of the original dialogue.
+        commentary:
+          type: string
+          description: An explanatory note on why the paraphrase is linked to the original dialogue.
