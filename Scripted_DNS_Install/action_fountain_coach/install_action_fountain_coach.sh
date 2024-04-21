@@ -21,11 +21,12 @@ apt-get update && apt-get install -y curl gnupg libatomic1 libcurl4 libedit2 lib
 
 # Install Swift
 print_status "Installing Swift..."
-wget https://download.swift.org/swift-5.3.3-release/ubuntu2004/swift-5.3.3-RELEASE-swift-5.3.3-RELEASE-ubuntu20.04.tar.gz
-tar xzf swift-5.3.3-RELEASE-ubuntu20.04.tar.gz
-mv swift-5.3.3-RELEASE-ubuntu20.04/usr /usr/share/swift
+wget https://download.swift.org/swift-5.10-release/ubuntu2004/swift-5.10-RELEASE-ubuntu20.04.tar.gz
+tar xzf swift-5.10-RELEASE-ubuntu20.04.tar.gz
+mv swift-5.10-RELEASE-ubuntu20.04/usr /usr/share/swift
 echo "export PATH=/usr/share/swift/bin:$PATH" >> ~/.bashrc
 source ~/.bashrc
+
 
 # Install Vapor
 print_status "Installing Vapor..."
