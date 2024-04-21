@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # This script fetches the Contexter/fountainAI repository from GitHub and makes all shell scripts (.sh) executable.
+# It searches for all .sh files in the repository directory and all its subdirectories recursively.
 
 # Define the repository URL
 REPO_URL="https://github.com/Contexter/fountainAI"
@@ -12,9 +13,8 @@ git clone $REPO_URL
 # Navigate to the cloned directory (assuming the repo name is the directory name)
 cd fountainAI
 
-# Find all .sh files and make them executable
+# Find all .sh files and make them executable. This command searches all directories recursively from the current directory.
 echo "Making all .sh scripts executable..."
 find . -type f -name "*.sh" -exec chmod +x {} \;
 
 echo "All .sh scripts in the repository have been made executable."
-
