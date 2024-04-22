@@ -30,7 +30,21 @@ fi
 # Update and install dependencies
 print_status "Updating system and installing required packages..."
 apt-get update
-apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 nginx software-properties-common certbot python3-certbot-nginx openssl libssl-dev uuid-dev
+apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 software-properties-common certbot python3-certbot-nginx openssl libssl-dev uuid-dev
+
+# Check if Nginx is installed and install if not
+if ! nginx -v &> /dev/null; then
+    print_status "Nginx is not installed. Installing Nginx..."
+    apt-get install -y nginx
+    if [ $? -eq 0 ]; then
+        print_status "Nginx installed successfully."
+    else
+        print_error "Failed to install Nginx."
+        exit 1
+    fi
+else
+    print_status "Nginx is already installed."
+fi
 
 # Install Swift
 print_status "Preparing to install Swift..."
@@ -111,7 +125,7 @@ struct CreateAction: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("actions")
             .id()
-            .field("description", .string, .required)
+            .field(""description", .string, .required)
             .field("sequence", .int, .required)
             .create()
     }
@@ -124,7 +138,7 @@ EOT
 
 # Configure Nginx and SSL
 read -p "Enter the domain name for your project (e.g., example.com): " DOMAIN_NAME
-read -p "Enter your email for SSL certificateregistration (e.g., user@example.com): " EMAIL
+read -p "Enter your email for SSL certificate registration (e.g., user@example.com): " EMAIL
 print_status "Configuring Nginx and setting up SSL..."
 nginx -t && systemctl reload nginx || {
     print_error "Failed to reload Nginx"
