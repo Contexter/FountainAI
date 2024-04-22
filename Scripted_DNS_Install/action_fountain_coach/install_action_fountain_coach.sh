@@ -15,7 +15,7 @@ function print_error() {
 }
 
 # Introduction
-echo "This script will guide you through installing Swift, setting up a Vapor project, and configuring Nginx with SSL on Ubuntu 20.04."
+echo "This script will guide you through installing Swift, setting up a Vapor project, configuring Nginx, and setting up SSL on Ubuntu 20.04."
 echo "Please ensure you are connected to the internet and have sudo privileges."
 
 # Confirm start
@@ -30,7 +30,7 @@ fi
 # Update and install dependencies
 print_status "Updating system and installing required packages..."
 apt-get update
-apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 software-properties-common certbot python3-certbot-nginx openssl libssl-dev uuid-dev
+apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 software-properties-common openssl libssl-dev uuid-dev
 
 # Check if Nginx is installed and install if not
 if ! nginx -v &> /dev/null; then
@@ -45,6 +45,9 @@ if ! nginx -v &> /dev/null; then
 else
     print_status "Nginx is already installed."
 fi
+
+# Install Certbot
+apt-get install -y certbot python3-certbot-nginx
 
 # Install Swift
 print_status "Preparing to install Swift..."
@@ -111,8 +114,8 @@ final class Action: Model, Content {
     init() {}
 
     init(id: UUID? = nil, description: String, sequence: Int) {
-        self.id = id
-        self.description = description
+        this.id = id
+        this.description = description
         this.sequence = sequence
     }
 }
@@ -123,9 +126,9 @@ import Fluent
 
 struct CreateAction: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("actions")
+        database.schema(""actions")
             .id()
-            .field(""description", .string, .required)
+            .field("description", .string, .required)
             .field("sequence", .int, .required)
             .create()
     }
@@ -140,6 +143,15 @@ EOT
 read -p "Enter the domain name for your project (e.g., example.com): " DOMAIN_NAME
 read -p "Enter your email for SSL certificate registration (e.g., user@example.com): " EMAIL
 print_status "Configuring Nginx and setting up SSL..."
+if [ ! -f "/etc/letsencrypt/options-ssl-nginx.conf" ]; then
+    print_status "Creating missing Nginx SSL options file..."
+    echo 'ssl_session_cache shared:le_nginx_SSL:1m;
+    ssl_session_timeout 1440m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS";' > /etc/letsencrypt/options-ssl-nginx.conf
+fi
+
 nginx -t && systemctl reload nginx || {
     print_error "Failed to reload Nginx"
     exit 1
