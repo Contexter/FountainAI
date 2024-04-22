@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Helper function for printing status messages
+# Helper functions for printing status messages
 function print_status() {
     echo -e "${GREEN}$1${NC}"
 }
@@ -13,6 +13,13 @@ function print_status() {
 function print_error() {
     echo -e "${RED}$1${NC}"
 }
+
+# Introduction
+echo "This script will guide you through installing Swift, setting up a Vapor project, and configuring Nginx with SSL on Ubuntu 20.04."
+echo "Please ensure you are connected to the internet and have sudo privileges."
+
+# Confirm start
+read -p "Press ENTER to begin or ctrl+c to abort..."
 
 # Ensure running as root
 if [ "$(id -u)" != "0" ]; then
@@ -26,14 +33,17 @@ apt-get update
 apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 nginx software-properties-common certbot python3-certbot-nginx openssl libssl-dev uuid-dev
 
 # Install Swift
-print_status "Installing Swift..."
+print_status "Preparing to install Swift..."
+read -p "Please confirm the version of Swift to install (e.g., 5.10): " SWIFT_VERSION
+read -p "Please confirm the Ubuntu version (e.g., ubuntu2004): " UBUNTU_VERSION
+SWIFT_URL="https://download.swift.org/swift-${SWIFT_VERSION}-release/${UBUNTU_VERSION}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-${UBUNTU_VERSION}.tar.gz"
+print_status "Downloading Swift from $SWIFT_URL..."
 if [ ! -d "/usr/share/swift" ]; then
-    SWIFT_URL="https://download.swift.org/swift-5.10-release/ubuntu2004/swift-5.10-RELEASE/swift-5.10-RELEASE-ubuntu20.04.tar.gz"
-    wget $SWIFT_URL -O swift.tar.gz
-    tar xzf swift.tar.gz
-    mv swift-5.10-RELEASE-ubuntu20.04/usr /usr/share/swift
+    wget $SWIFT_URL -O swift.tar.gz && tar xzf swift.tar.gz
+    mv swift-${SWIFT_VERSION}-RELEASE-${UBUNTU_VERSION}/usr /usr/share/swift
     echo "export PATH=/usr/share/swift/usr/bin:$PATH" >> ~/.bashrc
     source ~/.bashrc
+    print_status "Swift installed successfully."
 else
     print_status "Swift is already installed."
 fi
@@ -42,27 +52,29 @@ fi
 print_status "Installing Vapor CLI..."
 if ! command -v vapor &> /dev/null; then
     curl -sL toolbox.vapor.sh | bash
+    print_status "Vapor CLI installed successfully."
 else
     print_status "Vapor CLI is already installed."
 fi
 
 # Create a new Vapor project
-PROJECT_DIR="ActionAPI"
-print_status "Creating new Vapor project named $PROJECT_DIR..."
+print_status "Setting up a new Vapor project..."
+read -p "Enter your project directory name (e.g., MyVaporApp): " PROJECT_DIR
 if [ ! -d "$PROJECT_DIR" ]; then
     vapor new $PROJECT_DIR --fluent --template=api
     cd $PROJECT_DIR
+    print_status "Created the project in $PROJECT_DIR."
 else
     print_status "$PROJECT_DIR project already exists."
     cd $PROJECT_DIR
 fi
 
 # Configure SQLite and models
-print_status "Configuring SQLite and setting up models and migrations..."
+print_status "Configuring database and models..."
 mkdir -p Sources/App/Models
 mkdir -p Sources/App/Migrations
 
-# Model definitions
+# Model and Migration definitions
 cat <<EOT > Sources/App/Models/Action.swift
 import Fluent
 import Vapor
@@ -87,42 +99,11 @@ final class Action: Model, Content {
     init(id: UUID? = nil, description: String, sequence: Int) {
         self.id = id
         self.description = description
-        self.sequence = sequence
+        this.sequence = sequence
     }
 }
 EOT
 
-cat <<EOT > Sources/App/Models/Paraphrase.swift
-import Fluent
-import Vapor
-
-final class Paraphrase: Model, Content {
-    static let schema = "paraphrases"
-
-    @ID(key: .id)
-    var id: UUID?
-
-    @Parent(key: "action_id")
-    var action: Action
-
-    @Field(key: "text")
-    var text: String
-
-    @Field(key: "commentary")
-    var commentary: String
-
-    init() {}
-
-    init(id: UUID? = nil, actionId: UUID, text: String, commentary: String) {
-        self.id = id
-        self.\$action.id = actionId
-        self.text = text
-        self.commentary = commentary
-    }
-}
-EOT
-
-# Migration definitions
 cat <<EOT > Sources/App/Migrations/CreateAction.swift
 import Fluent
 
@@ -141,51 +122,21 @@ struct CreateAction: Migration {
 }
 EOT
 
-cat <<EOT > Sources/App/Migrations/CreateParaphrase.swift
-import Fluent
-
-struct CreateParaphrase: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("paraphrases            .id()
-            .field("action_id", .uuid, .required, .references("actions", "id"))
-            .field("text", .string, .required)
-            .field("commentary", .string, .required)
-            .create()
-    }
-
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("paraphrases").delete()
-    }
-}
-EOT
-
-# Configure routes
-print_status "Configuring routes..."
-cat <<EOT > Sources/App/routes.swift
-import Vapor
-
-func routes(_ app: Application) throws {
-    let actionController = ActionController()
-    app.get("actions", use: actionController.index)
-    app.post("actions", use: actionController.create)
-    app.get("actions", ":actionId", "paraphrases", use: actionController.getParaphrases)
-    app.post("actions", ":actionId", "paraphrases", use: actionController.addParaphrase)
-}
-EOT
-
 # Configure Nginx and SSL
+read -p "Enter the domain name for your project (e.g., example.com): " DOMAIN_NAME
+read -p "Enter your email for SSL certificateregistration (e.g., user@example.com): " EMAIL
 print_status "Configuring Nginx and setting up SSL..."
 nginx -t && systemctl reload nginx || {
     print_error "Failed to reload Nginx"
     exit 1
 }
-if ! certbot certificates | grep -q your_domain.com; then
-    certbot --nginx -m your_email@example.com --agree-tos --no-eff-email -d your_domain.com --redirect || {
+if ! certbot certificates | grep -q $DOMAIN_NAME; then
+    certbot --nginx -m $EMAIL --agree-tos --no-eff-email -d $DOMAIN_NAME --redirect || {
         print_error "Failed to setup SSL with Let's Encrypt"
         exit 1
     }
 else
-    print_status "SSL certificate for your_domain.com is already set up."
+    print_status "SSL certificate for $DOMAIN_NAME is already set up."
 fi
 
 # Build and run the project
@@ -199,4 +150,5 @@ vapor run serve || {
     exit 1
 }
 
-echo "Setup complete. Your system is now configured to use SSH with GitHub."
+echo "Setup complete. Your Vapor environment is ready to use."
+echo "Visit http://$DOMAIN_NAME to see your running application."
