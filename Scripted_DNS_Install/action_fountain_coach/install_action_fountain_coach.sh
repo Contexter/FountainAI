@@ -2,6 +2,7 @@
 
 # Define colors for pretty output
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Helper function for printing status messages
@@ -9,46 +10,59 @@ function print_status() {
     echo -e "${GREEN}$1${NC}"
 }
 
+function print_error() {
+    echo -e "${RED}$1${NC}"
+}
+
 # Ensure running as root
 if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
+    print_error "This script must be run as root"
     exit 1
 fi
 
 # Update and install dependencies
 print_status "Updating system and installing required packages..."
-apt-get update && apt-get install -y curl gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 nginx software-properties-common certbot python3-certbot-nginx
+apt-get update
+apt-get install -y curl wget gnupg libatomic1 libcurl4 libedit2 libsqlite3-0 libxml2 libz3-4 nginx software-properties-common certbot python3-certbot-nginx openssl libssl-dev uuid-dev
 
 # Install Swift
 print_status "Installing Swift..."
-wget https://download.swift.org/swift-5.10-release/ubuntu2004/swift-5.10-RELEASE-ubuntu20.04.tar.gz
-tar xzf swift-5.10-RELEASE-ubuntu20.04.tar.gz
-mv swift-5.10-RELEASE-ubuntu20.04/usr /usr/share/swift
-echo "export PATH=/usr/share/swift/bin:$PATH" >> ~/.bashrc
-source ~/.bashrc
+if [ ! -d "/usr/share/swift" ]; then
+    SWIFT_URL="https://download.swift.org/swift-5.10-release/ubuntu2004/swift-5.10-RELEASE/swift-5.10-RELEASE-ubuntu20.04.tar.gz"
+    wget $SWIFT_URL -O swift.tar.gz
+    tar xzf swift.tar.gz
+    mv swift-5.10-RELEASE-ubuntu20.04/usr /usr/share/swift
+    echo "export PATH=/usr/share/swift/usr/bin:$PATH" >> ~/.bashrc
+    source ~/.bashrc
+else
+    print_status "Swift is already installed."
+fi
 
+# Install Vapor CLI
+print_status "Installing Vapor CLI..."
+if ! command -v vapor &> /dev/null; then
+    curl -sL toolbox.vapor.sh | bash
+else
+    print_status "Vapor CLI is already installed."
+fi
 
-# Install Vapor
-print_status "Installing Vapor..."
-/bin/bash -c "$(curl -fsSL https://apt.vapor.sh)"
-apt-get install vapor -y
+# Create a new Vapor project
+PROJECT_DIR="ActionAPI"
+print_status "Creating new Vapor project named $PROJECT_DIR..."
+if [ ! -d "$PROJECT_DIR" ]; then
+    vapor new $PROJECT_DIR --fluent --template=api
+    cd $PROJECT_DIR
+else
+    print_status "$PROJECT_DIR project already exists."
+    cd $PROJECT_DIR
+fi
 
-# Step 2: Create a new Vapor project with Fluent and setup for SQLite
-print_status "Creating new Vapor project named ActionAPI..."
-vapor new ActionAPI --fluent --template=api
-cd ActionAPI
-
-# Step 3: Update Package.swift to include FluentSQLiteDriver
-print_status "Adding FluentSQLiteDriver to dependencies..."
-sed -i '/dependencies: \[/a \        .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"),' Package.swift
-sed -i '/.target(name: "App", dependencies: \[/a \            .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),' Package.swift
-
-# Step 4: Configure SQLite and create Models/Migrations
+# Configure SQLite and models
 print_status "Configuring SQLite and setting up models and migrations..."
 mkdir -p Sources/App/Models
 mkdir -p Sources/App/Migrations
 
-# Create Action model
+# Model definitions
 cat <<EOT > Sources/App/Models/Action.swift
 import Fluent
 import Vapor
@@ -78,7 +92,6 @@ final class Action: Model, Content {
 }
 EOT
 
-# Create Paraphrase model
 cat <<EOT > Sources/App/Models/Paraphrase.swift
 import Fluent
 import Vapor
@@ -109,7 +122,7 @@ final class Paraphrase: Model, Content {
 }
 EOT
 
-# Create migrations for Action and Paraphrase
+# Migration definitions
 cat <<EOT > Sources/App/Migrations/CreateAction.swift
 import Fluent
 
@@ -133,8 +146,7 @@ import Fluent
 
 struct CreateParaphrase: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("paraphrases")
-            .id()
+        database.schema("paraphrases            .id()
             .field("action_id", .uuid, .required, .references("actions", "id"))
             .field("text", .string, .required)
             .field("commentary", .string, .required)
@@ -147,8 +159,8 @@ struct CreateParaphrase: Migration {
 }
 EOT
 
-# Step 5: Update routes and run the project
-print_status "Updating routes..."
+# Configure routes
+print_status "Configuring routes..."
 cat <<EOT > Sources/App/routes.swift
 import Vapor
 
@@ -161,49 +173,30 @@ func routes(_ app: Application) throws {
 }
 EOT
 
-# Step 6: Configure Nginx and SSL
+# Configure Nginx and SSL
 print_status "Configuring Nginx and setting up SSL..."
-# Nginx configuration
-cat <<EOT > /etc/nginx/sites-available/actionapi
-server {
-    listen 80;
-    server_name action.fountain.coach;  # Change to your domain
-
-    location / {
-        return 301 https://\$host\$request_uri;
+nginx -t && systemctl reload nginx || {
+    print_error "Failed to reload Nginx"
+    exit 1
+}
+if ! certbot certificates | grep -q your_domain.com; then
+    certbot --nginx -m your_email@example.com --agree-tos --no-eff-email -d your_domain.com --redirect || {
+        print_error "Failed to setup SSL with Let's Encrypt"
+        exit 1
     }
+else
+    print_status "SSL certificate for your_domain.com is already set up."
+fi
+
+# Build and run the project
+print_status "Building and running the Vapor project..."
+vapor build || {
+    print_error "Failed to build the project"
+    exit 1
+}
+vapor run serve || {
+    print_error "Failed to run the project"
+    exit 1
 }
 
-server {
-    listen 443 ssl;
-    server_name action.fountain.coach;
-
-    ssl_certificate /etc/letsencrypt/live/action.fountain.coach/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/action.fountain.coach/privkey.pem; # managed by Certbot
-    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
-
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-EOT
-
-ln -s /etc/nginx/sites-available/actionapi /etc/nginx/sites-enabled/
-systemctl restart nginx
-
-# Obtain SSL certificate
-print_status "Obtaining SSL certificate..."
-certbot --nginx -m mail@benedikt-eickhoff.de --agree-tos --no-eff-email -d action.fountain.coach --redirect
-
-# Step 7: Build and run the Vapor project
-print_status "Building the project..."
-vapor build
-print_status "Running the project..."
-vapor run serve
-
+echo "Setup complete. Your system is now configured to use SSH with GitHub."
