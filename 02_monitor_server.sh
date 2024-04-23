@@ -29,11 +29,12 @@ function check_nginx {
 # Check if the web server is serving the expected content
 function check_web_server {
     echo "Checking web server response..."
-    response=$(curl -s http://$domain)
+    # Use curl to fetch the homepage over HTTPS and include a user-agent header to mimic browser requests
+    response=$(curl -s -L --insecure -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" https://$domain)
     if [[ "$response" == *'Nginx is working correctly'* ]]; then
         echo -e "${GREEN}Web server is serving the expected content.${NC}"
     else
-        echo -e "${RED}Web server content does not match expected.${NC}"
+        echo -e "${RED}Web server content does not match expected. Response was: $response${NC}"
         return 1
     fi
 }
