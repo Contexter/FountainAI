@@ -185,3 +185,62 @@ Using Git with SSH keys for managing server configurations not only enhances sec
 12. **Make Scripts Executable and Run on Server**: Change file permissions to make scripts executable and then execute them to deploy configurations.
 
 This workflow ensures that all changes are centrally managed through GitHub, providing a clear audit trail and secure deployment mechanism. This setup is particularly beneficial in environments where multiple administrators or developers need to manage configurations in a controlled and collaborative manner.
+
+### Addendum: Manage The Headless Deploy Machine: an Ubuntu 20.04 VPS !
+
+No worries! Here are the steps to generate an SSH key on a headless Ubuntu 20.04 VPS and add it to GitHub:
+
+### 1. Generate SSH Key on Ubuntu
+
+1. **Open your terminal.** Connect to your Ubuntu server if you're not already connected.
+
+2. **Check for existing SSH keys:**
+   ```bash
+   ls -al ~/.ssh
+   ```
+   Look for files named `id_rsa` and `id_rsa.pub`. If they exist, you already have an SSH key pair and can skip to step 4 if you want to use this key. Otherwise, proceed to step 3 to generate a new key.
+
+3. **Generate a new SSH key:**
+   ```bash
+   ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+   ```
+   Replace `"your_email@example.com"` with your email address. This command creates a new SSH key using the provided email as a label.
+   - When prompted to "Enter a file in which to save the key," press **Enter** to accept the default file location.
+   - At the prompt, enter a secure passphrase or press **Enter** to skip (not recommended for production environments).
+
+### 2. Copy the SSH Public Key
+
+1. **Display your public SSH key:**
+   ```bash
+   cat ~/.ssh/id_rsa.pub
+   ```
+   This command will display the SSH key file’s content, which you need to copy. Make sure to copy the entire key starting with `ssh-rsa`.
+
+### 3. Add SSH Key to GitHub
+
+1. **Log in to your GitHub account.**
+
+2. **Go to Settings:**
+   - In the upper-right corner of any page, click your profile photo, then click **Settings**.
+
+3. **SSH and GPG keys:**
+   - In the user settings sidebar, click **SSH and GPG keys**.
+
+4. **Add a new SSH key:**
+   - Click **New SSH key** or **Add SSH key**.
+   - In the "Title" field, add a descriptive label for the new key (e.g., `Ubuntu VPS`).
+   - Paste your key into the "Key" field (the key you copied from `id_rsa.pub`).
+
+5. **Save the SSH key:**
+   - Click **Add SSH key**.
+   - If prompted, confirm your GitHub password.
+
+### 4. Test SSH Connection
+
+1. **Test your SSH connection to GitHub:**
+   ```bash
+   ssh -T git@github.com
+   ```
+   You should receive a welcome message from GitHub if everything is set up correctly. If you see a warning about authenticity, type "yes" to continue.
+
+Now, your Ubuntu 20.04 VPS is set up to securely connect to GitHub via SSH, allowing you to manage your repositories without needing to enter your username and password every time.
