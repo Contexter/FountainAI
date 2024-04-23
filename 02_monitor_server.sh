@@ -3,7 +3,7 @@
 # Save this script as '02_monitor_server.sh' and make it executable:
 # chmod +x monitor_server.sh
 # Run the script using:
-# ./monitor_server.sh
+# ./02_monitor_server.sh
 
 # Define color codes
 GREEN="\033[0;32m"
@@ -14,6 +14,12 @@ NC="\033[0m"  # No Color
 read -p "Please enter the domain you want to monitor: " domain
 
 echo -e "${GREEN}Starting server monitoring checks for $domain...${NC}"
+
+# Check if the domain resolves
+if ! host $domain > /dev/null 2>&1; then
+    echo -e "${RED}Error: Domain $domain does not resolve. Please check the DNS settings or domain name.${NC}"
+    exit 1
+fi
 
 # Check if Nginx is active and running
 function check_nginx {
@@ -26,15 +32,14 @@ function check_nginx {
     fi
 }
 
-# Check if the web server is serving the expected content
+# Check if the web server is serving the expected content and validate HTTP status code
 function check_web_server {
     echo "Checking web server response..."
-    # Use curl to fetch the homepage over HTTPS and include a user-agent header to mimic browser requests
-    response=$(curl -s -L --insecure -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" https://$domain)
-    if [[ "$response" == *'Nginx is working correctly'* ]]; then
+    response=$(curl -s -L -o /dev/null -w "%{http_code}" --insecure https://$domain)
+    if [ "$response" -eq 200 ]; then
         echo -e "${GREEN}Web server is serving the expected content.${NC}"
     else
-        echo -e "${RED}Web server content does not match expected. Response was: $response${NC}"
+        echo -e "${RED}Web server content does not match expected. HTTP status code was: $response${NC}"
         return 1
     fi
 }
