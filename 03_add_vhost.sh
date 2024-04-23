@@ -24,13 +24,57 @@ function check_dns() {
     fi
 }
 
-# Function to configure Nginx
-function setup_nginx() {
-    echo -e "${GREEN}Configuring new Nginx vhost for $new_domain...${NC}"
-
-    # Create Nginx server block file
+# Function to configure Nginx without SSL initially
+function setup_nginx_basic() {
+    echo -e "${GREEN}Setting up basic Nginx config for $new_domain...${NC}"
     local vhost_file="/etc/nginx/sites-available/$new_domain"
     sudo touch $vhost_file
+    sudo cat > $vhost_file <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $new_domain www.$new_domain;
+
+    root /var/www/$new_domain/html;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+
+    return 301 https://\$server_name\$request_uri;
+}
+EOF
+
+    # Create root directory for the new domain and assign ownership
+    sudo mkdir -p /var/www/$new_domain/html
+    sudo chown -R www-data:www-data /var/www/$new_domain/html
+
+    # Create a simple HTML file to confirm Nginx is serving pages correctly
+    sudo cat > /var/www/$new_domain/html/index.html <<EOF
+<html>
+    <head><title>Welcome to $new_domain!</title></head>
+    <body>
+        <h1>Success! The basic $new_domain server block is working!</h1>
+        <p>This page will soon be secured with SSL.</p>
+    </body>
+</html>
+EOF
+
+    # Enable the new vhost by creating a symbolic link
+    sudo ln -s /etc/nginx/sites-available/$new_domain /etc/nginx/sites-enabled/
+
+    # Test Nginx configuration without SSL
+    sudo nginx -t && sudo systemctl reload nginx
+}
+
+# Function to configure SSL with Certbot
+function setup_ssl() {
+    echo -e "${GREEN}Configuring SSL with Certbot for $new_domain using email $user_email...${NC}"
+    sudo certbot --nginx -d $new_domain -d www.$new_domain --non-interactive --redirect --agree-tos --email $user_email --hsts
+
+    # Update Nginx config to include SSL details after Certbot has installed certificates
+    local vhost_file="/etc/nginx/sites-available/$new_domain"
     sudo cat > $vhost_file <<EOF
 server {
     listen 80;
@@ -59,39 +103,15 @@ server {
 }
 EOF
 
-    # Create root directory for the new domain and assign ownership
-    sudo mkdir -p /var/www/$new_domain/html
-    sudo chown -R \$USER:\$USER /var/www/$new_domain/html
-
-    # Create a simple HTML file to confirm Nginx is serving pages correctly
-    sudo cat > /var/www/$new_domain/html/index.html <<EOF
-<html>
-    <head><title>Welcome to $new_domain!</title></head>
-    <body>
-        <h1>Success! The $new_domain server block is working!</h1>
-        <p>Hosted on $(hostname) with IP address $(hostname -I | cut -d' ' -f1)</p>
-    </body>
-</html>
-EOF
-
-    # Enable the new vhost by creating a symbolic link
-    sudo ln -s /etc/nginx/sites-available/$new_domain /etc/nginx/sites-enabled/
-
-    # Test Nginx configuration and restart service
-    sudo nginx -t && sudo systemctl restart nginx
-}
-
-# Function to configure SSL
-function setup_ssl() {
-    echo -e "${GREEN}Configuring SSL with Certbot for $new_domain using email $user_email...${NC}"
-    sudo certbot --nginx -d $new_domain -d www.$new_domain --non-interactive --redirect --agree-tos --email $user_email --hsts
+    # Reload Nginx to apply SSL configuration
+    sudo nginx -t && sudo systemctl reload nginx
 }
 
 # Main execution function
 function main() {
     prompt_for_input
     check_dns
-    setup_nginx
+    setup_nginx_basic
     setup_ssl
 
     # Final confirmation message
@@ -106,4 +126,3 @@ function main() {
 
 # Call main function to execute the script
 main
-
