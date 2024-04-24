@@ -9,10 +9,14 @@ update_and_install_dependencies() {
     sudo apt-get install -y clang libicu-dev libatomic1 libcurl4 libxml2 zlib1g-dev libssl-dev pkg-config
 }
 
-# Install Vapor Toolbox using the official script
-install_vapor_toolbox() {
+# Add Vapor repository and install Vapor Toolbox
+add_vapor_repository_and_install_toolbox() {
+    echo "Adding Vapor repository..."
+    wget -q https://repo.vapor.codes/apt/keyring.gpg -O- | sudo gpg --dearmor -o /usr/share/keyrings/vapor-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/vapor-archive-keyring.gpg] https://repo.vapor.codes/apt/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/vapor.list > /dev/null
+    sudo apt-get update
+
     echo "Installing Vapor Toolbox..."
-    eval "$(curl -sL https://apt.vapor.sh)"
     sudo apt-get install -y vapor
 }
 
@@ -24,5 +28,5 @@ verify_installation() {
 
 # Run the functions
 update_and_install_dependencies
-install_vapor_toolbox
+add_vapor_repository_and_install_toolbox
 verify_installation
