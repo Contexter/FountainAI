@@ -22,8 +22,8 @@ function check_swift_installed() {
 # Function to install Swift if not already installed
 function install_swift() {
     echo -e "${GREEN}Installing Swift...${NC}"
-    local swift_version="5.3"
-    local swift_url="https://download.swift.org/swift-${swift_version}-release/ubuntu2004/swift-${swift_version}-RELEASE/swift-${swift_version}-RELEASE-ubuntu2004.tar.gz"
+    local swift_version="5.10"  # Specify the exact version of Swift
+    local swift_url="https://download.swift.org/swift-5.10-release/ubuntu2004/swift-5.10-RELEASE/swift-5.10-RELEASE-ubuntu20.04.tar.gz"
     wget "$swift_url" -O swift.tar.gz  # Download Swift
     sudo tar xzf swift.tar.gz -C /usr --strip-components=1  # Extract it
     echo "export PATH=/usr/bin/swift:\$PATH" >> ~/.bash_profile  # Add Swift to PATH
