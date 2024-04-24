@@ -63,6 +63,13 @@ function find_available_port() {
     done
 }
 
+# Function to configure UFW to allow traffic on the Vapor port
+function configure_ufw_firewall() {
+    echo -e "${GREEN}Configuring UFW firewall to allow traffic on port $vapor_port...${NC}"
+    sudo ufw allow $vapor_port/tcp
+    echo -e "${GREEN}Firewall configured to allow traffic on port $vapor_port.${NC}"
+}
+
 # Function to create and setup the Vapor project
 function create_vapor_project() {
     echo -e "${GREEN}Creating Vapor project in $app_directory...${NC}"
@@ -152,6 +159,7 @@ function main() {
     install_vapor
     prompt_for_input
     find_available_port
+    configure_ufw_firewall  # Configure UFW before setting up the project
     create_vapor_project
     setup_systemd_service
     update_nginx_for_vapor
