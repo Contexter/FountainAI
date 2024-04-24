@@ -1,20 +1,52 @@
 #!/bin/bash
 
-# Save this script as '04_setup_vapor_vhost.sh' and make it executable:
-# chmod +x 04_setup_vapor_vhost.sh
+# Save this script as '04_setup_dev_environment.sh' and make it executable:
+# chmod +x 04_setup_dev_environment.sh
 # Run the script using:
-# ./04_setup_vapor_vhost.sh
+# ./04_setup_dev_environment.sh
 
-# Define color codes for output
+# Define ANSI color code variables for better readability in terminal outputs
 GREEN="\033[0;32m"
 RED="\033[0;31m"
-NC="\033[0m"  # No Color
+NC="\033[0m"  # No Color, to reset the color after printing
+
+# Function to check if Swift is already installed
+function check_swift_installed() {
+    if ! type swift >/dev/null 2>&1; then
+        install_swift  # Call install_swift if Swift is not found
+    else
+        echo -e "${GREEN}Swift is already installed.${NC}"
+    fi
+}
+
+# Function to install Swift if not already installed
+function install_swift() {
+    echo -e "${GREEN}Installing Swift...${NC}"
+    local swift_version="5.3"
+    local swift_url="https://download.swift.org/swift-${swift_version}-release/ubuntu2004/swift-${swift_version}-RELEASE/swift-${swift_version}-RELEASE-ubuntu2004.tar.gz"
+    wget "$swift_url" -O swift.tar.gz  # Download Swift
+    sudo tar xzf swift.tar.gz -C /usr --strip-components=1  # Extract it
+    echo "export PATH=/usr/bin/swift:\$PATH" >> ~/.bash_profile  # Add Swift to PATH
+    source ~/.bash_profile  # Reload bash profile
+    echo "Swift installed successfully."
+}
+
+# Function to install Vapor CLI if it is not installed
+function install_vapor() {
+    echo -e "${GREEN}Installing Vapor CLI...${NC}"
+    if ! command -v vapor > /dev/null; then
+        /bin/bash -c "$(curl -fsSL https://get.vapor.sh)"  # Install Vapor CLI
+        echo "Vapor CLI installed successfully."
+    else
+        echo "Vapor CLI is already installed."
+    fi
+}
 
 # Function to prompt for user input
 function prompt_for_input() {
     read -p "Please enter the domain to configure for Vapor: " new_domain
     read -p "Please enter the directory to create the Vapor app in (default /var/www/$new_domain): " app_directory
-    app_directory=${app_directory:-/var/www/$new_domain}
+    app_directory=${app_directory:-/var/www/$new_domain}  # Default to /var/www/domain if no input
 }
 
 # Function to find an available port starting from 8080
@@ -36,9 +68,9 @@ function create_vapor_project() {
     echo -e "${GREEN}Creating Vapor project in $app_directory...${NC}"
     mkdir -p $app_directory
     cd $app_directory
-    vapor new --type=web --name=$new_domain
+    vapor new --type=web --name=$new_domain  # Create new Vapor project
     cd $new_domain
-    swift build -c release
+    swift build -c release  # Build the project in release configuration
     echo -e "${GREEN}Vapor project created and built successfully.${NC}"
 }
 
@@ -63,7 +95,6 @@ Environment="VAPOR_ENV=production"
 WantedBy=multi-user.target
 EOF
 
-    # Enable and start the service
     sudo systemctl daemon-reload
     sudo systemctl enable $service_name
     sudo systemctl start $service_name
@@ -111,14 +142,14 @@ server {
 }
 EOF
 
-   
-
- # Test and reload Nginx configuration
     sudo nginx -t && sudo systemctl reload nginx
+    echo -e "${GREEN}Nginx configuration updated successfully.${NC}"
 }
 
-# Main execution function
+# Main function to orchestrate setup
 function main() {
+    check_swift_installed
+    install_vapor
     prompt_for_input
     find_available_port
     create_vapor_project
@@ -127,7 +158,7 @@ function main() {
 
     # Final confirmation message
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Vapor app and Nginx configuration completed successfully for $new_domain.${NC}"
+        echo -e "${GREEN}Development environment setup complete. Swift and Vapor CLI are ready for use.${NC}"
         echo -e "${GREEN}You can verify the setup by accessing https://$new_domain in your browser.${NC}"
     else
         echo -e "${RED}Failed to setup Vapor app or Nginx configuration. Check the configurations and try again.${NC}"
