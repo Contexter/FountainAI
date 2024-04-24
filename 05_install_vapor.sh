@@ -1,23 +1,27 @@
 #!/bin/bash
 
-# This script installs Vapor and the Vapor CLI on Ubuntu 20.04.
+# This script installs the Vapor toolbox by cloning the official GitHub repository.
 
-# Update system packages and install dependencies
-update_and_install_dependencies() {
-    echo "Updating system packages and installing necessary dependencies..."
+# Install git, make, and any necessary dependencies
+install_dependencies() {
+    echo "Installing git, make, and necessary build dependencies..."
     sudo apt-get update
-    sudo apt-get install -y clang libicu-dev libatomic1 libcurl4 libxml2 zlib1g-dev libssl-dev pkg-config
+    sudo apt-get install -y git build-essential
 }
 
-# Add Vapor repository and install Vapor Toolbox
-add_vapor_repository_and_install_toolbox() {
-    echo "Adding Vapor repository..."
-    wget -q https://repo.vapor.codes/apt/keyring.gpg -O- | sudo gpg --dearmor -o /usr/share/keyrings/vapor-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/vapor-archive-keyring.gpg] https://repo.vapor.codes/apt/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/vapor.list > /dev/null
-    sudo apt-get update
+# Clone Vapor toolbox repository and install a specific version
+clone_and_install_vapor() {
+    echo "Cloning Vapor toolbox repository..."
+    git clone https://github.com/vapor/toolbox.git
+    cd toolbox
 
+    # Checkout version 18.7.5
+    echo "Checking out version 18.7.5..."
+    git checkout 18.7.5
+
+    # Install Vapor Toolbox
     echo "Installing Vapor Toolbox..."
-    sudo apt-get install -y vapor
+    make install
 }
 
 # Verify the installation by checking the Vapor version
@@ -27,6 +31,6 @@ verify_installation() {
 }
 
 # Run the functions
-update_and_install_dependencies
-add_vapor_repository_and_install_toolbox
+install_dependencies
+clone_and_install_vapor
 verify_installation
