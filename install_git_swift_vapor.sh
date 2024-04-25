@@ -57,7 +57,13 @@ install_vapor_toolbox() {
     git clone https://github.com/vapor/toolbox.git
     cd toolbox
     git checkout $vapor_toolbox_version
-    make install
+
+    # Determine Swift compiler path
+    swiftc_path=$(dirname $(which swiftc))
+
+    # Temporarily export the Swift compiler path for sudo environment
+    sudo env "PATH=$PATH:$swiftc_path" make install
+
     cd ..
     rm -rf toolbox
     echo "Vapor Toolbox installed or updated successfully."
@@ -76,4 +82,3 @@ main() {
 
 # Entry point of the script.
 main
-
