@@ -8,4 +8,3 @@ Root Directory for Vapor Apps implementing the openAPIs:
 ├── SectionHeading.yaml
 ├── SpokenWord.yaml
 ├── Transition.yaml
-└── serverSetup.yaml
