@@ -1,17 +1,30 @@
 openapi: 3.0.1
 info:
   title: Script Notes API
-  description: This API allows clients to manage notes within scripts, facilitating note creation, retrieval, updating, and deletion within a scriptwriting or editing environment.
-  version: 1.0.0
+  description: |
+    This API allows clients to manage notes within scripts, facilitating note creation, retrieval, updating, and deletion within a scriptwriting or editing environment.
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container caches script note data, optimizing performance for frequent queries.
+    - **RedisAI Middleware**: RedisAI provides enhanced recommendations and validations for note analysis.
+
+  version: "1.1.0"
 servers:
   - url: 'https://note.fountain.coach'
-    description: Primary server for the Script Notes API.
+    description: Primary server for the Script Notes API (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for the Script Notes API (Docker environment)
+
 paths:
   /notes:
     post:
       summary: Create a Note
       operationId: createNote
-      description: Creates a new note associated with a script, identified by a script ID, and includes the note's text and its sequence within the script.
+      description: |
+        Creates a new note associated with a script, identified by a script ID, and includes the note's text and its sequence within the script. RedisAI provides recommendations and validation for the note content.
       requestBody:
         required: true
         description: The required details for creating a new note, including the script ID, note text, and its sequence order.
@@ -47,7 +60,8 @@ paths:
     get:
       summary: Retrieve a Note by ID
       operationId: getNoteById
-      description: Retrieves the details of a specific note by its unique identifier (noteId).
+      description: |
+        Retrieves the details of a specific note by its unique identifier (noteId). Redis caching improves retrieval performance.
       parameters:
         - name: noteId
           in: path
@@ -68,7 +82,8 @@ paths:
     put:
       summary: Update a Note
       operationId: updateNote
-      description: Updates the content and/or sequence of an existing note, identified by its noteId.
+      description: |
+        Updates the content and/or sequence of an existing note, identified by its noteId. RedisAI provides validation for note content updates.
       parameters:
         - name: noteId
           in: path
@@ -123,7 +138,7 @@ components:
   schemas:
     Note:
       type: object
-      description: Represents a note within a script, containing its ID, associated script ID, textual content, and sequence order.
+      description: Represents a note within a script, containing its ID, associated script ID, textual content, and sequence order. Caching via Redis optimizes retrieval performance.
       required:
         - noteId
         - scriptId
