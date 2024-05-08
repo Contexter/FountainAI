@@ -3,17 +3,28 @@ info:
   title: SpokenWord API
   description: |
     An API designed to manage SpokenWord entities in a scriptwriting application. This includes operations to list, create, retrieve, update, and delete SpokenWord entities, as well as manage their paraphrases.
-  version: "1.0.0"
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The primary persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container caches spoken word data, optimizing query performance.
+    - **RedisAI Middleware**: RedisAI provides recommendations, validation, and analysis for spoken word content and paraphrases.
+
+  version: "1.1.0"
 servers:
   - url: 'https://spokenwords.fountain.coach'
-    description: Main server for the SpokenWord API, managing spoken word entries.
+    description: Main server for the SpokenWord API, managing spoken word entries (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for the SpokenWord API (Docker environment)
 
 paths:
   /spokenWords:
     get:
       summary: Retrieve All SpokenWords
       operationId: getSpokenWords
-      description: Fetches a list of all SpokenWords entities in the system, providing an overview of spoken dialogues.
+      description: |
+        Fetches a list of all SpokenWords entities in the system, providing an overview of spoken dialogues. This endpoint leverages Redis caching to improve query performance.
       responses:
         '200':
           description: Successfully retrieved a list of SpokenWords.
@@ -26,7 +37,8 @@ paths:
     post:
       summary: Create SpokenWord
       operationId: createSpokenWord
-      description: Creates a new SpokenWord entity with provided dialogue text and sequence within the script.
+      description: |
+        Creates a new SpokenWord entity with provided dialogue text and sequence within the script. RedisAI middleware provides recommendations and validation during creation.
       requestBody:
         required: true
         description: Details for the new SpokenWord entity to be created.
@@ -46,7 +58,8 @@ paths:
     get:
       summary: Retrieve All Paraphrases for a SpokenWord
       operationId: listSpokenWordParaphrases
-      description: Retrieves all paraphrases linked to a specific SpokenWord, including a commentary on why each paraphrase is connected to the original dialogue.
+      description: |
+        Retrieves all paraphrases linked to a specific SpokenWord, including a commentary on why each paraphrase is connected to the original dialogue. This endpoint leverages Redis caching for improved query performance.
       parameters:
         - name: id
           in: path
@@ -66,7 +79,8 @@ paths:
     post:
       summary: Create a New Paraphrase for a SpokenWord
       operationId: createSpokenWordParaphrase
-      description: Allows for the creation of a new paraphrase linked to a SpokenWord. Clients must provide the paraphrased text and a commentary explaining the link to the original dialogue.
+      description: |
+        Allows for the creation of a new paraphrase linked to a SpokenWord. Clients must provide the paraphrased text and a commentary explaining the link to the original dialogue. RedisAI provides validation and analysis for paraphrase creation.
       parameters:
         - name: id
           in: path
@@ -93,7 +107,7 @@ components:
   schemas:
     SpokenWord:
       type: object
-      description: Represents a dialogue or spoken word within the script, identified by a unique ID, text, and sequence order.
+      description: Represents a dialogue or spoken word within the script, identified by a unique ID, text, and sequence order. Caching via Redis improves query performance.
       required:
         - dialogueId
         - text
@@ -111,7 +125,8 @@ components:
 
     Paraphrase:
       type: object
-      description: Represents a paraphrased version of a dialogue or spoken word, including textual paraphrase and commentary on the connection to the original.
+      description: |
+        Represents a paraphrased version of a dialogue or spoken word, including textual paraphrase and commentary on the connection to the original. RedisAI helps improve analysis and validation of paraphrase quality.
       required:
         - originalId
         - text
