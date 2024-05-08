@@ -1,6 +1,3 @@
-To update the "MusicSound API" OpenAPI specification from version 1.0 to 1.1, reflecting the Dockerized environment and Redis/RedisAI integrations, we can follow a similar approach as the previous updates. Here's the revised OpenAPI spec:
-
-```yaml
 openapi: 3.0.1
 info:
   title: MusicSound API
@@ -184,9 +181,3 @@ components:
         midiData:
           type: string
           description: MIDI data for the entity.
-```
-
-### Summary of Changes:
-- Added a description of the Dockerized environment and architecture in the `info` section.
-- Updated endpoint descriptions to reflect Redis caching and RedisAI integrations.
-- Incremented the version number to "1.1" to reflect these changes.
