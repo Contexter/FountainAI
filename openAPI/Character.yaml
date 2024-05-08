@@ -3,16 +3,28 @@ info:
   title: Character Management API
   description: |
     This API facilitates managing characters within a screenplay application, enabling characters to exist independently of specific scripts. It supports operations for creating, listing, retrieving, updating, and deleting characters, and managing their paraphrases, providing a comprehensive toolset for screenplay character management.
-  version: "1.0.0"
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The primary persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container caches character data for optimized query performance.
+    - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for character paraphrases and relations.
+
+  version: "1.1.0"
 servers:
   - url: 'https://character.fountain.coach'
-    description: Main production server for the Character Management API.
+    description: Main production server for the Character Management API (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for the Character Management API (Docker environment)
+
 paths:
   /characters:
     get:
       summary: Retrieve All Characters
       operationId: listCharacters
-      description: Lists all characters stored within the application, offering an overview of the characters available for screenplay development.
+      description: |
+        Lists all characters stored within the application, offering an overview of the characters available for screenplay development. This endpoint leverages Redis caching to improve query performance.
       responses:
         '200':
           description: A JSON array of character entities.
@@ -27,7 +39,8 @@ paths:
     post:
       summary: Create a New Character
       operationId: createCharacter
-      description: Allows for the creation of a new character, adding to the pool of characters available for inclusion in screenplays.
+      description: |
+        Allows for the creation of a new character, adding to the pool of characters available for inclusion in screenplays. RedisAI is integrated to provide recommendations and validation for character creation.
       requestBody:
         required: true
         description: A JSON object detailing the new character to be created.
@@ -51,7 +64,8 @@ paths:
     get:
       summary: Retrieve All Paraphrases for a Character
       operationId: listCharacterParaphrases
-      description: Retrieves all paraphrases linked to a specific character, including a commentary on why each paraphrase is connected to the original character.
+      description: |
+        Retrieves all paraphrases linked to a specific character, including a commentary on why each paraphrase is connected to the original character. Redis caching improves retrieval performance.
       parameters:
         - name: characterId
           in: path
@@ -75,7 +89,8 @@ paths:
     post:
       summary: Create a New Paraphrase for a Character
       operationId: createCharacterParaphrase
-      description: Allows for the creation of a new paraphrase linked to a character. Clients must provide the paraphrased text and a commentary explaining the link to the original character.
+      description: |
+        Allows for the creation of a new paraphrase linked to a character. Clients must provide the paraphrased text and a commentary explaining the link to the original character. RedisAI integration provides additional validation.
       parameters:
         - name: characterId
           in: path
@@ -108,7 +123,7 @@ components:
   schemas:
     Character:
       type: object
-      description: Represents a character entity within the screenplay application, containing details such as name, description, and associated script IDs.
+      description: Represents a character entity within the screenplay application, containing details such as name, description, and associated script IDs. Caching via Redis optimizes retrieval performance.
       properties:
         characterId:
           type: integer
