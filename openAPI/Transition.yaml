@@ -1,17 +1,30 @@
 openapi: 3.0.1
 info:
   title: Script Elements API
-  description: API for managing script elements including Transition instances, facilitating complex script structures and their paraphrases.
-  version: "1.0.0"
+  description: |
+    API for managing script elements including Transition instances, facilitating complex script structures and their paraphrases.
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The primary persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container caches transition data, optimizing query performance.
+    - **RedisAI Middleware**: RedisAI provides validation, analysis, and recommendations for script transitions and their paraphrases.
+
+  version: "1.1.0"
 servers:
   - url: 'https://transition.fountain.coach'
-    description: Main server for the Script Elements API, handling transitions within scripts.
+    description: Main server for the Script Elements API, handling transitions within scripts (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for script transitions (Docker environment)
 
 paths:
   /transitions:
     get:
       summary: Get a list of Transitions
       operationId: listTransitions
+      description: |
+        Retrieves a list of all transitions in the system, providing an overview of transition structures. This endpoint leverages Redis caching to improve query performance.
       responses:
         '200':
           description: A list of Transitions.
@@ -24,6 +37,8 @@ paths:
     post:
       summary: Create a new Transition
       operationId: createTransition
+      description: |
+        Creates a new transition with provided description and sequence within the script. RedisAI middleware provides validation and recommendations during creation.
       requestBody:
         required: true
         content:
@@ -42,6 +57,8 @@ paths:
     get:
       summary: Retrieve All Paraphrases for a Transition
       operationId: listTransitionParaphrases
+      description: |
+        Retrieves all paraphrases linked to a specific Transition. Redis caching helps optimize retrieval performance.
       parameters:
         - name: transitionId
           in: path
@@ -61,6 +78,8 @@ paths:
     post:
       summary: Create a New Paraphrase for a Transition
       operationId: createTransitionParaphrase
+      description: |
+        Allows for the creation of a new paraphrase linked to a Transition. Clients must provide the paraphrased text and commentary explaining the link to the original Transition. RedisAI provides validation and recommendations for paraphrase creation.
       parameters:
         - name: transitionId
           in: path
@@ -102,7 +121,8 @@ components:
 
     Paraphrase:
       type: object
-      description: Represents a paraphrased version of a script element, including textual paraphrase and commentary on the connection to the original.
+      description: |
+        Represents a paraphrased version of a script element, including textual paraphrase and commentary on the connection to the original. RedisAI helps improve paraphrase analysis and validation.
       required:
         - originalId
         - text
