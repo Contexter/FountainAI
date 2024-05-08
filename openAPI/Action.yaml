@@ -3,10 +3,20 @@ info:
   title: Action API
   description: |
     The Action API facilitates the management of Action and Paraphrase entities within a script management system. This API enables the creation, retrieval, updating, and deletion of actions, as well as their paraphrased versions, thus serving as the backbone for organizing scripts by allowing users to manipulate action entities and their various expressive forms.
-  version: "1.0"
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container is used for caching action data, optimizing performance for frequent queries.
+    - **RedisAI Middleware**: RedisAI is employed for enhanced recommendations and decision-making based on predefined models.
+
+  version: "1.1"
 servers:
   - url: https://action.fountain.coach
-    description: Production server for the Action API.
+    description: Production server for the Action API (behind Nginx proxy)
+  - url: http://localhost:8080
+    description: Development server for the Action API (Docker environment)
 
 paths:
   /actions:
@@ -16,7 +26,7 @@ paths:
       tags:
         - Actions
       description: |
-        Lists all actions currently stored within the system. This endpoint is useful for getting an overview of all actions or for initializing user interfaces with data.
+        Lists all actions currently stored within the system. This endpoint leverages Redis caching for optimized query performance.
       responses:
         '200':
           description: A JSON array of action entities.
@@ -32,7 +42,7 @@ paths:
       tags:
         - Actions
       description: |
-        Allows for the creation of a new action entity. Clients must provide an action description and its sequence within a script. This endpoint is key for adding new steps to existing scripts or creating the initial action in a new script.
+        Allows for the creation of a new action entity. Clients must provide an action description and its sequence within a script. This endpoint integrates with RedisAI to provide recommendations or validations based on predefined models.
       requestBody:
         required: true
         description: A JSON object containing the new action's details.
@@ -56,7 +66,8 @@ paths:
         - Actions
         - Paraphrases
       description: |
-        Retrieves all paraphrases linked to a specific action. This includes a commentary on why each paraphrase is connected to the original action.
+        Retrieves all paraphrases linked to a specific action. This includes commentary on why each paraphrase is connected to the original action.
+        Leverages Redis caching for improved query performance.
       parameters:
         - name: actionId
           in: path
@@ -80,7 +91,7 @@ paths:
         - Actions
         - Paraphrases
       description: |
-        Allows for the creation of a new paraphrase linked to an action. Clients must provide the paraphrased text and a commentary explaining the link to the original action.
+        Allows for the creation of a new paraphrase linked to an action. Clients must provide the paraphrased text and a commentary explaining the link to the original action. RedisAI integration provides additional validation.
       parameters:
         - name: actionId
           in: path
@@ -108,7 +119,7 @@ components:
     Action:
       type: object
       description: |
-        Represents a single action within a script, detailing what happens at this step and its order relative to other actions.
+        Represents a single action within a script, detailing what happens at this step and its order relative to other actions. Caching via Redis optimizes retrieval.
       required:
         - description
         - sequence
@@ -132,7 +143,7 @@ components:
     Paraphrase:
       type: object
       description: |
-        Represents a paraphrased version of a script element (e.g., action), including textual paraphrase and commentary on the connection to the original.
+        Represents a paraphrased version of a script element (e.g., action), including textual paraphrase and commentary on the connection to the original. Redis caching improves retrieval times.
       required:
         - originalId
         - text
