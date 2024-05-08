@@ -1,18 +1,33 @@
+To update the "MusicSound API" OpenAPI specification from version 1.0 to 1.1, reflecting the Dockerized environment and Redis/RedisAI integrations, we can follow a similar approach as the previous updates. Here's the revised OpenAPI spec:
+
+```yaml
 openapi: 3.0.1
 info:
   title: MusicSound API
   description: |
     The MusicSound API provides capabilities for managing MusicSound entities with integrations for Csound, LilyPond, and MIDI. This API supports operations for creating, retrieving, updating, and deleting MusicSound entities, as well as processing them with Csound, notating with LilyPond, and converting to MIDI format. It serves the audio programming and musical notation communities by facilitating the technical implementation of music creation.
-  version: "1.0"
+
+    **Dockerized Environment**:  
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.  
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.  
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.  
+    - **Redis Cache**: A Redis container is used for caching MusicSound data, optimizing performance for frequent queries.  
+    - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for MusicSound analysis.
+
+  version: "1.1"
 servers:
   - url: https://musicsound.fountain.coach
-    description: Primary server for the MusicSound API.
+    description: Primary server for the MusicSound API (behind Nginx proxy)
+  - url: http://localhost:8080
+    description: Development server for the MusicSound API (Docker environment)
+
 paths:
   /musicsound:
     get:
       summary: Retrieve All MusicSound Entities
       operationId: listAllMusicSounds
-      description: Lists all MusicSound entities available in the system, providing a comprehensive overview.
+      description: |
+        Lists all MusicSound entities available in the system, providing a comprehensive overview. This endpoint leverages Redis caching for improved query performance.
       responses:
         '200':
           description: A JSON array of MusicSound entities.
@@ -25,7 +40,8 @@ paths:
     post:
       summary: Create MusicSound Entity
       operationId: createMusicSound
-      description: Allows for the creation of a new MusicSound entity, enabling users to add new sounds and musical elements into the system.
+      description: |
+        Allows for the creation of a new MusicSound entity, enabling users to add new sounds and musical elements into the system. RedisAI provides recommendations and validations for this entity.
       requestBody:
         required: true
         description: A JSON object containing the new MusicSound entity details.
@@ -40,6 +56,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MusicSound'
+
   /musicsound/{musicSoundId}:
     get:
       summary: Fetch MusicSound Entity by ID
@@ -51,6 +68,8 @@ paths:
           required: true
           schema:
             type: integer
+      description: |
+        Fetches a specific MusicSound entity by its ID. Redis caching improves retrieval performance.
       responses:
         '200':
           description: MusicSound entity details.
@@ -95,6 +114,7 @@ paths:
       responses:
         '204':
           description: MusicSound entity successfully deleted.
+
   /musicsound/{musicSoundId}/csound:
     post:
       summary: Process with Csound
@@ -109,6 +129,7 @@ paths:
       responses:
         '200':
           description: MusicSound entity processed with Csound.
+
   /musicsound/{musicSoundId}/lilypond:
     post:
       summary: Notate with LilyPond
@@ -123,6 +144,7 @@ paths:
       responses:
         '200':
           description: MusicSound entity notated with LilyPond.
+
   /musicsound/{musicSoundId}/midi:
     post:
       summary: Convert to MIDI
@@ -137,6 +159,7 @@ paths:
       responses:
         '200':
           description: MusicSound entity converted to MIDI.
+
 components:
   schemas:
     MusicSound:
@@ -161,3 +184,9 @@ components:
         midiData:
           type: string
           description: MIDI data for the entity.
+```
+
+### Summary of Changes:
+- Added a description of the Dockerized environment and architecture in the `info` section.
+- Updated endpoint descriptions to reflect Redis caching and RedisAI integrations.
+- Incremented the version number to "1.1" to reflect these changes.
