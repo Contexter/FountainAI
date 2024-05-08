@@ -1,17 +1,30 @@
 openapi: 3.0.1
 info:
   title: Script Management API
-  description: API for managing screenplay scripts, including creation, retrieval, updating, and deletion.
-  version: "1.0.0"
+  description: |
+    API for managing screenplay scripts, including creation, retrieval, updating, and deletion.
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container is used for caching script data, optimizing performance for frequent queries.
+    - **RedisAI Middleware**: RedisAI provides enhanced analysis, recommendations, and validation for script management.
+
+  version: "1.1.0"
 servers:
   - url: 'https://script.fountain.coach'
-    description: Main server for Script Management API services.
+    description: Main server for Script Management API services (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for Script Management API services (Docker environment)
+
 paths:
   /scripts:
     get:
       summary: Retrieve All Scripts
       operationId: listScripts
-      description: Lists all screenplay scripts stored within the system.
+      description: |
+        Lists all screenplay scripts stored within the system. This endpoint leverages Redis caching for improved query performance.
       responses:
         '200':
           description: An array of scripts.
@@ -24,7 +37,8 @@ paths:
     post:
       summary: Create a New Script
       operationId: createScript
-      description: Creates a new screenplay script record in the system.
+      description: |
+        Creates a new screenplay script record in the system. RedisAI provides recommendations and validation during creation.
       requestBody:
         required: true
         content:
@@ -43,7 +57,8 @@ paths:
     get:
       summary: Retrieve a Script by ID
       operationId: getScriptById
-      description: Retrieves the details of a specific screenplay script by its unique identifier (scriptId).
+      description: |
+        Retrieves the details of a specific screenplay script by its unique identifier (scriptId). Redis caching improves retrieval performance.
       parameters:
         - name: scriptId
           in: path
@@ -61,7 +76,8 @@ paths:
     put:
       summary: Update a Script by ID
       operationId: updateScript
-      description: Updates an existing screenplay script with new details.
+      description: |
+        Updates an existing screenplay script with new details. RedisAI provides recommendations and validation for updating script content.
       parameters:
         - name: scriptId
           in: path
@@ -85,7 +101,7 @@ paths:
     delete:
       summary: Delete a Script by ID
       operationId: deleteScript
-      description: Deletes a specific screenplay script from the system.
+      description: Deletes a specific screenplay script from the system, identified by its scriptId.
       parameters:
         - name: scriptId
           in: path
