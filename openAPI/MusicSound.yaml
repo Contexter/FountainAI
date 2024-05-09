@@ -4,12 +4,18 @@ info:
   description: |
     The MusicSound API provides capabilities for managing MusicSound entities with integrations for Csound, LilyPond, and MIDI. This API supports operations for creating, retrieving, updating, and deleting MusicSound entities, as well as processing them with Csound, notating with LilyPond, and converting to MIDI format. It serves the audio programming and musical notation communities by facilitating the technical implementation of music creation.
 
-    **Dockerized Environment**:  
-    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.  
-    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.  
-    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.  
-    - **Redis Cache**: A Redis container is used for caching MusicSound data, optimizing performance for frequent queries.  
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Redis Cache**: A Redis container is used for caching MusicSound data, optimizing performance for frequent queries.
     - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for MusicSound analysis.
+
+    **Orchestration Tools in Docker**:
+    - **Python and Csound**: Python-based orchestration tools can be executed within a modular container. It includes Csound for synthesis and LilyPond for notation.
+    - **LilyPond**: Generates musical scores in PDF and other formats based on LilyPond `.ly` files.
+    - **MIDI**: MIDI libraries allow for seamless MIDI data generation and manipulation.
+    - **Custom Scripts**: The orchestration environment supports any orchestration script passed through a mounted volume.
 
   version: "1.1"
 servers:
