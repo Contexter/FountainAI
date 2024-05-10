@@ -1,199 +1,229 @@
 openapi: 3.0.1
 info:
-  title: MusicSound API
+  title: MusicSound Orchestration API
   description: |
-    The MusicSound API provides capabilities for managing MusicSound entities with integrations for Csound, LilyPond, and MIDI. This API supports operations for creating, retrieving, updating, and deleting MusicSound entities, as well as processing them with Csound, notating with LilyPond, and converting to MIDI format. It serves the audio programming and musical notation communities by facilitating the technical implementation of music creation.
+    This API integrates orchestration functions directly to generate musical files in Csound, LilyPond, and MIDI formats. The API supports generating and executing orchestration commands through endpoints that map directly to Python function names.
 
-    **Dockerized Environment**:
-    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
-    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
-    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
-    - **Redis Cache**: A Redis container is used for caching MusicSound data, optimizing performance for frequent queries.
-    - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for MusicSound analysis. It can execute AI models trained on MIDI data, allowing creative and analytical tasks like pattern recognition, generative creativity, and real-time interaction.
+    **Dockerized Orchestration**:
+    - **FastAPI**: Python-based FastAPI application provides the REST API endpoints for managing orchestration commands.
+    - **Python, Csound, and LilyPond**: Orchestration tools include Python functions, Csound synthesis, LilyPond notation, and MIDI data generation.
 
-    **Orchestration Tools in Docker**:
-    - **Python and Csound**: Python-based orchestration tools can be executed within a modular container. It includes Csound for synthesis and LilyPond for notation.
-    - **LilyPond**: Generates musical scores in PDF and other formats based on LilyPond `.ly` files.
-    - **MIDI**: MIDI libraries allow for seamless MIDI data generation and manipulation.
-    - **Custom Scripts**: The orchestration environment supports any orchestration script passed through a mounted volume.
+    **Docker Image Creation**:
+    To build the Docker image with all necessary tools for the MusicSound Orchestration API, use the following Dockerfile:
+    ```Dockerfile
+    # Use Python base image
+    FROM python:3.9
 
-    **MIDI 2.0 Perspective**:
-    The MusicSound API foreshadows a future implementation that supports MIDI 2.0 features like:
-    - **Higher Resolution**: MIDI 2.0 offers 32-bit data resolution, enabling more precise control over pitch, velocity, and other parameters.
-    - **Per-Note Controllers**: Per-note expression controllers allow each note to have unique expression parameters, enhancing creativity and expressiveness.
-    - **Universal MIDI Packet**: MIDI 2.0 introduces a new packet format that provides backward compatibility while facilitating new features.
-    - **Property Exchange**: Devices can share detailed property information, enabling automatic configuration and improved integration.
-    - **Profile Configuration**: Devices can switch to specific profiles for consistent behavior across various hardware and software.
+    # Install Csound
+    RUN apt-get update && apt-get install -y \
+        software-properties-common \
+        wget \
+        python3-pip \
+        nano \
+        csound
 
-    These features will significantly impact how AI models analyze, generate, and interact with MIDI data, offering new creative possibilities and richer analysis.
+    # Install LilyPond
+    RUN wget http://lilypond.org/download/binaries/linux/lilypond-2.24.2-1.linux-64.sh \
+        && chmod +x lilypond-2.24.2-1.linux-64.sh \
+        && ./lilypond-2.24.2-1.linux-64.sh --batch --prefix=/usr/local
 
-  version: "1.1"
+    # Install FastAPI and orchestration tools
+    RUN pip install fastapi uvicorn mido lilypond
+
+    # Set working directory and copy API files
+    WORKDIR /workspace
+    COPY . /workspace
+
+    # Start the FastAPI server
+    CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+    ```
+    **Python Scripting Examples**:
+    - **Generate Csound File**:
+      ```python
+      def generate_csound_file():
+          csound_data = \"\"\"
+          <CsoundSynthesizer>
+          <CsOptions>
+          -o output/drone_output.wav  ; Output audio file
+          </CsOptions>
+
+          <CsInstruments>
+          sr = 44100
+          ksmps = 32
+          nchnls = 2
+          0dbfs = 1
+
+          instr 1
+              ifreq = p4
+              iamp = p5
+              aout oscil iamp, ifreq, 1
+              outs aout, aout
+          endin
+          </CsInstruments>
+
+          <CsScore>
+          f1 0 16384 10 1
+
+          i1 0 30 55 0.3
+          </CsScore>
+          </CsoundSynthesizer>
+          \"\"\"
+          csound_file_path = 'output/drone_orchestra.csd'
+          with open(csound_file_path, 'w') as csound_file:
+              csound_file.write(csound_data)
+          return csound_file_path
+      ```
+
+    - **Generate LilyPond File**:
+      ```python
+      def generate_lilypond_file():
+          lilypond_data = \"\"\"
+          \\version "2.24.2"
+
+          \\header {
+            title = "Drone Melody"
+            composer = "Your Name"
+          }
+
+          \\score {
+            \\new Staff {
+              \\clef "bass"
+              \\time 4/4
+              \\key c \\major
+
+              c1 c1 c1 c1
+              c1 c1 c1 c1
+            }
+
+            \\layout { }
+
+            \\midi {
+              \\tempo 4 = 60
+            }
+          }
+          \"\"\"
+          lilypond_file_path = 'output/drone_notation.ly'
+          with open(lilypond_file_path, 'w') as lilypond_file:
+              lilypond_file.write(lilypond_data)
+          return lilypond_file_path
+      ```
+
+  version: "1.2"
 servers:
   - url: https://musicsound.fountain.coach
-    description: Primary server for the MusicSound API (behind Nginx proxy)
+    description: Production server for MusicSound Orchestration API
   - url: http://localhost:8080
-    description: Development server for the MusicSound API (Docker environment)
+    description: Development server for testing
 
 paths:
-  /musicsound:
-    get:
-      summary: Retrieve All MusicSound Entities
-      operationId: listAllMusicSounds
-      description: |
-        Lists all MusicSound entities available in the system, providing a comprehensive overview. This endpoint leverages Redis caching for improved query performance.
-      responses:
-        '200':
-          description: A JSON array of MusicSound entities.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MusicSound'
+  /generate_csound_file:
     post:
-      summary: Create MusicSound Entity
-      operationId: createMusicSound
+      summary: Generate Csound File
+      operationId: generateCsoundFile
       description: |
-        Allows for the creation of a new MusicSound entity, enabling users to add new sounds and musical elements into the system. RedisAI provides recommendations and validations for this entity.
-      requestBody:
-        required: true
-        description: A JSON object containing the new MusicSound entity details.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MusicSound'
+        Calls the Python function `generate_csound_file` to create a `.csd` file based on preset orchestration settings.
       responses:
         '201':
-          description: MusicSound entity successfully created.
+          description: Csound file successfully generated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MusicSound'
+                type: object
+                properties:
+                  csoundFilePath:
+                    type: string
+                    description: Path to the generated Csound file.
 
-  /musicsound/{musicSoundId}:
-    get:
-      summary: Fetch MusicSound Entity by ID
-      operationId: getMusicSoundById
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity to retrieve."
-          required: true
-          schema:
-            type: integer
+  /generate_lilypond_file:
+    post:
+      summary: Generate LilyPond File
+      operationId: generateLilyPondFile
       description: |
-        Fetches a specific MusicSound entity by its ID. Redis caching improves retrieval performance.
+        Calls the Python function `generate_lilypond_file` to create a `.ly` file based on preset orchestration settings.
       responses:
-        '200':
-          description: MusicSound entity details.
+        '201':
+          description: LilyPond file successfully generated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MusicSound'
-    put:
-      summary: Update MusicSound Entity
-      operationId: updateMusicSound
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity to be updated."
-          required: true
-          schema:
-            type: integer
+                type: object
+                properties:
+                  lilyPondFilePath:
+                    type: string
+                    description: Path to the generated LilyPond file.
+
+  /generate_midi_file:
+    post:
+      summary: Generate MIDI File
+      operationId: generateMIDIFile
+      description: |
+        Calls the Python function `generate_midi_file` to create a `.mid` file based on preset orchestration settings.
+      responses:
+        '201':
+          description: MIDI file successfully generated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  midiFilePath:
+                    type: string
+                    description: Path to the generated MIDI file.
+
+  /execute_csound:
+    post:
+      summary: Execute Csound
+      operationId: executeCsound
+      description: |
+        Calls the Python function `execute_csound` to process an existing `.csd` file using Csound.
       requestBody:
         required: true
-        description: "Payload containing updated data for the MusicSound entity."
+        description: JSON object specifying the path to the `.csd` file to process.
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MusicSound'
+              type: object
+              properties:
+                csoundFilePath:
+                  type: string
+                  description: Path to the existing `.csd` file for processing.
       responses:
         '200':
-          description: "Successfully updated the MusicSound entity."
+          description: Csound processing completed successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MusicSound'
-    delete:
-      summary: Delete MusicSound Entity
-      operationId: deleteMusicSound
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity to delete."
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: MusicSound entity successfully deleted.
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Message indicating the success of Csound processing.
 
-  /musicsound/{musicSoundId}/csound:
+  /execute_lilypond:
     post:
-      summary: Process with Csound
-      operationId: processWithCsound
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity for Csound processing."
-          required: true
-          schema:
-            type: integer
+      summary: Execute LilyPond
+      operationId: executeLilyPond
+      description: |
+        Calls the Python function `execute_lilypond` to process an existing `.ly` file using LilyPond.
+      requestBody:
+        required: true
+        description: JSON object specifying the path to the `.ly` file for processing.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lilyPondFilePath:
+                  type: string
+                  description: Path to the existing `.ly` file for processing.
       responses:
         '200':
-          description: MusicSound entity processed with Csound.
-
-  /musicsound/{musicSoundId}/lilypond:
-    post:
-      summary: Notate with LilyPond
-      operationId: notateWithLilyPond
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity for LilyPond notation."
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: MusicSound entity notated with LilyPond.
-
-  /musicsound/{musicSoundId}/midi:
-    post:
-      summary: Convert to MIDI
-      operationId: convertToMIDI
-      parameters:
-        - name: musicSoundId
-          in: path
-          description: "Unique identifier of the MusicSound entity for MIDI conversion."
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: MusicSound entity converted to MIDI.
-
-components:
-  schemas:
-    MusicSound:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: Unique identifier for the MusicSound entity.
-        description:
-          type: string
-          description: Textual description of the MusicSound entity.
-        sequence:
-          type: integer
-          description: Sequence order of the MusicSound entity, used for ordering.
-        csoundData:
-          type: string
-          description: Csound processing data for the entity.
-        lilyPondNotation:
-          type: string
-          description: LilyPond notation for the entity.
-        midiData:
-          type: string
-          description: MIDI data for the entity.
+          description: LilyPond processing completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Message indicating the success of LilyPond processing.
