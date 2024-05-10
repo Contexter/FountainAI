@@ -9,13 +9,23 @@ info:
     - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
     - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
     - **Redis Cache**: A Redis container is used for caching MusicSound data, optimizing performance for frequent queries.
-    - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for MusicSound analysis.
+    - **RedisAI Middleware**: RedisAI provides recommendations and decision-making for MusicSound analysis. It can execute AI models trained on MIDI data, allowing creative and analytical tasks like pattern recognition, generative creativity, and real-time interaction.
 
     **Orchestration Tools in Docker**:
     - **Python and Csound**: Python-based orchestration tools can be executed within a modular container. It includes Csound for synthesis and LilyPond for notation.
     - **LilyPond**: Generates musical scores in PDF and other formats based on LilyPond `.ly` files.
     - **MIDI**: MIDI libraries allow for seamless MIDI data generation and manipulation.
     - **Custom Scripts**: The orchestration environment supports any orchestration script passed through a mounted volume.
+
+    **MIDI 2.0 Perspective**:
+    The MusicSound API foreshadows a future implementation that supports MIDI 2.0 features like:
+    - **Higher Resolution**: MIDI 2.0 offers 32-bit data resolution, enabling more precise control over pitch, velocity, and other parameters.
+    - **Per-Note Controllers**: Per-note expression controllers allow each note to have unique expression parameters, enhancing creativity and expressiveness.
+    - **Universal MIDI Packet**: MIDI 2.0 introduces a new packet format that provides backward compatibility while facilitating new features.
+    - **Property Exchange**: Devices can share detailed property information, enabling automatic configuration and improved integration.
+    - **Profile Configuration**: Devices can switch to specific profiles for consistent behavior across various hardware and software.
+
+    These features will significantly impact how AI models analyze, generate, and interact with MIDI data, offering new creative possibilities and richer analysis.
 
   version: "1.1"
 servers:
