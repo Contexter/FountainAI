@@ -37,6 +37,7 @@ info:
     # Start the FastAPI server
     CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
     ```
+
     **Python Scripting Examples**:
     - **Generate Csound File**:
       ```python
@@ -106,6 +107,32 @@ info:
           with open(lilypond_file_path, 'w') as lilypond_file:
               lilypond_file.write(lilypond_data)
           return lilypond_file_path
+      ```
+
+    - **Generate MIDI File**:
+      ```python
+      def generate_midi_file():
+          midi_file_path = 'output/drone_melody.mid'
+          mid = MidiFile()
+          track = MidiTrack()
+          mid.tracks.append(track)
+
+          # Set the instrument (Program Change)
+          track.append(Message('program_change', program=0))  # Acoustic Grand Piano
+
+          # Define parameters for a drone pattern
+          note = 33  # A1, equivalent to 55 Hz
+          velocity = 64
+          duration = 1920  # Whole note duration
+
+          # Repeated notes to simulate a drone
+          for _ in range 8]:
+              track.append(Message('note_on', note=note, velocity=velocity, time=0))
+              track.append(Message('note_off', note=note, velocity=velocity, time=duration))
+
+          # Save the MIDI file
+          mid.save(midi_file_path)
+          return midi_file_path
       ```
 
   version: "1.2"
