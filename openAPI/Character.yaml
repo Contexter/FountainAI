@@ -34,8 +34,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Character'
+              examples:
+                characterListExample:
+                  summary: Example of character listing
+                  value:
+                    - characterId: 1
+                      name: "Juliet"
+                      description: "The heroine of Romeo and Juliet."
+                      scriptIds: [2, 5, 7]
+                    - characterId: 2
+                      name: "Romeo"
+                      description: "The hero of Romeo and Juliet."
+                      scriptIds: [2, 5, 7]
         '500':
           description: Internal server error indicating a failure to process the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to retrieve characters."
     post:
       summary: Create a New Character
       operationId: createCharacter
@@ -48,6 +70,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CharacterCreateRequest'
+            examples:
+              createCharacterExample:
+                summary: Example of creating a new character
+                value:
+                  name: "Mercutio"
+                  description: "A close friend of Romeo with a wild, energetic personality."
       responses:
         '201':
           description: Character successfully created, returning the new character entity.
@@ -55,10 +83,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Character'
+              examples:
+                createCharacterResponseExample:
+                  summary: Successful character creation example
+                  value:
+                    characterId: 3
+                    name: "Mercutio"
+                    description: "A close friend of Romeo with a wild, energetic personality."
+                    scriptIds: []
         '400':
           description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  summary: Bad request example
+                  value:
+                    code: 400
+                    message: "Bad Request - Missing name field in request body."
         '500':
           description: Internal server error indicating a failure in creating the character.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to create character."
 
   /characters/{characterId}/paraphrases:
     get:
@@ -82,10 +138,42 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Paraphrase'
+              examples:
+                paraphraseListExample:
+                  summary: Example list of paraphrases
+                  value:
+                    - paraphraseId: 1
+                      originalId: 1
+                      text: "Juliet, a young woman of Verona."
+                      commentary: "Simplified description for younger audiences."
+                    - paraphraseId: 2
+                      originalId: 1
+                      text: "Juliet, the love interest of Romeo in the classic tale."
+                      commentary: "Adapted description for modern retellings."
         '404':
           description: The specified character was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  summary: Not found example
+                  value:
+                    code: 404
+                    message: "Not Found - The character specified does not exist."
         '500':
           description: Internal server error indicating a failure to retrieve the paraphrases.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to retrieve paraphrases."
     post:
       summary: Create a New Paraphrase for a Character
       operationId: createCharacterParaphrase
@@ -105,6 +193,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Paraphrase'
+            examples:
+              createParaphraseExample:
+                summary: Example of creating a new paraphrase
+                value:
+                  originalId: 1
+                  text: "Juliet, the star-crossed lover from Shakespeare's famous play."
+                  commentary: "Contextualized description for educational purposes."
       responses:
         '201':
           description: The paraphrase has been successfully created.
@@ -112,12 +207,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Paraphrase'
+              examples:
+                createParaphraseResponseExample:
+                  summary: Successful paraphrase creation example
+                  value:
+                    paraphraseId: 3
+                    originalId: 1
+                    text: "Juliet, the star-crossed lover from Shakespeare's famous play."
+                    commentary: "Contextualized description for educational purposes."
         '400':
           description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  summary: Bad request example
+                  value:
+                    code: 400
+                    message: "Bad Request - Missing or incorrect fields in request body."
         '404':
           description: The specified character was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  summary: Not found example
+                  value:
+                    code: 404
+                    message: "Not Found - The character specified does not exist."
         '500':
           description: Internal server error indicating a failure in creating the paraphrase.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to create the paraphrase."
 
 components:
   schemas:
