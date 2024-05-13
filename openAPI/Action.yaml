@@ -36,6 +36,40 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Action'
+              examples:
+                actionsExample:
+                  summary: Example of an actions list
+                  value:
+                    - actionId: 1
+                      description: "Character enters the room."
+                      sequence: 1
+                    - actionId: 2
+                      description: "Character picks up a book."
+                      sequence: 2
+        '401':
+          description: Unauthorized - Invalid or missing authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  summary: Unauthorized request example
+                  value:
+                    code: 401
+                    message: "Unauthorized - Authentication token is missing or invalid."
+        '500':
+          description: Internal Server Error - Error fetching data from the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to retrieve actions."
     post:
       summary: Create a New Action
       operationId: createAction
@@ -50,6 +84,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Action'
+            examples:
+              createActionExample:
+                summary: Example of creating an action
+                value:
+                  description: "Character shouts for help."
+                  sequence: 3
       responses:
         '201':
           description: The action has been successfully created.
@@ -57,6 +97,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Action'
+              examples:
+                createActionResponseExample:
+                  summary: Successful action creation example
+                  value:
+                    actionId: 3
+                    description: "Character shouts for help."
+                    sequence: 3
+        '400':
+          description: Bad Request - Missing or invalid data in the request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  summary: Bad request example
+                  value:
+                    code: 400
+                    message: "Bad Request - Data format is incorrect or missing fields."
+        '401':
+          description: Unauthorized - Invalid or missing authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  summary: Unauthorized request example
+                  value:
+                    code: 401
+                    message: "Unauthorized - Authentication token is missing or invalid."
+        '500':
+          description: Internal Server Error - Error creating the action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to create the action."
 
   /actions/{actionId}/paraphrases:
     get:
@@ -84,6 +167,54 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Paraphrase'
+              examples:
+                paraphrasesExample:
+                  summary: Example list of paraphrases
+                  value:
+                    - paraphraseId: 1
+                      originalId: 1
+                      text: "Character enters the stage."
+                      commentary: "Rephrased to fit a theatrical context."
+                    - paraphraseId: 2
+                      originalId: 1
+                      text: "Character steps into the scene."
+                      commentary: "Adjusted for a screenplay format."
+        '404':
+          description: Not Found - The specified action does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  summary: Not found example
+                  value:
+                    code: 404
+                    message: "Not Found - The action specified does not exist."
+        '401':
+          description: Unauthorized - Invalid or missing authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  summary: Unauthorized request example
+                  value:
+                    code: 401
+                    message: "Unauthorized - Authentication token is missing or invalid."
+        '500':
+          description: Internal Server Error - Error fetching paraphrases from the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to retrieve paraphrases."
     post:
       summary: Create a New Paraphrase for an Action
       operationId: createActionParaphrase
@@ -106,6 +237,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Paraphrase'
+            examples:
+              createParaphraseExample:
+                summary: Example of creating a paraphrase
+                value:
+                  originalId: 1
+                  text: "Character makes an entrance."
+                  commentary: "Simplified for better understanding in educational scripts."
       responses:
         '201':
           description: The paraphrase has been successfully created.
@@ -113,6 +251,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Paraphrase'
+              examples:
+                createParaphraseResponseExample:
+                  summary: Successful paraphrase creation example
+                  value:
+                    paraphraseId: 3
+                    originalId: 1
+                    text: "Character makes an entrance."
+                    commentary: "Simplified for better understanding in educational scripts."
+        '400':
+          description: Bad Request - Missing or invalid data in the request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  summary: Bad request example
+                  value:
+                    code: 400
+                    message: "Bad Request - Data format is incorrect or missing fields."
+        '404':
+          description: Not Found - The specified action does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  summary: Not found example
+                  value:
+                    code: 404
+                    message: "Not Found - The action specified does not exist."
+        '401':
+          description: Unauthorized - Invalid or missing authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  summary: Unauthorized request example
+                  value:
+                    code: 401
+                    message: "Unauthorized - Authentication token is missing or invalid."
+        '500':
+          description: Internal Server Error - Error creating the paraphrase.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerErrorExample:
+                  summary: Internal server error example
+                  value:
+                    code: 500
+                    message: "Internal Server Error - Unable to create the paraphrase."
 
 components:
   schemas:
@@ -139,7 +333,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Paraphrase'
-
     Paraphrase:
       type: object
       description: |
@@ -162,3 +355,23 @@ components:
         commentary:
           type: string
           description: An explanatory note on why the paraphrase is linked to the original action.
+    Error:
+      type: object
+      description: Error response structure.
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code representing the type of error.
+        message:
+          type: string
+          description: Description of the error encountered.
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
