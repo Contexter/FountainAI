@@ -34,6 +34,17 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SectionHeading'
+              examples:
+                sectionHeadingsExample:
+                  value:
+                    - headingId: 1
+                      scriptId: 101
+                      title: "Introduction"
+                      sequence: 1
+                    - headingId: 2
+                      scriptId: 101
+                      title: "Rising Action"
+                      sequence: 2
     post:
       summary: Create Section Heading
       operationId: createSectionHeading
@@ -46,6 +57,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SectionHeading'
+            examples:
+              createSectionHeadingExample:
+                value:
+                  scriptId: 101
+                  title: "Climax"
+                  sequence: 3
       responses:
         '201':
           description: Successfully created a new Section Heading.
@@ -53,6 +70,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SectionHeading'
+              examples:
+                createdSectionHeading:
+                  value:
+                    headingId: 3
+                    scriptId: 101
+                    title: "Climax"
+                    sequence: 3
 
 components:
   schemas:
@@ -76,3 +100,11 @@ components:
         - scriptId
         - title
         - sequence
+    Error:
+      type: object
+      description: Common error structure for the API.
+      properties:
+        message:
+          type: string
+          description: Description of the error encountered.
+          example: "Required field missing: 'title'"
