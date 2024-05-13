@@ -34,6 +34,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Transition'
+              examples:
+                transitionsExample:
+                  summary: Example of retrieving all transitions
+                  value:
+                    - transitionId: 1
+                      description: "Fade out to black."
+                      sequence: 1
+                    - transitionId: 2
+                      description: "Cut to the next scene."
+                      sequence: 2
     post:
       summary: Create a new Transition
       operationId: createTransition
@@ -45,6 +55,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Transition'
+            examples:
+              createTransitionExample:
+                summary: Example of creating a transition
+                value:
+                  description: "Dissolve to exterior shot."
+                  sequence: 3
       responses:
         '201':
           description: Created Transition.
@@ -52,6 +68,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transition'
+              examples:
+                createdTransition:
+                  summary: Example of a created transition
+                  value:
+                    transitionId: 3
+                    description: "Dissolve to exterior shot."
+                    sequence: 3
 
   /transitions/{transitionId}/paraphrases:
     get:
@@ -75,6 +98,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Paraphrase'
+              examples:
+                paraphrasesExample:
+                  summary: Example of paraphrases linked to a Transition
+                  value:
+                    - paraphraseId: 1
+                      originalId: 1
+                      text: "Slowly fade out to a dark scene."
+                      commentary: "A detailed version for dramatic effect."
     post:
       summary: Create a New Paraphrase for a Transition
       operationId: createTransitionParaphrase
@@ -93,6 +124,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Paraphrase'
+            examples:
+              createParaphraseExample:
+                summary: Example of creating a paraphrase for a transition
+                value:
+                  originalId: 2
+                  text: "Quickly switch scenes without delay."
+                  commentary: "Simplification for faster pace."
       responses:
         '201':
           description: The paraphrase has been successfully created.
@@ -100,6 +138,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Paraphrase'
+              examples:
+                createdParaphrase:
+                  summary: Example of a created paraphrase
+                  value:
+                    paraphraseId: 2
+                    originalId: 2
+                    text: "Quickly switch scenes without delay."
+                    commentary: "Simplification for faster pace."
 
 components:
   schemas:
