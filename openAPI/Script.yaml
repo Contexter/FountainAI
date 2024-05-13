@@ -34,6 +34,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Script'
+              examples:
+                allScripts:
+                  summary: Example of retrieving all scripts
+                  value:
+                    - scriptId: 1
+                      title: "Sunset Boulevard"
+                      description: "A screenplay about Hollywood and faded glory."
+                      author: "Billy Wilder"
+                      sequence: 1
     post:
       summary: Create a New Script
       operationId: createScript
@@ -45,6 +54,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ScriptCreateRequest'
+            examples:
+              createScriptExample:
+                summary: Example of script creation
+                value:
+                  title: "New Dawn"
+                  description: "A story about renewal and second chances."
+                  author: "Jane Doe"
+                  sequence: 1
       responses:
         '201':
           description: Script successfully created.
@@ -52,6 +69,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Script'
+              examples:
+                scriptCreated:
+                  summary: Example of a created script
+                  value:
+                    scriptId: 2
+                    title: "New Dawn"
+                    description: "A story about renewal and second chances."
+                    author: "Jane Doe"
+                    sequence: 1
+        '400':
+          description: Bad request due to missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  value:
+                    message: "Missing required fields: 'title' or 'author'."
 
   /scripts/{scriptId}:
     get:
@@ -73,6 +109,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Script'
+              examples:
+                retrievedScript:
+                  summary: Example of a retrieved script
+                  value:
+                    scriptId: 1
+                    title: "Sunset Boulevard"
+                    description: "A screenplay about Hollywood and faded glory."
+                    author: "Billy Wilder"
+                    sequence: 1
+        '404':
+          description: The script with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  value:
+                    message: "Script not found with ID: 3"
     put:
       summary: Update a Script by ID
       operationId: updateScript
@@ -91,6 +146,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ScriptUpdateRequest'
+            examples:
+              updateScriptExample:
+                summary: Example of updating a script
+                value:
+                  title: "Sunset Boulevard Revised"
+                  description: "Updated description with more focus on character development."
+                  author: "Billy Wilder"
+                  sequence: 2
       responses:
         '200':
           description: Script successfully updated.
@@ -98,6 +161,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Script'
+              examples:
+                scriptUpdated:
+                  summary: Example of an updated script
+                  value:
+                    scriptId: 1
+                    title: "Sunset Boulevard Revised"
+                    description: "Updated description with more focus on character development."
+                    author: "Billy Wilder"
+                    sequence: 2
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestUpdateExample:
+                  value:
+                    message: "Invalid input data: 'sequence' must be a positive number."
+        '404':
+          description: The script with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundUpdateExample:
+                  value:
+                    message: "Script not found with ID: 4"
     delete:
       summary: Delete a Script by ID
       operationId: deleteScript
@@ -112,6 +204,16 @@ paths:
       responses:
         '204':
           description: Script successfully deleted.
+        '404':
+          description: The script with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundDeleteExample:
+                  value:
+                    message: "Script not found with ID: 5"
 
 components:
   schemas:
@@ -163,3 +265,11 @@ components:
           type: string
         sequence:
           type: integer
+
+    Error:
+      type: object
+      description: Common error structure for the API.
+      properties:
+        message:
+          type: string
+          description: Description of the error encountered.
