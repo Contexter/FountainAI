@@ -46,6 +46,12 @@ paths:
                 sequence:
                   type: integer
                   description: The sequence number of the note within the script, determining its order.
+            examples:
+              createNoteExample:
+                value:
+                  scriptId: 101
+                  text: "Consider revising the dialogue to add more emotional depth."
+                  sequence: 3
       responses:
         '201':
           description: The note was successfully created.
@@ -53,8 +59,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
+            examples:
+              noteCreatedExample:
+                value:
+                  noteId: 1
+                  scriptId: 101
+                  text: "Consider revising the dialogue to add more emotional depth."
+                  sequence: 3
         '400':
           description: The request contains invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  value:
+                    message: "Missing required field: 'text'"
 
   /notes/{noteId}:
     get:
@@ -76,8 +97,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
+            examples:
+              retrievedNoteExample:
+                value:
+                  noteId: 1
+                  scriptId: 101
+                  text: "Consider revising the dialogue to add more emotional depth."
+                  sequence: 3
         '404':
           description: The note with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundExample:
+                  value:
+                    message: "Note not found with ID: 2"
 
     put:
       summary: Update a Note
@@ -105,6 +141,11 @@ paths:
                 sequence:
                   type: integer
                   description: The updated sequence number of the note within the script.
+            examples:
+              updateNoteExample:
+                value:
+                  text: "Update: Add more suspense to the scene."
+                  sequence: 4
       responses:
         '200':
           description: The note was successfully updated.
@@ -112,10 +153,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
+            examples:
+              updatedNoteExample:
+                value:
+                  noteId: 1
+                  scriptId: 101
+                  text: "Update: Add more suspense to the scene."
+                  sequence: 4
         '400':
           description: The request contains invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestUpdateExample:
+                  value:
+                    message: "Invalid input data: 'sequence' must be a positive number."
         '404':
           description: The note with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundUpdateExample:
+                  value:
+                    message: "Note not found with ID: 3"
 
     delete:
       summary: Delete a Note
@@ -133,6 +197,14 @@ paths:
           description: The note was successfully deleted.
         '404':
           description: The note with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFoundDeleteExample:
+                  value:
+                    message: "Note not found with ID: 4"
 
 components:
   schemas:
@@ -157,3 +229,10 @@ components:
         sequence:
           type: integer
           description: The sequence number of the note within its script, determining its order.
+    Error:
+      type: object
+      description: Common error structure for the API.
+      properties:
+        message:
+          type: string
+          description: Description of the error encountered.
