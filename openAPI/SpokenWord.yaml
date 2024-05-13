@@ -34,6 +34,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SpokenWord'
+              examples:
+                spokenWordsExample:
+                  summary: Example of retrieving all spoken words
+                  value:
+                    - dialogueId: 1
+                      text: "Hello there, how are you?"
+                      sequence: 1
+                    - dialogueId: 2
+                      text: "I'm fine, thank you!"
+                      sequence: 2
     post:
       summary: Create SpokenWord
       operationId: createSpokenWord
@@ -46,6 +56,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SpokenWord'
+            examples:
+              createSpokenWordExample:
+                value:
+                  text: "Suddenly, he was gone."
+                  sequence: 3
       responses:
         '201':
           description: Successfully created a new SpokenWord entity.
@@ -53,6 +68,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpokenWord'
+              examples:
+                createdSpokenWord:
+                  summary: Example of a created spoken word
+                  value:
+                    dialogueId: 3
+                    text: "Suddenly, he was gone."
+                    sequence: 3
 
   /spokenWords/{id}/paraphrases:
     get:
@@ -76,6 +98,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Paraphrase'
+              examples:
+                paraphrasesExample:
+                  summary: Example of paraphrases linked to a SpokenWord
+                  value:
+                    - paraphraseId: 1
+                      originalId: 1
+                      text: "Hi there, how's it going?"
+                      commentary: "A more casual rephrasing."
+                    - paraphraseId: 2
+                      originalId: 2
+                      text: "I'm well, thanks for asking!"
+                      commentary: "A polite response."
     post:
       summary: Create a New Paraphrase for a SpokenWord
       operationId: createSpokenWordParaphrase
@@ -95,6 +129,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Paraphrase'
+            examples:
+              createParaphraseExample:
+                value:
+                  originalId: 1
+                  text: "Greetings, how do you do?"
+                  commentary: "Formal version for a different context."
       responses:
         '201':
           description: The paraphrase has been successfully created.
@@ -102,6 +142,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Paraphrase'
+              examples:
+                createdParaphrase:
+                  summary: Example of a created paraphrase
+                  value:
+                    paraphraseId: 3
+                    originalId: 1
+                    text: "Greetings, how do you do?"
+                    commentary: "Formal version for a different context."
 
 components:
   schemas:
