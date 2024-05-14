@@ -276,12 +276,8 @@ components:
           type: string
           description: Description of the error encountered.
           
-          ```
-          
-
-# Model Output
-
-## Script Tree
+``` 
+# Model Output Script Tree
 ```
 script.fountain.coach/
 ├── certbot/
@@ -854,11 +850,10 @@ echo "Production server setup complete and running in $PROJECT_DIR."
    ```sh
    ./scripts/setup_project.sh
    ```
+
+These scripts now include interactive prompts for input and validation to ensure proper setup and initialization.
+
 # generated Self Critique
-
-Let's analyze the resulting application setup to identify potential issues that might prevent it from working correctly.
-
-## Analysis
 
 1. **Directory Structure and Permissions:**
    - The script creates directories and sets up configuration files, but it does not handle permissions explicitly. There might be permission issues when Docker tries to read/write these files.
@@ -887,7 +882,7 @@ Let's analyze the resulting application setup to identify potential issues that 
 7. **Database Initialization:**
    - There are no database migration scripts or initialization scripts for the `postgres` database. Without initializing the database schema, the `vapor` application will not function correctly.
 
-## Conclusion
+### Conclusion
 
 Here are the key points why this setup will likely not work as intended:
 
@@ -909,7 +904,7 @@ Here are the key points why this setup will likely not work as intended:
 6. **Database Initialization:**
    - Lack of database migration or initialization scripts will prevent the `vapor` application from functioning correctly.
 
-## Recommendations
+### Recommendations
 
 To address these issues, consider the following improvements:
 
