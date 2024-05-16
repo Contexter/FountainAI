@@ -1,11 +1,11 @@
----
+
 # Summary:
 - **Phase 1:** Creates, builds, and runs the Vapor app locally, implementing Redis for caching and RedisAI for enhanced script analysis.
 - **Phase 2:** Sets up the production environment, including Docker Compose, Nginx, and Certbot configurations, and deploys the Vapor app in a Docker container.
 
 # Main Script 
 - **Main Script to call**
----
+
 
 ## Phase 1: Vapor App Creation
 ### Directory Structure for Phase 1
