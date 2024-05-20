@@ -1,4 +1,5 @@
-# Automated Deployment of a Secure Vapor App with Docker, Nginx, and Let's Encrypt
+Automated Deployment of a Secure Vapor App with Docker, Nginx, and Let's Encrypt
+
 ### Project Directory Structure
 
 ```
@@ -15,6 +16,9 @@ vapor-app/
 │   ├── master_script.sh           # Master script to orchestrate the entire setup process
 │   └── input_validation.sh        # Common functions for validating user inputs
 │   └── read_config.sh             # Function to read configuration variables from config.yaml
+├── .github/                       # Contains GitHub Actions workflows
+│   └── workflows/
+│       └── ci-cd-pipeline.yml     # CI/CD pipeline configuration
 ├── config/                        # Contains configuration templates and the main config file
 │   ├── config.yaml                # Centralized configuration file for all variables used in the setup
 │   ├── docker-compose-template.yml# Template for the Docker Compose file
@@ -53,55 +57,92 @@ vapor-app/
 └── docker-compose.yml             # Docker Compose file (generated from template)
 ```
 
-### Comprehensive Guide for Securing a Single Domain with Vapor, Nginx, Docker, and Let's Encrypt
+### CI/CD Pipeline Configuration (`.github/workflows/ci-cd-pipeline.yml`)
 
-This guide provides a detailed approach to deploying a Vapor application on Ubuntu 20.04. The primary goals are to:
+```yaml
+name: CI/CD Pipeline
 
-1. **Develop** a Vapor application with Redis for caching and RedisAI for enhanced script analysis.
-2. **Test** the application locally to ensure it functions correctly.
-3. **Deploy** the application in a production environment using Docker and Docker Compose.
-4. **Secure** the application with SSL certificates using Nginx and Certbot (Let's Encrypt).
+on:
+  push:
+    branches:
+      - main
 
-The system is designed using the following components and design patterns:
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-1. **Microservices Architecture**: The system uses Docker to encapsulate each component (Vapor app, Nginx, Redis, Postgres, etc.) into separate containers, following the microservices architecture.
-2. **Infrastructure as Code (IaC)**: Using scripts and configuration files to automate the setup, deployment, and management of the entire application infrastructure.
-3. **Single Responsibility Principle**: Each script and configuration file has a single responsibility, making the system modular and maintainable.
-4. **Continuous Integration and Continuous Deployment (CI/CD)**: Although not fully implemented here, the scripts lay the groundwork for integrating with CI/CD tools for automated testing and deployment.
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: scriptdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
-### Development, Testing, Production, and Deployment Phases
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
-These phases are integrated into a scripted flow to ensure consistency and reliability. The steps include:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-1. **Development**:
-   - Create directories and set up the Vapor project.
-   - Build the Vapor application.
+      - name: Set up Swift
+        uses: fwal/setup-swift@v1
 
-2. **Testing**:
-   - Run the Vapor application locally to verify functionality.
+      - name: Install dependencies
+        run: swift package resolve
 
-3. **Production**:
-   - Set up the production environment with Docker and Docker Compose.
-   - Configure Nginx for reverse proxying and SSL termination.
-   - Set up Certbot for SSL certificate generation and renewal.
+      - name: Build project
+        run: swift build -c release
 
-4. **Deployment**:
-   - Deploy the Vapor application using Docker Compose.
-   - Initialize SSL certificates with Certbot.
+      - name: Run tests
+        run: swift test
 
-The scripts automate these phases to minimize manual intervention, reduce errors, and ensure reproducibility.
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
 
-### Improvements and Enhancements
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-1. **CI/CD Integration**: Integrate with CI/CD tools like GitHub Actions, GitLab CI, or Jenkins for automated testing and deployment.
-2. **Monitoring and Logging**: Add monitoring and logging mechanisms (e.g., Prometheus, Grafana, ELK stack) to ensure application health and performance.
-3. **Environment-Specific Configurations**: Extend the configuration to handle multiple environments (development, staging, production) with environment-specific settings.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-### Scripts and Their Implementation
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-The following sections introduce each script and provide detailed comments explaining their purpose and implementation.
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
 
-### `config/config.yaml`
+      - name: Deploy to production
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            docker pull ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
+            docker-compose -f /path/to/your/project/docker-compose.yml up -d
+          EOF
+```
+
+### Configuration File (`config/config.yaml`)
 
 ```yaml
 # Centralized configuration file for all variables used in the setup
@@ -119,7 +160,7 @@ redis:
 staging: 0
 ```
 
-### `Scripts/input_validation.sh`
+### Input Validation Script (`Scripts/input_validation.sh`)
 
 ```sh
 #!/bin/bash
@@ -152,7 +193,7 @@ validate_email() {
 }
 ```
 
-### `Scripts/read_config.sh`
+### Configuration Reading Script (`Scripts/read_config.sh`)
 
 ```sh
 #!/bin/bash
@@ -185,7 +226,7 @@ read_config() {
 }
 ```
 
-### `Scripts/create_directories.sh`
+### Create Directories Script (`Scripts/create_directories.sh`)
 
 ```sh
 #!/bin/bash
@@ -197,14 +238,14 @@ source ./Scripts/input_validation.sh
 source ./Scripts/read_config.sh
 read_config ./config/config.yaml
 
+
+
 # Function to create necessary directories for the project
 create_directories() {
     local project_dir=$1
     validate_project_directory "$project_dir"
 
-    if [ ! -d
-
- "$project_dir" ]; then
+    if [ ! -d "$project_dir" ]; then
         mkdir -p "$project_dir/Sources/App/Controllers"
         mkdir -p "$project_dir/Sources/App/Models"
         mkdir -p "$project_dir/Sources/App/Migrations"
@@ -223,7 +264,7 @@ main() {
 main
 ```
 
-### `Scripts/setup_vapor_project.sh`
+### Setup Vapor Project Script (`Scripts/setup_vapor_project.sh`)
 
 ```sh
 #!/bin/bash
@@ -501,7 +542,7 @@ main() {
 main
 ```
 
-### `Scripts/build_vapor_app.sh`
+### Build Vapor App Script (`Scripts/build_vapor_app.sh`)
 
 ```sh
 #!/bin/bash
@@ -516,7 +557,9 @@ read_config ./config/config.yaml
 # Function to build the Vapor application
 build_vapor_app() {
     local project_dir=$1
-    validate_project_directory "$project_dir"
+    validate
+
+_project_directory "$project_dir"
 
     cd "$project_dir"
     swift build -c release
@@ -525,16 +568,14 @@ build_vapor_app() {
 
 # Main function to execute the script
 main() {
-    project_dir=$
-
-PROJECT_DIRECTORY
+    project_dir=$PROJECT_DIRECTORY
     build_vapor_app "$project_dir"
 }
 
 main
 ```
 
-### `Scripts/run_vapor_local.sh`
+### Run Vapor Locally Script (`Scripts/run_vapor_local.sh`)
 
 ```sh
 #!/bin/bash
@@ -564,7 +605,7 @@ main() {
 main
 ```
 
-### `Scripts/create_docker_compose.sh`
+### Create Docker Compose Script (`Scripts/create_docker_compose.sh`)
 
 ```sh
 #!/bin/bash
@@ -596,7 +637,7 @@ main() {
 main
 ```
 
-### `config/docker-compose-template.yml`
+### Docker Compose Template (`config/docker-compose-template.yml`)
 
 ```yaml
 version: '3.8'
@@ -644,7 +685,6 @@ services:
 
   postgres:
     image: postgres:13
-    container_name: postgres
     environment:
       POSTGRES_USER: $DATABASE_USERNAME
       POSTGRES_PASSWORD: $DATABASE_PASSWORD
@@ -661,7 +701,6 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis
     networks:
       - web
     healthcheck:
@@ -672,7 +711,6 @@ services:
 
   redisai:
     image: redislabs/redisai:latest
-    container_name: redisai
     ports:
       - "6378:6378"
     networks:
@@ -680,7 +718,6 @@ services:
 
   certbot:
     image: certbot/certbot
-    container_name: certbot
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
@@ -696,7 +733,7 @@ volumes:
   postgres_data:
 ```
 
-### `Scripts/create_nginx_config.sh`
+### Create Nginx Config Script (`Scripts/create_nginx_config.sh`)
 
 ```sh
 #!/bin/bash
@@ -731,7 +768,7 @@ main() {
 main
 ```
 
-### `config/nginx-template.conf`
+### Nginx Config Template (`config/nginx-template.conf`)
 
 ```nginx
 server {
@@ -764,7 +801,7 @@ server {
 }
 ```
 
-### `Scripts/create_certbot_script.sh`
+### Create Certbot Script (`Scripts/create_certbot_script.sh`)
 
 ```sh
 #!/bin/bash
@@ -846,15 +883,15 @@ request_lets_encrypt_certificate() {
     domain_args="-d $domain"
     email_arg="--email $email"
     staging_arg=""
-    if [ "$staging" != "0" ]; then staging_arg="--staging"; fi
+    if [ "$staging" != "0
+
+" ]; then staging_arg="--staging"; fi
 
     docker-compose run --rm --entrypoint "\
       certbot certonly --webroot -w /var/www/certbot \
         $staging_arg \
         $email_arg \
-        $
-
-domain_args \
+        $domain_args \
         --rsa-key-size 4096 \
         --agree-tos \
         --force-renewal" certbot
@@ -893,7 +930,7 @@ main() {
 main
 ```
 
-### `config/init-letsencrypt-template.sh`
+### Certbot Initialization Template (`config/init-letsencrypt-template.sh`)
 
 ```sh
 #!/bin/bash
@@ -967,7 +1004,7 @@ echo "### Reloading nginx ..."
 docker-compose exec nginx nginx -s reload
 ```
 
-### `Scripts/setup_project.sh`
+### Setup Project Script (`Scripts/setup_project.sh`)
 
 ```sh
 #!/bin/bash
@@ -1010,7 +1047,7 @@ main() {
 main
 ```
 
-### `Scripts/master_script.sh`
+### Master Script (`Scripts/master_script.sh`)
 
 ```sh
 #!/bin/bash
@@ -1073,4 +1110,4 @@ echo "Master script completed successfully. The Vapor app is now set up and runn
 
 ### Conclusion
 
-This refactored approach centralizes all configuration variables in a `config.yaml` file and splits the configuration files into a `config` directory. By using `yq` to read the configuration and set environment variables, we ensure a more organized and maintainable setup process. This guide ensures that your Vapor application is securely deployed with SSL certificates using Docker and Docker Compose, providing a robust production environment. Each script is thoroughly commented to explain its purpose and functionality, making the entire setup process transparent and easy to understand.
+This refactored implementation centralizes configuration variables in a `config.yaml` file and uses a modular and automated approach for setting up and deploying the Vapor application. It incorporates CI/CD practices with GitHub Actions and enhances security measures for managing sensitive information throughout the application lifecycle. This setup ensures a robust, efficient, and secure deployment process for your Vapor application.
