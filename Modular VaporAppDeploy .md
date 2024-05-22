@@ -1019,6 +1019,8 @@ let package = Package(
 )
 ```
 
+---
+
 ### File: `README.md`
 ```markdown
 # VaporAppDeploy
@@ -1041,17 +1043,17 @@ Before using the VaporAppDeploy tool, ensure you have the following installed on
    git clone <repository-url>
    cd vapor-app-deploy
 
-
 2. Build the project:
 
    swift build -c release
-   ```
+
 ## Configuration
 
 The configuration is stored in `config/config.yaml`. Ensure this file is correctly set up before running the commands.
 
-```yaml
+
 # Example config.yaml
+
 projectDirectory: "/path/to/your/project"
 domain: "yourdomain.com"
 email: "youremail@example.com"
@@ -1064,14 +1066,14 @@ redis:
   host: "localhost"
   port: 6379
 staging: 0
-```
+
 
 ## Usage
 
 Run the main command to see available subcommands:
 ```sh
 swift run vaporappdeploy --help
-```
+
 
 ### Available Commands
 
@@ -1089,54 +1091,46 @@ swift run vaporappdeploy --help
 ## Example Usage
 
 1. **Create Necessary Directories**:
-   ```sh
+  
    swift run vaporappdeploy create-directories
-   ```
+
 
 2. **Set Up the Vapor Project**:
-   ```sh
+
    swift run vaporappdeploy setup-vapor-project
-   ```
+
 
 3. **Build the Vapor Application**:
-   ```sh
+   
    swift run vaporappdeploy build-vapor-app
-   ```
 
 4. **Run the Vapor Application Locally**:
-   ```sh
+
    swift run vaporappdeploy run-vapor-local
-   ```
 
 5. **Create the Docker Compose File**:
-   ```sh
+
    swift run vaporappdeploy create-docker-compose-file
-   ```
 
 6. **Create the Nginx Configuration File**:
-   ```sh
+
    swift run vaporappdeploy create-nginx-config-file
-   ```
 
 7. **Create the Certbot Script**:
-   ```sh
+
    swift run vaporappdeploy create-certbot-script
-   ```
 
 8. **Set Up the Entire Project**:
-   ```sh
+
    swift run vaporappdeploy setup-project
-   ```
 
 9. **Run the Master Script to Set Up and Deploy the Vapor Application**:
-   ```sh
+
    swift run vaporappdeploy master-script
-   ```
 
 10. **Set Up the GitHub Actions CI/CD Pipeline**:
-    ```sh
+
     swift run vaporappdeploy setup-cicd-pipeline
-    ```
 
 ## CI/CD Pipeline Configuration
 
@@ -1224,7 +1218,6 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
             docker-compose -f /path/to/your/project/docker-compose.yml up -d
           EOF
-```
 
 ## Adding Secrets to GitHub
 
@@ -1238,6 +1231,9 @@ You need to add the following secrets to your GitHub repository for the workflow
 ## Conclusion
 
 By integrating this CI/CD pipeline with GitHub Actions, we automate the build, test, and deployment process, ensuring that the Vapor application is always in a deployable state and that new features and bug fixes are delivered quickly to the production environment. This solution improves efficiency and enhances the reliability and maintainability of the application.
+
+```
+
 
 
 
