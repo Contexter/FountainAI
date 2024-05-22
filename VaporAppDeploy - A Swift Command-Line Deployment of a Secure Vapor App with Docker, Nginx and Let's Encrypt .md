@@ -1,64 +1,291 @@
 ### Introduction
 
-**VaporAppDeploy** is a Swift command-line utility designed to automate the setup and deployment of a Vapor application using Docker, Nginx, and Let's Encrypt. This tool simplifies the process of preparing your Vapor project for production by creating necessary directories, setting up the project, building the application, generating configuration files, and deploying the project in a Dockerized environment. It also handles the generation and renewal of SSL certificates using Let's Encrypt, ensuring that your application is securely accessible over HTTPS.
+**VaporAppDeploy** is a Swift command-line utility designed to automate the setup, deployment, and continuous integration/continuous deployment (CI/CD) of a Vapor application using Docker, Nginx, and Let's Encrypt. This tool simplifies the process of preparing your Vapor project for production by creating necessary directories, setting up the project, building the application, generating configuration files, and deploying the project in a Dockerized environment. It also handles the generation and renewal of SSL certificates using Let's Encrypt, ensuring that your application is securely accessible over HTTPS. Additionally, VaporAppDeploy includes functionality to set up a CI/CD pipeline using GitHub Actions, enabling automated builds, tests, and deployments.
 
 ### Flow Description
 
-The **VaporAppDeploy** utility provides a series of commands, each responsible for a specific part of the deployment process. Below is a detailed flow of the functionalities implemented:
+The `VaporAppDeploy` tool consists of multiple commands, each serving a specific purpose in the setup and deployment process. Here is an overview of the flow and functionality:
 
-1. **Create Directories**
+1. **Create Necessary Directories**:
    - Command: `create-directories`
-   - Functionality: This command creates the necessary directory structure for the Vapor project, including directories for controllers, models, and migrations.
+   - This command creates the directory structure required for the Vapor project, including directories for controllers, models, and migrations.
 
-2. **Setup Vapor Project**
+2. **Set Up the Vapor Project**:
    - Command: `setup-vapor-project`
-   - Functionality: This command sets up the Vapor project by generating essential files such as `Package.swift`, `main.swift`, `configure.swift`, `routes.swift`, and model, migration, and controller files for a basic Script entity.
+   - This command sets up the Vapor project by generating essential files such as `Package.swift`, `main.swift`, `configure.swift`, `routes.swift`, and model, migration, and controller files for a basic Script entity.
 
-3. **Build Vapor App**
+3. **Build the Vapor Application**:
    - Command: `build-vapor-app`
-   - Functionality: This command builds the Vapor application in release mode using Swift's build system.
+   - This command builds the Vapor application in release mode using Swift's build system.
 
-4. **Run Vapor Locally**
+4. **Run the Vapor Application Locally**:
    - Command: `run-vapor-local`
-   - Functionality: This command runs the Vapor application locally in development mode for testing purposes.
+   - This command runs the Vapor application locally in development mode for testing purposes.
 
-5. **Create Docker Compose File**
+5. **Create the Docker Compose File**:
    - Command: `create-docker-compose-file`
-   - Functionality: This command generates a Docker Compose file from a template, substituting necessary environment variables from the configuration file to set up services such as Vapor, PostgreSQL, Redis, and Nginx.
+   - This command generates a Docker Compose file from a template, substituting necessary environment variables from the configuration file to set up services such as Vapor, PostgreSQL, Redis, and Nginx.
 
-6. **Create Nginx Config File**
+6. **Create the Nginx Configuration File**:
    - Command: `create-nginx-config-file`
-   - Functionality: This command creates an Nginx configuration file from a template, setting up Nginx to act as a reverse proxy for the Vapor application and handle HTTPS traffic.
+   - This command creates an Nginx configuration file from a template, setting up Nginx to act as a reverse proxy for the Vapor application and handle HTTPS traffic.
 
-7. **Create Certbot Script**
+7. **Create the Certbot Script**:
    - Command: `create-certbot-script`
-   - Functionality: This command creates the directory structure for Certbot, downloads TLS parameters, and generates a script to obtain and renew SSL certificates from Let's Encrypt.
+   - This command creates the directory structure for Certbot, downloads TLS parameters, and generates a script to obtain and renew SSL certificates from Let's Encrypt.
 
-8. **Setup Project**
+8. **Set Up the Entire Project**:
    - Command: `setup-project`
-   - Functionality: This command orchestrates the setup of the entire project by running the necessary commands to create directories, generate configuration files, and start the Docker containers. It also runs the Certbot script to obtain SSL certificates.
+   - This command orchestrates the setup of the entire project by running the necessary commands to create directories, generate configuration files, and start the Docker containers. It also runs the Certbot script to obtain SSL certificates.
 
-9. **Master Script**
+9. **Run the Master Script to Set Up and Deploy the Vapor Application**:
    - Command: `master-script`
-   - Functionality: This command combines the setup and deployment process into a single workflow. It performs all the steps from creating directories to running the project in production, ensuring that the Vapor application is fully set up and deployed.
+   - This command combines the setup and deployment process into a single workflow. It performs all the steps from creating directories to running the project in production, ensuring that the Vapor application is fully set up and deployed.
 
+10. **Set Up the GitHub Actions CI/CD Pipeline**:
+    - Command: `setup-cicd-pipeline`
+    - This command sets up the CI/CD pipeline by creating the necessary `.github/workflows/ci-cd-pipeline.yml` file. The GitHub Actions workflow builds and tests the Vapor application whenever code is pushed to the repository and deploys the application to a production environment if the tests pass.
 
-# Swift VaporAppDeploy Implementation 
-### Step 1: Create a Swift Package
+By following this flow, VaporAppDeploy ensures a comprehensive and automated setup and deployment process, making it easier to manage and maintain Vapor applications in a production environment.
 
-First, create a new Swift package:
+### Comprehensive Documentation and Usage Description
 
-```sh
-$ mkdir vapor-app-deploy
-$ cd vapor-app-deploy
-$ swift package init --type executable
+### Introduction
+
+**VaporAppDeploy** is a Swift command-line utility designed to automate the setup and deployment of a Vapor application using Docker, Nginx, and Let's Encrypt. This tool simplifies the process of preparing your Vapor project for production by creating necessary directories, setting up the project, building the application, generating configuration files, and deploying the project in a Dockerized environment. It also handles the generation and renewal of SSL certificates using Let's Encrypt, ensuring that your application is securely accessible over HTTPS.
+
+### Prerequisites
+
+Before using the VaporAppDeploy tool, ensure you have the following installed on your system:
+
+- Swift
+- Docker
+- Docker Compose
+- Git
+
+### Installation
+
+1. Clone the repository:
+   ```sh
+   git clone <repository-url>
+   cd vapor-app-deploy
+   ```
+
+2. Build the project:
+   ```sh
+   swift build -c release
+   ```
+
+### Configuration
+
+The configuration is stored in `config/config.yaml`. Ensure this file is correctly set up before running the commands.
+
+```yaml
+# Example config.yaml
+projectDirectory: "/path/to/your/project"
+domain: "yourdomain.com"
+email: "youremail@example.com"
+database:
+  host: "localhost"
+  username: "postgres"
+  password: "password"
+  name: "scriptdb"
+redis:
+  host: "localhost"
+  port: 6379
+staging: 0
 ```
 
-### Step 2: Implement Functionalities
+### Usage
 
-Replace the contents of `main.swift` with the refactored code, organizing the functionalities into commands using the `ArgumentParser` library.
+Run the main command to see available subcommands:
+```sh
+swift run vaporappdeploy --help
+```
 
-**Package.swift**
+### Available Commands
+
+- `create-directories`: Create necessary directories for the project.
+- `setup-vapor-project`: Set up the Vapor project.
+- `build-vapor-app`: Build the Vapor application.
+- `run-vapor-local`: Run the Vapor application locally.
+- `create-docker-compose-file`: Create the Docker Compose file.
+- `create-nginx-config-file`: Create the Nginx configuration file.
+- `create-certbot-script`: Create the Certbot script.
+- `setup-project`: Set up the entire project.
+- `master-script`: Run the master script to set up and deploy the Vapor application.
+- `setup-cicd-pipeline`: Set up the GitHub Actions CI/CD pipeline.
+
+### Example Usage
+
+1. **Create Necessary Directories**:
+   ```sh
+   swift run vaporappdeploy create-directories
+   ```
+   This command creates the necessary directory structure for the Vapor project, including directories for controllers, models, and migrations.
+
+2. **Set Up the Vapor Project**:
+   ```sh
+   swift run vaporappdeploy setup-vapor-project
+   ```
+   This command sets up the Vapor project by generating essential files such as `Package.swift`, `main.swift`, `configure.swift`, `routes.swift`, and model, migration, and controller files for a basic Script entity.
+
+3. **Build the Vapor Application**:
+   ```sh
+   swift run vaporappdeploy build-vapor-app
+   ```
+   This command builds the Vapor application in release mode using Swift's build system.
+
+4. **Run the Vapor Application Locally**:
+   ```sh
+   swift run vaporappdeploy run-vapor-local
+   ```
+   This command runs the Vapor application locally in development mode for testing purposes.
+
+5. **Create the Docker Compose File**:
+   ```sh
+   swift run vaporappdeploy create-docker-compose-file
+   ```
+   This command generates a Docker Compose file from a template, substituting necessary environment variables from the configuration file to set up services such as Vapor, PostgreSQL, Redis, and Nginx.
+
+6. **Create the Nginx Configuration File**:
+   ```sh
+   swift run vaporappdeploy create-nginx-config-file
+   ```
+   This command creates an Nginx configuration file from a template, setting up Nginx to act as a reverse proxy for the Vapor application and handle HTTPS traffic.
+
+7. **Create the Certbot Script**:
+   ```sh
+   swift run vaporappdeploy create-certbot-script
+   ```
+   This command creates the directory structure for Certbot, downloads TLS parameters, and generates a script to obtain and renew SSL certificates from Let's Encrypt.
+
+8. **Set Up the Entire Project**:
+   ```sh
+   swift run vaporappdeploy setup-project
+   ```
+   This command orchestrates the setup of the entire project by running the necessary commands to create directories, generate configuration files, and start the Docker containers. It also runs the Certbot script to obtain SSL certificates.
+
+9. **Run the Master Script to Set Up and Deploy the Vapor Application**:
+   ```sh
+   swift run vaporappdeploy master-script
+   ```
+   This command combines the setup and deployment process into a single workflow. It performs all the steps from creating directories to running the project in production, ensuring that the Vapor application is fully set up and deployed.
+
+10. **Set Up the GitHub Actions CI/CD Pipeline**:
+    ```sh
+    swift run vaporappdeploy setup-cicd-pipeline
+    ```
+    This command sets up the CI/CD pipeline by creating the necessary `.github/workflows/ci-cd-pipeline.yml` file. The GitHub Actions workflow builds and tests the Vapor application whenever code is pushed to the repository and deploys the application to a production environment if the tests pass.
+
+### CI/CD Pipeline Configuration
+
+1. **Create a `.github/workflows` Directory** in the root of your project.
+2. **Create a `ci-cd-pipeline.yml` File** inside the `.github/workflows` directory with the following content:
+
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: scriptdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Swift
+        uses: fwal/setup-swift@v1
+
+      - name: Install dependencies
+        run: swift package resolve
+
+      - name: Build project
+        run: swift build -c release
+
+      - name: Run tests
+        run: swift test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
+
+      - name: Deploy to production
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            docker pull ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
+            docker-compose -f /path/to/your/project/docker-compose.yml up -d
+          EOF
+```
+
+### Adding Secrets to GitHub
+
+You need to add the following secrets to your GitHub repository for the workflow to access:
+
+1. `DOCKER_USERNAME`: Your Docker Hub username.
+2. `DOCKER_PASSWORD`: Your Docker Hub password.
+3. `SSH_USER`: The SSH user for your production server.
+4. `SSH_HOST`: The hostname or IP address of your production server.
+
+### Conclusion
+
+By integrating this CI/CD pipeline with GitHub Actions, we automate the build, test, and deployment process, ensuring that the Vapor application is always in a deployable state and that new features and bug fixes are delivered quickly to the production environment. This solution improves efficiency and enhances the reliability and maintainability of the application.
+
+### Comprehensive Documentation with Code Comments
+
+Here's the complete code for the `VaporAppDeploy` command-line utility with detailed comments suitable for documentation generation.
+
+**Step 1: Update `Package.swift`**
+
+Ensure that the `Package.swift` file includes the necessary dependencies and targets.
 
 ```swift
 // swift-tools-version:5.3
@@ -85,6 +312,8 @@ let package = Package(
 )
 ```
 
+**Step 2: Implement the Command-Line Application**
+
 **Sources/VaporAppDeploy/main.swift**
 
 ```swift
@@ -94,6 +323,7 @@ import Yaml
 
 // MARK: - Configuration Structures
 
+/// The main configuration structure for the application.
 struct Config: Decodable {
     var projectDirectory: String
     var domain: String
@@ -103,6 +333,7 @@ struct Config: Decodable {
     var staging: Int
 }
 
+/// The configuration structure for the database settings.
 struct DatabaseConfig: Decodable {
     var host: String
     var username: String
@@ -110,6 +341,7 @@ struct DatabaseConfig: Decodable {
     var name: String
 }
 
+/// The configuration structure for the Redis settings.
 struct RedisConfig: Decodable {
     var host: String
     var port: Int
@@ -117,6 +349,7 @@ struct RedisConfig: Decodable {
 
 // MARK: - Helper Functions
 
+/// Reads and decodes the configuration file.
 func readConfig() -> Config {
     let fileURL = URL(fileURLWithPath: "./config/config.yaml")
     guard let data = try? Data(contentsOf: fileURL) else {
@@ -131,12 +364,14 @@ func readConfig() -> Config {
     return config
 }
 
+/// Validates the project directory path.
 func validateProjectDirectory(_ projectDir: String) {
     if projectDir.isEmpty {
         fatalError("Error: Project directory cannot be empty")
     }
 }
 
+/// Validates the domain name format.
 func validateDomainName(_ domain: String) {
     let regex = try! NSRegularExpression(pattern: "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
     if regex.firstMatch(in: domain, options: [], range: NSRange(location: 0, length: domain.count)) == nil {
@@ -144,6 +379,7 @@ func validateDomainName(_ domain: String) {
     }
 }
 
+/// Validates the email address format.
 func validateEmail(_ email: String) {
     let regex = try! NSRegularExpression(pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
     if regex.firstMatch(in: email, options: [], range: NSRange(location: 0, length: email.count)) == nil {
@@ -151,6 +387,7 @@ func validateEmail(_ email: String) {
     }
 }
 
+/// Runs a shell command with the specified arguments.
 func runShellCommand(_ command: String, arguments: [String], workingDirectory: String? = nil) {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: command)
@@ -169,6 +406,7 @@ func runShellCommand(_ command: String, arguments: [String], workingDirectory: S
 
 // MARK: - Command Line Application
 
+/// The main command structure for the VaporAppDeploy utility.
 struct VaporAppDeploy: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "vaporappdeploy",
@@ -182,12 +420,14 @@ struct VaporAppDeploy: ParsableCommand {
             CreateNginxConfigFile.self,
             CreateCertbotScript.self,
             SetupProject.self,
-            MasterScript.self
+            MasterScript.self,
+            SetupCiCdPipeline.self
         ]
     )
 }
 
 extension VaporAppDeploy {
+    /// Command to create necessary directories for the project.
     struct CreateDirectories: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Create necessary directories for the project."
@@ -216,6 +456,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to set up the Vapor project.
     struct SetupVaporProject: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Set up the Vapor project."
@@ -235,6 +476,7 @@ extension VaporAppDeploy {
             createScriptController(projectDir)
         }
 
+        /// Creates the Package.swift file.
         func createPackageSwift(_ projectDir: String) {
             let content = """
             // swift-tools-version:5.3
@@ -272,6 +514,7 @@ extension VaporAppDeploy {
             print("Package.swift created.")
         }
 
+        /// Creates the main.swift file.
         func createMainSwift(_ projectDir: String) {
             let content = """
             import Vapor
@@ -287,6 +530,7 @@ extension VaporAppDeploy {
             print("main.swift created.")
         }
 
+        /// Creates the configure.swift file.
         func createConfigureSwift(_ projectDir: String) {
             let content = """
             import Vapor
@@ -323,6 +567,9 @@ extension VaporAppDeploy {
             print("configure.swift created.")
         }
 
+       
+
+ /// Creates the routes.swift file.
         func createRoutesSwift(_ projectDir: String) {
             let content = """
             import Vapor
@@ -333,8 +580,6 @@ extension VaporAppDeploy {
                 app.get("scripts", use: scriptController.index)
                 app.post("scripts", use: scriptController.create)
                 app.get("scripts", ":scriptId", use: scriptController.show)
-
-
                 app.put("scripts", ":scriptId", use: scriptController.update)
                 app.delete("scripts", ":scriptId", use: scriptController.delete)
 
@@ -348,6 +593,7 @@ extension VaporAppDeploy {
             print("routes.swift created.")
         }
 
+        /// Creates the Script model file.
         func createScriptModel(_ projectDir: String) {
             let content = """
             import Vapor
@@ -387,6 +633,7 @@ extension VaporAppDeploy {
             print("Script.swift created.")
         }
 
+        /// Creates the migration file for the Script model.
         func createScriptMigration(_ projectDir: String) {
             let content = """
             import Fluent
@@ -412,6 +659,7 @@ extension VaporAppDeploy {
             print("CreateScript.swift created.")
         }
 
+        /// Creates the controller file for the Script model.
         func createScriptController(_ projectDir: String) {
             let content = """
             import Vapor
@@ -467,6 +715,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to build the Vapor application.
     struct BuildVaporApp: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Build the Vapor application."
@@ -482,6 +731,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to run the Vapor application locally.
     struct RunVaporLocal: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Run the Vapor application locally."
@@ -496,6 +746,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to create the Docker Compose file.
     struct CreateDockerComposeFile: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Create the Docker Compose file."
@@ -522,6 +773,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to create the Nginx configuration file.
     struct CreateNginxConfigFile: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Create the Nginx configuration file."
@@ -546,6 +798,7 @@ extension VaporAppDeploy {
         }
     }
 
+    /// Command to create the Certbot script.
     struct CreateCertbotScript: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Create the Certbot script."
@@ -557,6 +810,7 @@ extension VaporAppDeploy {
             createCertbotScriptFile()
         }
 
+        /// Creates the directory structure for Certbot.
         func createCertbotDirectoryStructure() {
             let config = readConfig()
             let projectDir = config.projectDirectory
@@ -578,6 +832,7 @@ extension VaporAppDeploy {
             }
         }
 
+        /// Downloads the recommended TLS parameters for Certbot.
         func downloadTlsParameters() {
             let config = readConfig()
             let projectDir = config.projectDirectory
@@ -587,7 +842,9 @@ extension VaporAppDeploy {
             let sslDhparamsPath = "\(projectDir)/certbot/conf/ssl-dhparams.pem"
 
             if !FileManager.default.fileExists(atPath: optionsSslNginxPath) || !FileManager.default.fileExists(atPath: sslDhparamsPath) {
-                print("### Downloading recommended TLS parameters ...")
+               
+
+ print("### Downloading recommended TLS parameters ...")
                 let optionsSslNginxURL = URL(string: "https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/options-ssl-nginx.conf")!
                 let sslDhparamsURL = URL(string: "https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem")!
 
@@ -600,11 +857,10 @@ extension VaporAppDeploy {
             }
         }
 
+        /// Creates the Certbot script file.
         func createCertbotScriptFile() {
             let config = readConfig()
-            let projectDir = config.project
-
-Directory
+            let projectDir = config.projectDirectory
             let domain = config.domain
             validateProjectDirectory(projectDir)
             validateDomainName(domain)
@@ -625,6 +881,7 @@ Directory
         }
     }
 
+    /// Command to set up the entire project.
     struct SetupProject: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Set up the entire project."
@@ -650,6 +907,7 @@ Directory
             print("Production server setup complete and running in \(projectDir).")
         }
 
+        /// Runs a specified command script.
         func runScript<T: ParsableCommand>(_ command: T.Type) {
             var command = command.init()
             do {
@@ -660,6 +918,7 @@ Directory
         }
     }
 
+    /// Command to run the master script to set up and deploy the Vapor application.
     struct MasterScript: ParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Run the master script to set up and deploy the Vapor application."
@@ -685,6 +944,7 @@ Directory
             print("Master script completed successfully. The Vapor app is now set up and running in the production environment.")
         }
 
+        /// Runs a specified command script.
         func runScript<T: ParsableCommand>(_ command: T.Type) {
             var command = command.init()
             do {
@@ -694,6 +954,108 @@ Directory
             }
         }
     }
+
+    /// Command to set up the GitHub Actions CI/CD pipeline.
+    struct SetupCiCdPipeline: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "Set up the GitHub Actions CI/CD pipeline."
+        )
+
+        func run() {
+            let workflowPath = ".github/workflows/ci-cd-pipeline.yml"
+            let workflowContent = """
+            name: CI/CD Pipeline
+
+            on:
+              push:
+                branches:
+                  - main
+
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+
+                services:
+                  postgres:
+                    image: postgres:13
+                    env:
+                      POSTGRES_USER: postgres
+                      POSTGRES_PASSWORD: password
+                      POSTGRES_DB: scriptdb
+                    ports:
+                      - 5432:5432
+                    options: >-
+                      --health-cmd="pg_isready -U postgres"
+                      --health-interval=10s
+                      --health-timeout=5s
+                      --health-retries=5
+
+                  redis:
+                    image: redis:latest
+                    ports:
+                      - 6379:6379
+                    options: >-
+                      --health-cmd="redis-cli ping"
+                      --health-interval=10s
+                      --health-timeout=5s
+                      --health-retries=5
+
+                steps:
+                  - name: Checkout code
+                    uses: actions/checkout@v2
+
+                  - name: Set up Swift
+                    uses: fwal/setup-swift@v1
+
+                  - name: Install dependencies
+                    run: swift package resolve
+
+                  - name: Build project
+                    run: swift build -c release
+
+                  - name: Run tests
+                    run: swift test
+
+              deploy:
+                runs-on: ubuntu-latest
+                needs: build
+
+                steps:
+                  - name: Checkout code
+                    uses: actions/checkout@v2
+
+                  - name: Set up Docker Buildx
+                    uses: docker/setup-buildx-action@v1
+
+                  - name: Log in to Docker Hub
+                    uses: docker/login-action@v1
+                    with:
+                      username: ${{ secrets.DOCKER_USERNAME }}
+                      password: ${{ secrets.DOCKER_PASSWORD }}
+
+                  - name: Build and push Docker image
+                    run: |
+                      docker build -t ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest .
+                      docker push ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
+
+                  - name: Deploy to production
+                    run: |
+                      ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+                        docker pull ${{ secrets.DOCKER_USERNAME }}/vapor-app:latest
+                        docker-compose -f /path/to/your/project/docker-compose.yml up -d
+                      EOF
+            """
+
+            let fileManager = FileManager.default
+            let workflowDirectory = ".github/workflows"
+            if !fileManager.fileExists(atPath: workflowDirectory) {
+                try! fileManager.createDirectory(atPath: workflowDirectory, withIntermediateDirectories: true, attributes: nil)
+            }
+
+            try! workflowContent.write(toFile: workflowPath, atomically: true, encoding: .utf8)
+            print("GitHub Actions CI/CD pipeline configuration created at \(workflowPath).")
+        }
+    }
 }
 
 // MARK: - Main
@@ -701,98 +1063,28 @@ Directory
 VaporAppDeploy.main()
 ```
 
-### Step 3: Provide Documentation
+### Tutorial for Creating and Using the VaporAppDeploy CLI
 
-Create a `README.md` file to provide documentation on how to use the command-line application.
+**Step 1: Clone the Repository**
 
-**README.md**
+First, clone the repository where the `VaporAppDeploy` tool is hosted.
 
-```markdown
-# VaporAppDeploy
-
-A utility for deploying a Vapor application with Docker, Nginx, and Let's Encrypt.
-
-## Installation
-
-1. Clone the repository:
- 
-   git clone <repository-url>
-   cd vapor-app-deploy
-
-2. Build the project:
-
-   swift build -c release
-   ```
-
-## Usage
-
-Run the main command to see available subcommands:
 ```sh
-swift run vaporappdeploy --help
+git clone <repository-url>
+cd vapor-app-deploy
 ```
 
-### Available Commands
+**Step 2: Build the Project**
 
-- `create-directories`: Create necessary directories for the project.
-- `setup-vapor-project`: Set up the Vapor project.
-- `build-vapor-app`: Build the Vapor application.
-- `run-vapor-local`: Run the Vapor application locally.
-- `create-docker-compose-file`: Create the Docker Compose file.
-- `create-nginx-config-file`: Create the Nginx configuration file.
-- `create-certbot-script`: Create the Certbot script.
-- `setup-project`: Set up the entire project.
-- `master-script`: Run the master script to set up and deploy the Vapor application.
+Build the project using Swift's build system.
 
-### Example Usage
+```sh
+swift build -c release
+```
 
-1. Create necessary directories:
-   ```sh
-   swift run vaporappdeploy create-directories
-   ```
+**Step 3: Configure the Project**
 
-2. Set up the Vapor project:
-   ```sh
-   swift run vaporappdeploy setup-vapor-project
-   ```
-
-3. Build the Vapor application:
-   ```sh
-   swift run vaporappdeploy build-vapor-app
-   ```
-
-4. Run the Vapor application locally:
-   ```sh
-   swift run vaporappdeploy run-vapor-local
-   ```
-
-5. Create the Docker Compose file:
-   ```sh
-   swift run vaporappdeploy create-docker-compose-file
-   ```
-
-6. Create the Nginx configuration file:
-   ```sh
-   swift run vaporappdeploy create-nginx-config-file
-   ```
-
-7. Create the Certbot script:
-   ```sh
-   swift run vaporappdeploy create-certbot-script
-   ```
-
-8. Set up the entire project:
-   ```sh
-   swift run vaporappdeploy setup-project
-   ```
-
-9. Run the master script to set up and deploy the Vapor application:
-   ```sh
-   swift run vaporappdeploy master-script
-   ```
-
-## Configuration
-
-The configuration is stored in `config/config.yaml`. Ensure this file is correctly set up before running the commands.
+Ensure the `config/config.yaml` file is properly set up with the necessary configuration values.
 
 ```yaml
 # Example config.yaml
@@ -810,23 +1102,172 @@ redis:
 staging: 0
 ```
 
-### Commit Message
+**Step 4: Run the Commands**
 
+The `VaporAppDeploy` tool provides various commands to set up and deploy your Vapor project. Below are examples of how to use each command.
+
+1. **Create Necessary Directories**
+
+   ```sh
+   swift run vaporappdeploy create-directories
+   ```
+
+   This command creates the necessary directory structure for the Vapor project, including directories for controllers, models, and migrations.
+
+2. **Set Up the Vapor Project**
+
+   ```sh
+   swift run vaporappdeploy setup-vapor-project
+   ```
+
+   This command sets up the Vapor project by generating essential files such as `Package.swift`, `main.swift`, `configure.swift`, `routes.swift`, and model, migration, and controller files for a basic Script entity.
+
+3. **Build the Vapor Application**
+
+   ```sh
+   swift run vaporappdeploy build-vapor-app
+   ```
+
+   This command builds the Vapor application in release mode using Swift's build system.
+
+4. **Run the Vapor Application Locally**
+
+   ```sh
+   swift run vaporappdeploy run-vapor-local
+   ```
+
+   This command runs the Vapor application locally in development mode for testing purposes.
+
+5. **Create the Docker Compose File**
+
+   ```sh
+   swift run vaporappdeploy create-docker-compose-file
+   ```
+
+   This command generates a Docker Compose file from a template, substituting necessary environment variables from the configuration file to set up services such as Vapor, PostgreSQL, Redis, and Nginx.
+
+6. **Create the Nginx Configuration File**
+
+   ```sh
+   swift run vaporappdeploy create-nginx-config-file
+   ```
+
+   This command creates an Nginx configuration file from a template, setting up Nginx to act as a reverse proxy for the Vapor application and handle HTTPS traffic.
+
+7. **Create the Certbot Script**
+
+   ```sh
+   swift run vaporappdeploy create-certbot-script
+   ```
+
+   This command creates the directory structure for Certbot, downloads TLS parameters, and generates a script to obtain and renew SSL certificates from Let's Encrypt.
+
+8. **Set Up the Entire Project**
+
+   ```sh
+   swift run vaporappdeploy setup-project
+   ```
+
+   This command orchestrates the setup of the entire project by running the necessary commands to create directories, generate configuration files, and start the Docker containers. It also runs the Certbot script to obtain SSL certificates.
+
+9. **Run the Master Script to Set Up and Deploy the Vapor Application**
+
+   ```sh
+   swift run vaporappdeploy master-script
+   ```
+
+   This command combines the setup and deployment process into a single workflow. It performs all the steps from creating directories to running the project in production, ensuring that the Vapor application is fully set up and deployed.
+
+10. **Set Up the GitHub Actions CI/CD Pipeline**
+
+    ```sh
+    swift run vaporappdeploy setup-cicd-pipeline
+    ```
+
+    This command sets up the CI/CD pipeline by creating the necessary `.github/workflows/ci-cd-pipeline.yml` file. The GitHub Actions workflow builds and tests the Vapor application whenever code is pushed to the repository and deploys the application to a production environment if the tests pass.
+
+### Detailed Command Descriptions
+
+**Create Directories**
+
+This command creates the necessary directory structure for the Vapor project, ensuring that the project has a well-organized layout.
+
+```sh
+swift run vaporappdeploy create-directories
 ```
-feat: Implement VaporAppDeploy CLI for automated deployment of Vapor apps
 
-- Created `VaporAppDeploy` Swift command-line application
-- Added commands to:
-  - Create necessary directories (`create-directories`)
-  - Set up the Vapor project (`setup-vapor-project`)
-  - Build the Vapor application (`build-vapor-app`)
-  - Run the Vapor application locally (`run-vapor-local`)
-  - Generate Docker Compose file (`create-docker-compose-file`)
-  - Generate Nginx configuration file (`create-nginx-config-file`)
-  - Create Certbot directory structure and script (`create-certbot-script`)
-  - Orchestrate full project setup (`setup-project`)
-  - Run master script for complete deployment (`master-script`)
-- Provided detailed documentation on usage in `README.md`
+**Setup Vapor Project**
 
-This implementation automates the setup and deployment of Vapor applications using Docker, Nginx, and Let's Encrypt, streamlining the process and enhancing security.
+This command sets up the Vapor project by generating essential files such as `Package.swift`, `main.swift`, `configure.swift`, `routes.swift`, and model, migration, and controller files for a basic Script entity.
+
+```sh
+swift run vaporappdeploy setup-vapor-project
 ```
+
+**Build Vapor App**
+
+This command builds the Vapor application in release mode using Swift's build system.
+
+```sh
+swift run vaporappdeploy build-vapor-app
+```
+
+**Run Vapor Locally**
+
+This command runs the Vapor application locally in development mode for testing purposes.
+
+```sh
+swift run vaporappdeploy run-vapor-local
+```
+
+**Create Docker Compose File**
+
+This command generates a Docker Compose file from a template, substituting necessary environment variables from the configuration file to set up services such as Vapor, PostgreSQL, Redis, and Nginx.
+
+```sh
+swift run vaporappdeploy create-docker-compose-file
+```
+
+**Create Nginx Config File**
+
+This command creates an Nginx configuration file from a template, setting up Nginx to act as a reverse proxy for the Vapor application and handle HTTPS traffic.
+
+```sh
+swift run vaporappdeploy create-nginx-config-file
+```
+
+**Create Certbot Script**
+
+This command creates the directory structure for Certbot, downloads TLS parameters, and generates a script to obtain and renew SSL certificates from Let's Encrypt.
+
+```sh
+swift run vaporappdeploy create-certbot-script
+```
+
+**Setup Project**
+
+This command orchestrates the setup of the entire project by running the necessary commands to create directories, generate configuration files, and start the Docker containers. It also runs the Certbot script to obtain SSL certificates.
+
+```sh
+swift run vaporappdeploy setup-project
+```
+
+**Master Script**
+
+This command combines the setup and deployment process into a single workflow. It performs all the steps from creating directories to running the project in production, ensuring that the Vapor application is fully set up and deployed.
+
+```sh
+swift run vaporappdeploy master-script
+```
+
+**Setup CI/CD Pipeline**
+
+This command sets up the CI/CD pipeline by creating the necessary `.github/workflows/ci-cd-pipeline.yml` file. The GitHub Actions workflow builds and tests the Vapor application whenever code is pushed to the repository and deploys the application to a production environment if the tests pass.
+
+```sh
+swift run vaporappdeploy setup-cicd-pipeline
+```
+
+### Conclusion
+
+The `VaporAppDeploy` CLI tool provides a comprehensive solution for automating the setup, deployment, and CI/CD integration of a Vapor application. By following the steps outlined in this tutorial, you can streamline your development workflow and ensure that your Vapor application is properly configured and deployed in a production environment.
