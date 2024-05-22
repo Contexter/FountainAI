@@ -28,7 +28,49 @@
 ├── Package.swift
 └── README.md
 ```
+# Create empty files ...
+Here is a shell script that creates the directory structure and empty files as specified:
 
+```bash
+#!/bin/bash
+
+# Create the directory structure
+mkdir -p VaporAppDeploy/Sources/VaporAppDeploy/Commands
+mkdir -p VaporAppDeploy/Sources/VaporAppDeploy/Helpers
+mkdir -p VaporAppDeploy/config
+
+# Create empty files in Commands directory
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/BuildVaporApp.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/CreateCertbotScript.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/CreateDirectories.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/CreateDockerComposeFile.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/CreateNginxConfigFile.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/MasterScript.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/RunVaporLocal.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/SetupCiCdPipeline.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/SetupProject.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Commands/SetupVaporProject.swift
+
+# Create empty files in Helpers directory
+touch VaporAppDeploy/Sources/VaporAppDeploy/Helpers/Config.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Helpers/InputValidation.swift
+touch VaporAppDeploy/Sources/VaporAppDeploy/Helpers/Shell.swift
+
+# Create the main.swift file
+touch VaporAppDeploy/Sources/VaporAppDeploy/main.swift
+
+# Create config files
+touch VaporAppDeploy/config/config.yaml
+touch VaporAppDeploy/config/docker-compose-template.yml
+touch VaporAppDeploy/config/nginx-template.conf
+touch VaporAppDeploy/config/init-letsencrypt-template.sh
+
+# Create Package.swift and README.md
+touch VaporAppDeploy/Package.swift
+touch VaporAppDeploy/README.md
+```
+
+You can run this script to create the directory structure and empty files as specified.
 ### Directory: `Sources/VaporAppDeploy/Commands/`
 
 #### File: `BuildVaporApp.swift`
