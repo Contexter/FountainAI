@@ -198,7 +198,8 @@ struct SetupVaporProject: ParsableCommand {
                     
                         init() {}
                     
-                        init(id: UUID? = nil"""
+                        init(id: UUID? = nil
+"""
                     
                     if let properties = schemaDetails["properties"] as? [String: Any] {
                         for (propertyName, _) in properties {
@@ -241,9 +242,7 @@ struct SetupVaporProject: ParsableCommand {
                             let functionName = operationId.camelCased()
                             let controllerContent = generateControllerContent(functionName: functionName, method: method, path: path, methodDetails: methodDetails)
                             
-                            try! controllerContent.write(toFile: "\(projectDirectory)/Sources/App/Controllers/\(function
-
-Name.capitalized)Controller.swift", atomically: true, encoding: .utf8)
+                            try! controllerContent.write(toFile: "\(projectDirectory)/Sources/App/Controllers/\(functionName.capitalized)Controller.swift", atomically: true, encoding: .utf8)
                             print("\(functionName.capitalized)Controller.swift created.")
                         }
                     }

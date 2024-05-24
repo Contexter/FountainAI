@@ -13,7 +13,9 @@ let package = Package(
         /// The Swift Argument Parser package dependency.
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.0"),
         /// The YamlSwift package dependency.
-        .package(url: "https://github.com/behrang/YamlSwift.git", from: "3.4.3")
+        .package(url: "https://github.com/behrang/YamlSwift.git", from: "3.4.3"),
+        /// The Yams package dependency.
+        .package(url: "https://github.com/jpsim/Yams.git", from: "4.0.0")
     ],
     targets: [
         /// The executable target for VaporAppDeploy.
@@ -23,7 +25,8 @@ let package = Package(
             /// The dependencies for the target.
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "Yaml", package: "YamlSwift")
+                .product(name: "Yaml", package: "YamlSwift"),
+                .product(name: "Yams", package: "Yams")
             ]
         )
     ]
