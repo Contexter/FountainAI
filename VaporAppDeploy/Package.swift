@@ -17,7 +17,7 @@ let package = Package(
     ],
     targets: [
         /// The executable target for VaporAppDeploy.
-        .executableTarget(
+        .target(
             /// The name of the target.
             name: "VaporAppDeploy",
             /// The dependencies for the target.
