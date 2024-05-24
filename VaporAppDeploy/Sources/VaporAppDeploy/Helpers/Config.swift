@@ -1,4 +1,5 @@
 import Foundation
+import Yams
 
 /// The configuration structure for the Vapor application deployment.
 struct Config: Decodable {
