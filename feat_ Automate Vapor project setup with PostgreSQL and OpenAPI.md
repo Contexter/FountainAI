@@ -1,7 +1,3 @@
-### Introduction for the Script
-
-This Bash script automates the creation and setup of a Vapor-based web application project. It sets up the necessary project structure, including directories for controllers, models, migrations, and tests. The script also generates key files such as `Package.swift` for dependency management, configuration files, and model and controller files for a basic Script management API. Additionally, it includes an OpenAPI YAML file for API documentation. The script initializes a PostgreSQL database and runs the necessary migrations to set up the database schema. By executing this script, developers can quickly bootstrap a Vapor project with a predefined structure and configuration, allowing them to focus on implementing application-specific logic.
-
 ### Commit Message
 
 ```
