@@ -8,6 +8,7 @@ feat: Add setup script for ScriptManagementAPI project
 - Build and run the project using Docker.
 - Test the API to ensure it is running correctly.
 ```
+
 ```
 #!/bin/bash
 
@@ -364,5 +365,4 @@ test_server
 run_swift_tests
 
 echo "Project setup completed."
-
 ```
