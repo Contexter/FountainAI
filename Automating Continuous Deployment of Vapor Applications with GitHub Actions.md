@@ -1,4 +1,3 @@
-> Note: this is a rough install, notably the deployment patch, well ... needs refinement - but afterall ! This thing stands :)
 
 # Automating Continuous Deployment of Vapor Applications with GitHub Actions
 
@@ -276,14 +275,14 @@ on:
       - main
 
 jobs:
-  build:
+  build
+
+:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@
-
-v2
+      uses: actions/checkout@v2
 
     - name: Set up Swift
       uses: fwal/setup-swift@v1
@@ -309,6 +308,7 @@ v2
           git pull origin main
           swift build -c release
           sudo systemctl restart ${PROJECT_NAME}
+          bash /var/www/${PROJECT_NAME}/deploy_patch.sh
 ```
 
 ### 3. Deployment Patching Script
@@ -379,3 +379,13 @@ echo "Deployment patch applied for ${PROJECT_NAME}."
 ## Conclusion
 
 By implementing this solution, developers can automate the deployment of Vapor applications using GitHub Actions, ensuring a fully automated CI/CD process. This approach minimizes manual intervention, reduces the risk of errors, and allows developers to focus on writing high-quality code. The use of GitHub Actions, in combination with the deployment patching script, provides a robust and scalable solution for deploying Vapor applications.
+
+---
+
+### GitHub Commit Message for the Scenario Paper
+
+```
+docs: Add comprehensive scenario paper for automated CI/CD deployment
+
+This document provides an in-depth description of the automated CI/CD deployment process for Vapor applications using GitHub Actions. It outlines the project generation script, CI/CD pipeline configuration, and deployment patching script, ensuring a fully automated deployment process without manual intervention.
+```
