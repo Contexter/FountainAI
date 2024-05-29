@@ -1,4 +1,3 @@
-
 # Automating Continuous Deployment of Vapor Applications with GitHub Actions
 
 ## Introduction
@@ -266,6 +265,10 @@ echo "Project setup completed. Please set up GitHub Actions for CI/CD."
 
 A GitHub Actions workflow is defined to automate the build, test, and deployment processes. This is specified in a `.github/workflows/deploy.yml` file in the repository.
 
+The GitHub Actions workflow uses secrets stored in the repository settings to securely pass sensitive information to the deployment
+
+ scripts. This includes `SERVER_IP`, `SERVER_USERNAME`, `SSH_PRIVATE_KEY`, and database credentials.
+
 ```yaml
 name: CI/CD
 
@@ -275,9 +278,7 @@ on:
       - main
 
 jobs:
-  build
-
-:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -369,10 +370,28 @@ sudo systemctl enable ${PROJECT_NAME}
 echo "Deployment patch applied for ${PROJECT_NAME}."
 ```
 
+### Using Environment Variables and GitHub Secrets
+
+The deployment pipeline utilizes environment variables and GitHub secrets for secure configuration. The `configure.swift` file in the Vapor application reads these environment variables for database configuration. In the GitHub Actions workflow, secrets are injected into the deployment environment.
+
+Ensure the following secrets are configured in your GitHub repository settings:
+
+- `SERVER_IP`: The IP address of your deployment server.
+- `SERVER_USERNAME`: The username for SSH access to the server.
+- `SSH_PRIVATE_KEY`: The private key for SSH access.
+- `DATABASE_HOST`: The hostname of the database server.
+- `DATABASE_USERNAME`: The username for the database.
+- `DATABASE_PASSWORD`: The password for the database.
+- `DATABASE_NAME`: The name of the database.
+
+### Triggering the Deployment
+
+The deployment process is triggered automatically whenever code is pushed to the `main` branch of the GitHub repository. The GitHub Actions workflow runs the build, test, and deployment steps, ensuring that the latest changes are deployed to the server without manual intervention.
+
 ### Usage Instructions
 
 1. **Run the Generator Script**: Generate the initial Vapor project and push it to GitHub using the `FountainAIGenerator.sh` script.
-2. **Configure GitHub Secrets**: Ensure your repository has the necessary secrets (`SERVER_IP`, `SERVER_USERNAME`, `SSH_PRIVATE_KEY`) set up in the GitHub settings.
+2. **Configure GitHub Secrets**: Ensure your repository has the necessary secrets (`SERVER_IP`, `SERVER_USERNAME`, `SSH_PRIVATE_KEY`, `DATABASE_HOST`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `DATABASE_NAME`) set up in the GitHub settings.
 3. **Configure GitHub Actions**: The `.github/workflows/deploy.yml` file is already set up to automate the build, test, and deployment processes.
 4. **Patching Script**: The `deploy_patch.sh` script will be run automatically by the GitHub Actions during the deployment phase to set up Nginx, SSL, and the systemd service for your app.
 
