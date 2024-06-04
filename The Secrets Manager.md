@@ -16,6 +16,7 @@ The FountainAI Secrets Manager is built using Vapor, a web framework for Swift. 
 
 - **Secrets Management**: Allows creating, retrieving, updating, and deleting secrets in GitHub repositories.
 - **CI/CD Workflow Generator**: Dynamically generates GitHub Actions workflow configuration files based on application configurations.
+- **VPS Verification**: Ensures the VPS meets the necessary requirements before deployment.
 
 #### OpenAPI Specification
 
@@ -27,7 +28,7 @@ The API is defined using OpenAPI, ensuring that the endpoints are well-documente
 openapi: 3.0.1
 info:
   title: FountainAI Secrets Manager API
-  description: API for managing GitHub secrets and generating CI/CD workflows.
+  description: API for managing GitHub secrets, generating CI/CD workflows, and verifying VPS requirements.
   version: "1.0.0"
 servers:
   - url: 'https://secrets.fountain.coach'
@@ -126,6 +127,23 @@ paths:
                         - main
                   jobs:
                     ...
+  /vps/verify:
+    post:
+      summary: Verify VPS Requirements
+      operationId: verifyVPS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VPSVerificationRequest'
+      responses:
+        '200':
+          description: VPS verification results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VPSVerificationResponse'
 components:
   schemas:
     SecretCreateRequest:
@@ -187,6 +205,30 @@ components:
       required:
         - name
         - secrets
+    VPSVerificationRequest:
+      type: object
+      properties:
+        vpsUsername:
+          type: string
+        vpsIP:
+          type: string
+      required:
+        - vpsUsername
+        - vpsIP
+    VPSVerificationResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VPSVerificationResult'
+    VPSVerificationResult:
+      type: object
+      properties:
+        requirement:
+          type: string
+        status:
+          type: string
 ```
 
 ### Implementation
@@ -202,7 +244,7 @@ cd FountainAISecretsManager
 
 #### 2. Models
 
-Create models for handling secrets and CI/CD workflow requests.
+Create models for handling secrets, CI/CD workflow requests, and VPS verification.
 
 **Models/SecretCreateRequest.swift**
 
@@ -245,9 +287,29 @@ struct AppConfig: Content {
 }
 ```
 
+**Models/VPSVerificationRequest.swift**
+
+```swift
+import Vapor
+
+struct VPSVerificationRequest: Content {
+    let vpsUsername: String
+    let vpsIP: String
+}
+
+struct VPSVerificationResponse: Content {
+    let results: [VPSVerificationResult]
+}
+
+struct VPSVerificationResult: Content {
+    let requirement: String
+    let status: String
+}
+```
+
 #### 3. Controllers
 
-Create a controller to handle the secrets management and CI/CD workflow generation logic.
+Create a controller to handle secrets management, CI/CD workflow generation, and VPS verification logic.
 
 **Controllers/SecretsController.swift**
 
@@ -267,6 +329,9 @@ class SecretsController: RouteCollection {
         secretsRoute.get(":repoOwner", ":repoName", ":secretName", use: getSecret)
         secretsRoute.delete(":repoOwner", ":repoName", ":secretName", use: deleteSecret)
         secretsRoute.post("generate-cicd-workflow", use: generateCICDWorkflow)
+        
+        let vpsRoute = routes.grouped("vps")
+        vpsRoute.post("verify", use: verifyVPS)
     }
 
     // Endpoint to create or update a secret
@@ -286,7 +351,9 @@ class SecretsController: RouteCollection {
         }
     }
 
-    // Helper function to fetch the public key for the repository
+    // Helper
+
+ function to fetch the public key for the repository
     func getPublicKey(req: Request, repoOwner: String, repoName: String, githubToken: String) -> EventLoopFuture<PublicKeyResponse> {
         let url = "https://api.github.com/repos/\(repoOwner)/\(repoName)/actions/secrets/public-key"
         
@@ -312,9 +379,7 @@ class SecretsController: RouteCollection {
     }
 
     // Helper function to set the secret in the GitHub repository
-    func setSecret(req: Request, repoOwner: String, repo
-
-Name: String, secretName: String, encryptedValue: String, keyID: String, githubToken: String) -> EventLoopFuture<Void> {
+    func setSecret(req: Request, repoOwner: String, repoName: String, secretName: String, encryptedValue: String, keyID: String, githubToken: String) -> EventLoopFuture<Void> {
         let url = "https://api.github.com/repos/\(repoOwner)/\(repoName)/actions/secrets/\(secretName)"
         let secretRequest = ["encrypted_value": encryptedValue, "key_id": keyID]
 
@@ -506,7 +571,9 @@ Name: String, secretName: String, encryptedValue: String, keyID: String, githubT
               with:
                 ssh-private-key: "${{ secrets.\(appName)_VPS_SSH_KEY }}"
 
-            - name: Deploy Docker Image to VPS for \(appName)
+            - name:
+
+ Deploy Docker Image to VPS for \(appName)
               run: |
                 ssh ${{ secrets.\(appName)_VPS_USERNAME }}@${{ secrets.\(appName)_VPS_IP }} << 'EOF'
                 IMAGE_NAME=ghcr.io/\(githubRepositoryOwner)/\(appName)
@@ -529,14 +596,57 @@ Name: String, secretName: String, encryptedValue: String, keyID: String, githubT
                   exit 1
                 fi
 
-                if ! curl -k https://${{ secrets.\(appName)_DOMAIN_NAME }} | grep -q "Expected content or
-
- response"; then
+                if ! curl -k https://${{ secrets.\(appName)_DOMAIN_NAME }} | grep -q "Expected content or response"; then
                   echo "Domain is not properly configured"
                   exit 1
                 fi
                 EOF
         """
+    }
+
+    // Endpoint to verify VPS requirements
+    func verifyVPS(req: Request) throws -> EventLoopFuture<VPSVerificationResponse> {
+        let verificationRequest = try req.content.decode(VPSVerificationRequest.self)
+
+        let sshCommand = "ssh \(verificationRequest.vpsUsername)@\(verificationRequest.vpsIP)"
+
+        let requirements = [
+            ("docker --version", "Docker"),
+            ("docker-compose --version", "Docker Compose"),
+            ("swift --version", "Swift"),
+            ("systemctl is-active --quiet nginx", "Nginx"),
+            ("systemctl is-active --quiet certbot", "Certbot")
+        ]
+
+        var results: [EventLoopFuture<VPSVerificationResult>] = []
+
+        for (command, requirement) in requirements {
+            let fullCommand = "\(sshCommand) '\(command)'"
+            let result = req.eventLoop.future()
+                .flatMapThrowing {
+                    let process = Process()
+                    process.launchPath = "/bin/bash"
+                    process.arguments = ["-c", fullCommand]
+
+                    let pipe = Pipe()
+                    process.standardOutput = pipe
+                    process.launch()
+                    process.waitUntilExit()
+
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let output = String(data: data, encoding: .utf8) ?? ""
+
+                    return VPSVerificationResult(
+                        requirement: requirement,
+                        status: process.terminationStatus == 0 ? "Passed" : "Failed: \(output)"
+                    )
+                }
+
+            results.append(result)
+        }
+
+        return results.flatten(on: req.eventLoop)
+            .map { VPSVerificationResponse(results: $0) }
     }
 }
 ```
@@ -569,17 +679,18 @@ public func configure(_ app: Application) throws {
 
 ### Conclusion
 
-The FountainAI Secrets Manager provides a robust solution for managing GitHub secrets and automating CI/CD workflows. By integrating these functionalities into a single Vapor application, developers can streamline their development processes and maintain a high level of security for their applications.
+The FountainAI Secrets Manager provides a robust solution for managing GitHub secrets, automating CI/CD workflows, and verifying VPS requirements. By integrating these functionalities into a single Vapor application, developers can streamline their development processes and maintain a high level of security and reliability for their applications.
 
 ### Commit Message
 
 ```markdown
-feat: Add Secrets Management and CI/CD Workflow Generator
+feat: Add Secrets Management, CI/CD Workflow Generator, and VPS Verification
 
 - Implemented endpoints for creating, retrieving, updating, and deleting GitHub secrets.
 - Added functionality to dynamically generate CI/CD workflows using GitHub Actions based on application configurations.
-- Defined OpenAPI specification for the Secrets Management and CI/CD Workflow Generator API.
+- Added endpoint to verify VPS requirements.
+- Defined OpenAPI specification for the Secrets Management, CI/CD Workflow Generator, and VPS Verification API.
 - Created comprehensive documentation for setting up and using the FountainAI Secrets Manager.
 ```
 
-This concludes the detailed implementation and documentation for the FountainAI Secrets Manager with CI/CD Workflow Generator.
+This concludes the detailed implementation and documentation for the FountainAI Secrets Manager with CI/CD Workflow Generator and VPS Verification.
