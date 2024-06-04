@@ -5,3 +5,4 @@ xcuserdata/
 Packages
 *.xcodeproj/*
 /*.xcworkspace/
+/openAPI/serverSetup.yaml
