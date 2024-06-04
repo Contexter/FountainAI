@@ -1,41 +1,187 @@
-## Introduction to FountainAI Project Setup Script
+## Introduction to FountainAI Project Setup and Configuration
 
 The FountainAI project involves developing multiple Vapor applications, each with its own requirements for building, testing, and deployment. Managing these applications individually can be time-consuming and error-prone. To streamline this process, we have created a setup script that automates the initial setup for all ten Vapor applications, including the Secrets Manager and Authentication Service, which are foundational to the project.
 
-This script not only initializes each application but also configures a comprehensive CI/CD pipeline using GitHub Actions. This pipeline ensures that each application is built, tested, and deployed consistently and reliably.
+This guide provides a comprehensive overview of the necessary manual and automated configurations required to get the FountainAI project up and running. By leveraging GitHub's API, we can automate many of the repetitive tasks, ensuring a consistent and efficient setup process.
 
 ### Background
 
 Vapor is a popular web framework for Swift, and it provides built-in support for creating RESTful services, which makes it an excellent choice for the FountainAI project. To manage the lifecycle of each application efficiently, we use Docker for containerization and GitHub Actions for CI/CD automation. The goal is to set up an environment where every code change is automatically built, tested, and deployed with minimal manual intervention.
 
-### Script Overview
+### Overview of the Setup Process
 
-The setup script performs the following tasks:
+To properly set up the FountainAI project, we need to:
 
-1. **Creates the Main Project Directory**: Initializes a directory to house all the applications.
-2. **Creates Subdirectories and Initializes Vapor Applications**: Uses the `vapor new` command to create new Vapor applications in their respective directories.
-3. **Creates GitHub Actions Workflows**: Configures a comprehensive CI/CD pipeline for each application, including steps for building Docker images, running unit, integration, and end-to-end tests, and deploying to a Virtual Private Server (VPS).
+1. Generate and add a GitHub Container Registry (GHCR) token.
+2. Generate SSH keys for VPS access.
+3. Add the public key to the VPS.
+4. Add the private key to GitHub Secrets.
+5. Add environment variables for each application to GitHub Secrets.
+6. Configure GitHub Actions workflows for CI/CD automation.
 
-### Configuration File
+### Manual Configurations
 
-The script reads necessary configuration variables from a file named `config.env`. This file should contain environment variables required for the setup, such as application names, GitHub Container Registry token, and VPS credentials.
+Some steps require manual intervention, such as generating tokens and SSH keys, and adding them to the appropriate places. Below is a detailed list of these manual steps.
 
-### Configuration File: `config.env`
+#### 1. Generate and Add GitHub Container Registry (GHCR) Token
 
-Create a file named `config.env` with the following content:
+- **Generate a Personal Access Token**:
+  1. Go to your GitHub account settings.
+  2. Navigate to **Developer settings** -> **Personal access tokens**.
+  3. Generate a new token with the following scopes:
+     - `write:packages`
+     - `read:packages`
+     - `delete:packages`
+     - `repo` (if you want to access private repositories)
+  4. Copy the token.
 
-```ini
-MAIN_DIR=fountainAI
-APP_NAMES="secrets-manager,auth-service,app1,app2,app3,app4,app5,app6,app7,app8"
-GHCR_TOKEN=<your-ghcr-token>
-VPS_SSH_KEY=<your-vps-ssh-key>
-VPS_USERNAME=<your-vps-username>
-VPS_IP=<your-vps-ip>
+- **Add GHCR Token to GitHub Secrets**:
+  1. Go to your GitHub repository.
+  2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
+  3. Add a new secret named `GHCR_TOKEN` and paste the copied token.
+
+#### 2. Generate SSH Key for VPS Access
+
+- **Generate an SSH Key Pair**:
+  ```sh
+  ssh-keygen -t ed25519 -C "your_email@example.com"
+  ```
+  This will generate a key pair at `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`.
+
+#### 3. Add Public Key to VPS
+
+- **Copy the Public Key**:
+  ```sh
+  cat ~/.ssh/id_ed25519.pub
+  ```
+  - Log in to your VPS.
+  - Add the public key to the `~/.ssh/authorized_keys` file on your VPS:
+    ```sh
+    echo "<public_key>" >> ~/.ssh/authorized_keys
+    ```
+
+### Automating Configurations via GitHub's API
+
+To automate the addition of secrets and environment variables, we can use GitHub's API. This reduces manual effort and ensures consistency.
+
+#### 4. Add Private Key to GitHub Secrets
+
+- **Copy the Private Key**:
+  ```sh
+  cat ~/.ssh/id_ed25519
+  ```
+
+- **Add Private Key to GitHub Secrets via API**:
+  - Use the GitHub API to add the private key as a secret.
+
+#### 5. Add Environment Variables for Each Application to GitHub Secrets
+
+- **Add Environment Variables to GitHub Secrets via API**:
+  - Use the GitHub API to add the necessary environment variables for each application.
+
+### Automate with GitHub's API
+
+Below is a script to add secrets to GitHub using the API.
+
+#### Script to Add Secrets via GitHub's API
+
+1. **Prerequisites**:
+   - Install `curl` if not already installed.
+   - Ensure you have a GitHub personal access token with the required scopes.
+
+2. **Script to Add Secrets**:
+
+Create a script named `add_secrets.sh`:
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# GitHub repository details
+REPO_OWNER=<your_github_username>
+REPO_NAME=<your_repository_name>
+
+# GitHub personal access token
+GITHUB_TOKEN=<your_github_token>
+
+# Function to create a secret in GitHub repository
+create_github_secret() {
+    local secret_name=$1
+    local secret_value=$2
+
+    # Get the public key
+    PUB_KEY_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                            "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/secrets/public-key")
+    PUB_KEY=$(echo "$PUB_KEY_RESPONSE" | jq -r '.key')
+    KEY_ID=$(echo "$PUB_KEY_RESPONSE" | jq -r '.key_id')
+
+    # Encrypt the secret value
+    ENCRYPTED_VALUE=$(echo -n "$secret_value" | openssl rsautl -encrypt -pubin -inkey <(echo "$PUB_KEY" | base64 -d) | base64)
+
+    # Create the secret
+    curl -s -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"encrypted_value\":\"$ENCRYPTED_VALUE\",\"key_id\":\"$KEY_ID\"}" \
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/secrets/$secret_name"
+}
+
+# Add common secrets
+create_github_secret "GHCR_TOKEN" "$GHCR_TOKEN"
+create_github_secret "VPS_SSH_KEY" "$VPS_SSH_KEY"
+create_github_secret "VPS_USERNAME" "$VPS_USERNAME"
+create_github_secret "VPS_IP" "$VPS_IP"
+
+# Add application-specific secrets
+for app_name in "${APP_NAMES_ARRAY[@]}"; do
+    upper_app_name=$(echo $app_name | tr '[:lower:]' '[:upper:]')
+
+    create_github_secret "${upper_app_name}_DB_HOST" "<your_db_host>"
+    create_github_secret "${upper_app_name}_DB_USER" "<your_db_user>"
+    create_github_secret "${upper_app_name}_DB_PASSWORD" "<your_db_password>"
+    create_github_secret "${upper_app_name}_API_KEY" "<your_api_key>"
+    create_github_secret "${upper_app_name}_GHCR_TOKEN" "$GHCR_TOKEN"
+    create_github_secret "${upper_app_name}_VPS_SSH_KEY" "$VPS_SSH_KEY"
+    create_github_secret "${upper_app_name}_VPS_USERNAME" "$VPS_USERNAME"
+    create_github_secret "${upper_app_name}_VPS_IP" "$VPS_IP"
+    create_github_secret "${upper_app_name}_DOMAIN_NAME" "<your_domain_name>"
+done
+
+echo "Secrets have been added to GitHub repository."
 ```
 
-### Setup Script: `setup.sh`
+3. **Run the Script**:
 
-Save the following script as `setup.sh` in your desired directory.
+Make the script executable and run it:
+```bash
+chmod +x add_secrets.sh
+./add_secrets.sh
+```
+
+### Summary of Manual and Automated Steps
+
+1. **Generate and Add GHCR Token**:
+   - **Manual**: Generate a personal access token and add it as the `GHCR_TOKEN` secret.
+
+2. **Generate SSH Key for VPS Access**:
+   - **Manual**: Generate an SSH key pair.
+
+3. **Add Public Key to VPS**:
+   - **Manual**: Copy the public key to the `~/.ssh/authorized_keys` file on the VPS.
+
+4. **Add Private Key to GitHub Secrets**:
+   - **Automated**: Use the provided script to add the private key as a `VPS_SSH_KEY` secret.
+
+5. **Add Environment Variables for Each Application to GitHub Secrets**:
+   - **Automated**: Use the provided script to add environment variables as secrets for each application.
+
+6. **Configure GitHub Actions Workflows**:
+   - **Automated**: Ensure workflow files are generated and placed in `.github/workflows` using the setup script.
+
+### Comprehensive Setup Script
+
+To automate the setup of the initial state for all ten Vapor applications, including configuring CI/CD workflows, use the following `setup.sh` script:
 
 ```bash
 #!/bin/bash
@@ -81,7 +227,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker
+
+ Buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Set up .env file
@@ -201,8 +349,6 @@ jobs:
           ssh \${{ secrets.VPS_USERNAME }}@\${{ secrets.VPS_IP }} << 'EOF'
           if ! systemctl is-active --quiet nginx; then
             echo "Nginx is not running"
-
-
             exit 1
           fi
 
@@ -239,23 +385,6 @@ main() {
 main
 ```
 
-### Detailed Explanation of the Script
-
-1. **Loading Configuration**: The script starts by loading configuration variables from the `config.env` file. This includes the main project directory name, application names, and credentials for the GitHub Container Registry and VPS.
-
-2. **Creating the Main Project Directory**: The `create_main_directory` function creates the main directory for the project and navigates into it.
-
-3. **Creating and Initializing Vapor Applications**: The `create_vapor_app` function creates a subdirectory for each application and initializes a new Vapor application within it using the `vapor new` command. This ensures each application has a standard structure and necessary files, including the default Dockerfile provided by Vapor.
-
-4. **Creating GitHub Actions Workflows**: The `create_workflow_file` function generates a comprehensive GitHub Actions workflow for each application. This workflow includes:
-   - **Building the Docker Image**: The `build` job checks out the code, sets up Docker Buildx, creates an `.env` file with necessary environment variables, logs into the GitHub Container Registry, and builds and pushes the Docker image.
-   - **Running Unit Tests**: The `unit-test` job runs unit tests inside the Docker container.
-   - **Running Integration Tests**: The `integration-test` job runs integration tests inside the Docker container.
-   - **Running End-to-End Tests**: The `end-to-end-test` job runs end-to-end tests inside the Docker container.
-   - **Deploying to VPS**: The `deploy` job pulls the latest Docker image, stops and removes the old container, runs the new container, and verifies the Nginx and SSL configuration on the VPS.
-
-5. **Executing the Main Function**: The `main` function orchestrates the entire setup process, creating the main directory, initializing each Vapor application, and generating the corresponding GitHub Actions workflows.
-
 ### How to Use the Script
 
 1. **Save the Configuration File**: Save the configuration variables in a file named `config.env`.
@@ -274,7 +403,7 @@ main
 
 ### Conclusion
 
-This setup script automates the initial configuration for all ten Vapor applications in the FountainAI project, including comprehensive CI/CD pipelines. By leveraging Docker and GitHub Actions, it ensures that each application is built, tested, and deployed consistently and reliably. This approach saves time, reduces manual errors, and enhances the overall efficiency of the development and deployment process.
+By following these steps and using the provided scripts, you can automate most of the configuration required for setting up the FountainAI project. This approach ensures consistency and saves time, allowing you to focus on developing and deploying your applications effectively. The detailed guide and scripts will help you automate the setup of Vapor applications and configure a comprehensive CI/CD pipeline using GitHub Actions.
 
 ### Commit Message
 
@@ -285,4 +414,5 @@ feat: Initial setup for FountainAI project
 - Initialized new Vapor applications for each app.
 - Set up GitHub Actions workflows for CI/CD automation, including build, unit test, integration test, end-to-end test, and deployment steps.
 - Added a configuration file for easy setup and management.
+- Provided scripts to automate the addition of secrets via GitHub's API.
 ```
