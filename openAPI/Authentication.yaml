@@ -1,0 +1,188 @@
+openapi: 3.0.1
+info:
+  title: Centralized Authentication API for GPT Model
+  description: |
+    API for managing authentication, specifically for a custom GPT model, including registration, login, and token verification.
+
+    **Dockerized Environment**:
+    - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
+    - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
+    - **Postgres Database**: The main persistence layer is a PostgreSQL container managed by Docker Compose.
+
+  version: "1.0.0"
+servers:
+  - url: 'https://auth.fountain.coach'
+    description: Main server for Authentication API services (behind Nginx proxy)
+  - url: 'http://localhost:8080'
+    description: Development server for Authentication API services (Docker environment)
+
+paths:
+  /auth/register:
+    post:
+      summary: Register the GPT Model
+      operationId: registerGPT
+      description: Creates a new record for the GPT model in the authentication system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GPTModelCreateRequest'
+            examples:
+              createGPTExample:
+                summary: Example of GPT model registration
+                value:
+                  username: "gptmodel"
+                  password: "securepassword"
+      responses:
+        '201':
+          description: GPT model successfully registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GPTModel'
+              examples:
+                gptCreated:
+                  summary: Example of a registered GPT model
+                  value:
+                    modelId: 1
+                    username: "gptmodel"
+        '400':
+          description: Bad request due to missing required fields or invalid data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequestExample:
+                  value:
+                    message: "Missing required fields: 'username' or 'password'."
+
+  /auth/login:
+    post:
+      summary: Login the GPT Model
+      operationId: loginGPT
+      description: Authenticates the GPT model and returns a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GPTModelLoginRequest'
+            examples:
+              loginGPTExample:
+                summary: Example of GPT model login
+                value:
+                  username: "gptmodel"
+                  password: "securepassword"
+      responses:
+        '200':
+          description: GPT model successfully authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                tokenResponse:
+                  summary: Example of a token response
+                  value:
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Unauthorized due to invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  value:
+                    message: "Invalid username or password."
+
+  /auth/verify:
+    post:
+      summary: Verify the Token
+      operationId: verifyToken
+      description: Verifies the validity of a JWT token for the GPT model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+            examples:
+              verifyTokenExample:
+                summary: Example of token verification
+                value:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Token successfully verified.
+        '401':
+          description: Unauthorized due to invalid or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unauthorizedExample:
+                  value:
+                    message: "Invalid or expired token."
+
+components:
+  schemas:
+    GPTModel:
+      type: object
+      properties:
+        modelId:
+          type: integer
+          description: Unique identifier for the GPT model.
+        username:
+          type: string
+          description: Username for the GPT model.
+      required:
+        - username
+
+    GPTModelCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    GPTModelLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    TokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token for authenticated access.
+
+    Error:
+      type: object
+      description: Common error structure for the API.
+      properties:
+        message:
+          type: string
+          description: Description of the error encountered.
