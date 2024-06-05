@@ -101,83 +101,96 @@ Implement the functions in `main.swift` to make the tests pass:
    ```swift
    import Foundation
 
-   @discardableResult
-   func shell(_ args: String...) -> String? {
-       let task = Process()
-       task.launchPath = "/usr/bin/env"
-       task.arguments = args
+   struct TreeCatMD {
+       static func checkAndInstallTree() {
+           let task = Process()
+           task.launchPath = "/usr/bin/env"
+           task.arguments = ["which", "tree"]
 
-       let pipe = Pipe()
-       task.standardOutput = pipe
-       task.standardError = pipe
+           let pipe = Pipe()
+           task.standardOutput = pipe
+           task.launch()
+           task.waitUntilExit()
 
-       task.launch()
-       task.waitUntilExit()
-
-       let data = pipe.fileHandleForReading.readDataToEndOfFile()
-       return String(data: data, encoding: .utf8)
-   }
-
-   func getDirectoryTree(at path: String) -> String? {
-       return shell("tree", path)
-   }
-
-   func getFileContents(at path: String) -> String? {
-       return try? String(contentsOfFile: path)
-   }
-
-   func generateMarkdown(for directory: String, outputFileName: String) {
-       let fileManager = FileManager.default
-       guard let enumerator = fileManager.enumerator(atPath: directory) else {
-           print("Cannot enumerate directory")
-           return
-       }
-
-       var markdown = "# \(directory)\n\n"
-
-       if let tree = getDirectoryTree(at: directory) {
-           markdown += "## Directory Tree\n"
-           markdown += tree
-           markdown += "\n\n"
-       } else {
-           markdown += "'tree' command not found. Please install it using 'brew install tree'.\n\n"
-       }
-
-       markdown += "## File Contents\n"
-       for case let file as String in enumerator {
-           let filePath = "\(directory)/\(file)"
-           if fileManager.fileExists(atPath: filePath) {
-               markdown += "### \(file)\n"
-               markdown += "```\n"
-               if let content = getFileContents(at: filePath) {
-                   markdown += content
-               }
-               markdown += "\n```\n\n"
+           let data = pipe.fileHandleForReading.readDataToEndOfFile()
+           if let output = String(data: data, encoding: .utf8), output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+               print("'tree' command is not installed. Installing it now...")
+               installTreeMac()
+           } else {
+               print("'tree' command is already installed.")
            }
        }
 
-       let outputPath = "\(directory)/\(outputFileName)"
-       do {
-           try markdown.write(toFile: outputPath, atomically: true, encoding: .utf8)
-           print("Markdown file generated: \(outputPath)")
+       static func installTreeMac() {
+           let task = Process()
+           task.launchPath = "/usr/bin/env"
+           task.arguments = ["brew", "install", "tree"]
+           task.launch()
+           task.waitUntilExit()
+       }
 
+       static func generateDocumentation(for directory: String) {
+           let fileManager = FileManager.default
+           let dirName = URL(fileURLWithPath: directory).lastPathComponent
+           let outputFileName = "doc_\(dirName).md"
+
+           var output = "# \(directory)\n\n"
+
+           let treeTask = Process()
+           treeTask.launchPath = "/usr/bin/env"
+           treeTask.arguments = ["tree", directory]
+
+           let treePipe = Pipe()
+           treeTask.standardOutput = treePipe
+           treeTask.launch()
+           treeTask.waitUntilExit()
+
+           let treeData = treePipe.fileHandleForReading.readDataToEndOfFile()
+           if let treeOutput = String(data: treeData, encoding: .utf8) {
+               output += "## Directory Tree\n"
+               output += "```\n"
+               output += treeOutput
+               output += "```\n\n"
+           } else {
+               output += "'tree' command not found. Please install it using 'brew install tree'.\n\n"
+           }
+
+           output += "## File Contents\n"
+
+           if let enumerator = fileManager.enumerator(atPath: directory) {
+               for case let file as String in enumerator {
+                   let filePath = "\(directory)/\(file)"
+                   var isDirectory: ObjCBool = false
+                   if fileManager.fileExists(atPath: filePath, isDirectory: &isDirectory), !isDirectory.boolValue {
+                       output += "### \(file)\n"
+                       output += "```\n"
+                       if let fileContent = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                           output += fileContent
+                       }
+                       output += "\n```\n"
+                   }
+               }
+           }
+
+           try? output.write(toFile: "\(directory)/\(outputFileName)", atomically: true, encoding: .utf8)
+
+           // Copy to clipboard
            let pasteboard = NSPasteboard.general
            pasteboard.clearContents()
-           pasteboard.setString(markdown, forType: .string)
+           pasteboard.setString(output, forType: .string)
            print("Contents copied to clipboard")
-       } catch {
-           print("Failed to write markdown file: \(error)")
        }
    }
 
-   if CommandLine.arguments.count < 2 {
-       print("Usage: TreeCatMD <directory>")
+   let args = CommandLine.arguments
+   if args.count != 2 {
+       print("Usage: \(args[0]) <directory>")
        exit(1)
    }
 
-   let directory = CommandLine.arguments[1]
-   let outputFileName = "\(directory.components(separatedBy: "/").last ?? "output").md"
-   generateMarkdown(for: directory, outputFileName: outputFileName)
+   let directory = args[1]
+   TreeCatMD.checkAndInstallTree()
+   TreeCatMD.generateDocumentation(for: directory)
    ```
 
 ### Step 4: Running Tests
@@ -234,3 +247,20 @@ Implement the functions in `main.swift` to make the tests pass:
    - Open your Markdown editor or chat interface and paste the content.
 
 This setup provides a comprehensive, TDD-based approach to creating a Swift command-line tool that generates a Markdown document with directory tree and file contents, integrated with Automator for easy use.
+
+### Commit Message
+
+```
+feat: Add project paper for Swift-based directory tree and file content generation tool
+
+- Introduce project goals and implementation path
+- Describe use case and environment for the tool
+- Emphasize Test-Driven Development (TDD) approach
+- Provide a detailed, tutorialized project setup
+- Implement tests first, followed by functionality
+- Include a Swift script for generating a Markdown file from directory contents
+- Explain integration with Automator Quick Actions on macOS
+- Demonstrate proper functioning of the tool with usage examples
+
+This commit adds comprehensive documentation to guide the development and integration of a Swift command-line tool for generating Markdown files from directory contents, enhancing user interactions with AI systems.
+```
