@@ -102,6 +102,8 @@ Implement the functions in `main.swift` to make the tests pass:
    import Foundation
 
    struct TreeCatMD {
+       static let sizeLimit: Int = 1 * 1024 * 1024 // 1 MB
+
        static func checkAndInstallTree() {
            let task = Process()
            task.launchPath = "/usr/bin/env"
@@ -162,17 +164,23 @@ Implement the functions in `main.swift` to make the tests pass:
                    let filePath = "\(directory)/\(file)"
                    var isDirectory: ObjCBool = false
                    if fileManager.fileExists(atPath: filePath, isDirectory: &isDirectory), !isDirectory.boolValue {
-                       output += "### \(file)\n"
-                       output += "```\n"
-                       if let fileContent = try? String(contentsOfFile: filePath, encoding: .utf8) {
-                           output += fileContent
+                       let fileHeader = "### \(file)\n"
+                       let fileStart = "```\n"
+                       let fileEnd = "\n```\n"
+                       let fileContent = (try? String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
+
+                       let totalContent = fileHeader + fileStart + fileContent + fileEnd
+                       if output.count + totalContent.count > sizeLimit {
+                           print("The resulting Markdown file exceeds the size limit of \(sizeLimit / 1024) KB. Stopping the process.")
+                           return
                        }
-                       output += "\n```\n"
+                       output += totalContent
                    }
                }
            }
 
            try? output.write(toFile: "\(directory)/\(outputFileName)", atomically: true, encoding: .utf8)
+           print("Markdown file generated: \(directory)/\(outputFileName)")
 
            // Copy to clipboard
            let pasteboard = NSPasteboard.general
@@ -233,7 +241,9 @@ Implement the functions in `main.swift` to make the tests pass:
      ```
 
 4. **Save the Quick Action**:
-   - Go to `File` > `Save`.
+   - Go to `File` > `Save
+
+`.
    - Name it something like "Generate Markdown from Folder".
 
 ### Step 7: Demonstration
@@ -246,7 +256,7 @@ Implement the functions in `main.swift` to make the tests pass:
    - The script will run, generate the Markdown file, and copy its contents to the clipboard.
    - Open your Markdown editor or chat interface and paste the content.
 
-This setup provides a comprehensive, TDD-based approach to creating a Swift command-line tool that generates a Markdown document with directory tree and file contents, integrated with Automator for easy use.
+This setup provides a comprehensive, TDD-based approach to creating a Swift command-line tool that generates a Markdown document with directory tree and file contents, integrated with Automator for easy use. Additionally, it incorporates a size limit check to ensure the generated Markdown file remains within manageable limits, providing user feedback if the limit is exceeded.
 
 ### Commit Message
 
@@ -261,6 +271,7 @@ feat: Add project paper for Swift-based directory tree and file content generati
 - Include a Swift script for generating a Markdown file from directory contents
 - Explain integration with Automator Quick Actions on macOS
 - Demonstrate proper functioning of the tool with usage examples
+- Add size limit feature to ensure Markdown files remain manageable
 
 This commit adds comprehensive documentation to guide the development and integration of a Swift command-line tool for generating Markdown files from directory contents, enhancing user interactions with AI systems.
 ```
