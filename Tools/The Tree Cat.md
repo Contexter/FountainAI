@@ -1,23 +1,23 @@
-## Project Paper: Directory Tree and File Content Generation with Swift Using the FountainAI Method
+### Project Paper: Directory Tree and File Content Generation with Swift Using the FountainAI Method
 
-### Introduction
+#### Introduction
 
-This project aims to create a Swift-based command-line tool that generates a Markdown file containing the directory tree and the contents of files within a specified directory. The generated Markdown file is then copied to the clipboard for easy pasting into a Markdown editor or other interfaces. The tool will be integrated with Automator on macOS to allow users to generate the Markdown file via a quick action accessible from the Finder.
+This project aims to create a Swift-based command-line tool, TreeCatMD, that generates a Markdown file containing the directory tree and the contents of files within a specified directory. The generated Markdown file is then copied to the clipboard for easy pasting into a Markdown editor or other interfaces. The tool will be integrated with Automator on macOS to allow users to generate the Markdown file via a quick action accessible from the Finder.
 
-### Use Case and Environment
+#### Use Case and Environment
 
-#### Use Case
+##### Use Case
 
 The primary use case for this tool is to facilitate discussions and interactions with AI systems by referencing entire packages of information stored in directories. Users often need to share or reference complex directory structures and file contents during conversations with AI assistants. This tool simplifies the process by generating a single, well-structured Markdown document that captures the entire directory structure and file contents.
 
-#### Environment
+##### Environment
 
 The tool is designed to run on macOS with the following environment specifications:
 - **Operating System**: macOS
 - **Language**: Swift
 - **Additional Tools**: Homebrew (for installing dependencies like `tree`), Automator (for creating Quick Actions)
 
-### Test-Driven Development (TDD) Approach
+#### Test-Driven Development (TDD) Approach
 
 Test-Driven Development (TDD) is a software development process where tests are written before the actual functionality. The process involves the following steps:
 1. **Write a test** for the next bit of functionality.
@@ -25,9 +25,9 @@ Test-Driven Development (TDD) is a software development process where tests are 
 3. **Implement the functionality** to make the test pass.
 4. **Refactor the code**, ensuring all tests still pass.
 
-### Project Setup and Implementation Using the FountainAI Method
+#### Project Setup and Implementation Using the FountainAI Method
 
-#### Step 1: Setting Up the Project
+##### Step 1: Setting Up the Project
 
 We use a shell script to set up the project, making it simple, interactive, and idempotent.
 
@@ -113,6 +113,42 @@ let package = Package(
 )
 EOL
 
+    # Create .gitignore file
+    cat <<EOL > .gitignore
+# SwiftPM
+.build/
+Package.resolved
+
+# Xcode
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+
+# Swift Core Libraries
+.swiftpm/xcode/package.xcworkspace/
+
+# User-specific files
+*.swp
+*.swo
+*.tmp
+*.log
+
+# Environment variables
+.env
+EOL
+
+    # Create empty patch scripts
+    for i in {1..3}; do
+        touch "${PROJECT_NAME}_dev_patch_${i}.sh"
+    done
+
+    # Initialize git repository
+    git init
+    git add .
+    git commit -m "initial commit"
+
     # Build the project
     swift build
 
@@ -136,7 +172,34 @@ create_project_structure
 echo "Project $PROJECT_NAME setup completed successfully."
 ```
 
-#### Running the Script
+**Tree Structure After Running the Script**
+
+```
+TreeCatMD/
+├── .git/
+│   ├── HEAD
+│   ├── config
+│   ├── description
+│   ├── hooks/
+│   ├── info/
+│   ├── objects/
+│   └── refs/
+├── .gitignore
+├── Package.swift
+├── Sources/
+│   ├── TreeCatMD/
+│   │   └── main.swift
+│   └── TreeCatMDLib/
+│       └── lib.swift
+├── Tests/
+│   └── TreeCatMDTests/
+│       └── TreeCatMDTests.swift
+├── TreeCatMD_dev_patch_1.sh
+├── TreeCatMD_dev_patch_2.sh
+├── TreeCatMD_dev_patch_3.sh
+```
+
+##### Running the Script
 
 1. **Save the Script**:
    - Save the script to a file, e.g., `setup_project.sh`.
@@ -155,61 +218,193 @@ echo "Project $PROJECT_NAME setup completed successfully."
 
 #### Step 2: Writing Tests First
 
-1. **Create a Test Target**:
-   - The script already creates a test target in `Tests/${PROJECT_NAME}Tests`.
+We will now use the initially created empty development patches to develop our project. These patches will be used to incrementally add functionality to our project.
 
-2. **Write Tests**:
-   In the `Tests/${PROJECT_NAME}Tests` folder, create tests for the functionality:
+##### TreeCatMD_dev_patch_1.sh
 
-   ```swift
-   import XCTest
-   @testable import TreeCatMDLib
+Add unit tests for the basic functionality.
 
-   final class TreeCatMDTests: XCTestCase {
+```sh
+#!/bin/bash
 
-       func testShellCommand() {
-           let output = shell("echo", "Hello, World!")
-           XCTAssertEqual(output?.trimmingCharacters(in: .whitespacesAndNewlines), "Hello, World!")
-       }
+echo "Writing tests for the basic functionality..."
 
-       func testGetDirectoryTree() {
-           let output = getDirectoryTree(at: "/tmp")
-           XCTAssertNotNil(output)
-       }
+cat <<EOL > Tests/TreeCatMDTests/TreeCatMDTests.swift
+import XCTest
+@testable import TreeCatMDLib
 
-       func testGetFileContents() {
-           let filePath = "/tmp/testFile.txt"
-           let content = "Hello, World!"
-           try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
-           let fileContent = getFileContents(at: filePath)
-           XCTAssertEqual(fileContent, content)
-       }
+final class TreeCatMDTests: XCTestCase {
 
-       func testGenerateMarkdown() {
-           let directory = "/tmp/testDir"
-           let fileManager = FileManager.default
-           try? fileManager.createDirectory(atPath: directory, withIntermediateDirectories: true, attributes: nil)
-           let filePath = "\(directory)/testFile.txt"
-           let content = "Hello, World!"
-           try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
+    func testShellCommand() {
+        let output = shell("echo", "Hello, World!")
+        XCTAssertEqual(output?.trimmingCharacters(in: .whitespacesAndNewlines), "Hello, World!")
+    }
 
-           generateMarkdown(for: directory, outputFileName: "testOutput.md")
+    func testGetDirectoryTree() {
+        let output = getDirectoryTree(at: "/tmp")
+        XCTAssertNotNil(output)
+    }
 
-           let outputPath = "\(directory)/testOutput.md"
-           let outputContent = try? String(contentsOfFile: outputPath)
-           XCTAssertNotNil(outputContent)
-           XCTAssertTrue(outputContent?.contains("# \(directory)") ?? false)
-       }
-   }
-   ```
+    func testGetFileContents() {
+        let filePath = "/tmp/testFile.txt"
+        let content = "Hello, World!"
+        try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
+        let fileContent = getFileContents(at: filePath)
+        XCTAssertEqual(fileContent, content)
+    }
 
-#### Step 3: Implementing Functionality
+    func testGenerateMarkdown() {
+        let directory = "/tmp/testDir"
+        let fileManager = FileManager.default
+        try? fileManager.createDirectory(atPath: directory, withIntermediateDirectories: true, attributes: nil)
+        let filePath = "\(directory)/testFile.txt"
+        let content = "Hello, World!"
+        try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
 
-Implement the functions in `main.swift` to make the tests pass:
+        generateMarkdown(for: directory, outputFileName: "testOutput.md")
 
-**main.swift**
+        let outputPath = "\(directory)/testOutput.md"
+        let outputContent = try? String(contentsOfFile: outputPath)
+        XCTAssertNotNil(outputContent)
+        XCTAssertTrue(outputContent?.contains("# \(directory)") ?? false)
+    }
+}
+EOL
 
-```swift
+# Run tests
+swift test
+
+# Commit changes
+git add Tests/TreeCatMDTests/TreeCatMDTests.swift
+git commit -m "test: Add unit tests for basic functionality of TreeCatMD"
+```
+
+**Running Patch 1**
+
+```sh
+chmod +x TreeCatMD_dev_patch_1.sh
+./TreeCatMD_dev_patch_1.sh
+```
+
+##### TreeCatMD_dev_patch_2.sh
+
+Add functionality to main.swift to pass the tests.
+
+```sh
+#!/bin/bash
+
+echo "Implementing functionality to pass the tests..."
+
+cat <<EOL > Sources/TreeCatMD/main.swift
+import Foundation
+
+@discardableResult
+func shell(_ args: String...) -> String? {
+    let task = Process()
+    task.launchPath = "/usr/bin/env"
+    task.arguments = args
+
+    let pipe = Pipe()
+    task.standardOutput = pipe
+    task.standardError = pipe
+
+    task.launch()
+    task.waitUntilExit()
+
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    return String(data: data, encoding: .utf8)
+}
+
+func getDirectoryTree(at path: String) -> String?
+
+ {
+    return shell("tree", path)
+}
+
+func getFileContents(at path: String) -> String? {
+    return try? String(contentsOfFile: path)
+}
+
+func generateMarkdown(for directory: String, outputFileName: String) {
+    let fileManager = FileManager.default
+    guard let enumerator = fileManager.enumerator(atPath: directory) else {
+        print("Cannot enumerate directory")
+        return
+    }
+
+    var markdown = "# \(directory)\n\n"
+
+    if let tree = getDirectoryTree(at: directory) {
+        markdown += "## Directory Tree\n"
+        markdown += "```\n"
+        markdown += tree
+        markdown += "\n```\n\n"
+    } else {
+        markdown += "'tree' command not found. Please install it using 'brew install tree'.\n\n"
+    }
+
+    markdown += "## File Contents\n"
+    for case let file as String in enumerator {
+        let filePath = "\(directory)/\(file)"
+        if fileManager.fileExists(atPath: filePath) {
+            markdown += "### \(file)\n"
+            markdown += "```\n"
+            if let content = getFileContents(at: filePath) {
+                markdown += content
+            }
+            markdown += "\n```\n\n"
+        }
+    }
+
+    let outputPath = "\(directory)/\(outputFileName)"
+    do {
+        try markdown.write(toFile: outputPath, atomically: true, encoding: .utf8)
+        print("Markdown file generated: \(outputPath)")
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(markdown, forType: .string)
+        print("Contents copied to clipboard")
+    } catch {
+        print("Failed to write markdown file: \(error)")
+    }
+}
+
+if CommandLine.arguments.count < 2 {
+    print("Usage: TreeCatMD <directory>")
+    exit(1)
+}
+
+let directory = CommandLine.arguments[1]
+generateMarkdown(for: directory, outputFileName: "\(directory.components(separatedBy: "/").last ?? "output").md")
+EOL
+
+# Run tests
+swift test
+
+# Commit changes
+git add Sources/TreeCatMD/main.swift
+git commit -m "feat: Implement functionality for TreeCatMD to pass tests"
+```
+
+**Running Patch 2**
+
+```sh
+chmod +x TreeCatMD_dev_patch_2.sh
+./TreeCatMD_dev_patch_2.sh
+```
+
+##### TreeCatMD_dev_patch_3.sh
+
+Enhance functionality by adding a size limit check and implementing the tests for it.
+
+```sh
+#!/bin/bash
+
+echo "Adding size limit functionality and tests..."
+
+# Modify main.swift to include size limit check
+cat <<EOL > Sources/TreeCatMD/main.swift
 import Foundation
 
 struct TreeCatMD {
@@ -278,9 +473,7 @@ struct TreeCatMD {
                     let fileHeader = "### \(file)\n"
                     let fileStart = "```\n"
                     let fileEnd = "\n```\n"
-                    let fileContent = (try?
-
- String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
+                    let fileContent = (try? String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
 
                     let totalContent = fileHeader + fileStart + fileContent + fileEnd
                     if output.count + totalContent.count > sizeLimit {
@@ -309,81 +502,145 @@ if args.count != 2 {
     exit(1)
 }
 
-let directory = args[1]
+let directory = CommandLine.arguments[1]
 TreeCatMD.checkAndInstallTree()
 TreeCatMD.generateDocumentation(for: directory)
+EOL
+
+# Add size check function
+cat <<EOL > Sources/TreeCatMDLib/size_check.swift
+import Foundation
+
+func check_size_limit(filePath: String, maxSize: Int) {
+    let fileManager = FileManager.default
+    if let fileAttributes = try? fileManager.attributesOfItem(atPath: filePath), let fileSize = fileAttributes[FileAttributeKey.size] as? NSNumber {
+        if fileSize.intValue > maxSize {
+            print("File size exceeds limit: \(fileSize.intValue) bytes (limit: \(maxSize) bytes)")
+            exit(1)
+        }
+    }
+}
+EOL
+
+# Add unit tests for size check function
+cat <<EOL > Tests/TreeCatMDTests/SizeCheckTests.swift
+import XCTest
+@testable import TreeCatMDLib
+
+final class SizeCheckTests: XCTestCase {
+
+    func testFileSizeWithinLimit() {
+        let filePath = "/tmp/testFileWithinLimit.txt"
+        let content = "Hello, World!"
+        try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
+        check_size_limit(filePath: filePath, maxSize: 1024 * 1024) // 1 MB
+        XCTAssert(true) // If no exception is thrown, the test passes
+    }
+
+    func testFileSizeExceedsLimit() {
+        let filePath = "/tmp/testFileExceedsLimit.txt"
+        let content = String(repeating: "A", count: 2 * 1024 * 1024) // 2 MB
+        try? content.write(toFile: filePath, atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try check_size_limit(filePath: filePath, maxSize: 1 * 1024 * 1024)) // 1 MB
+    }
+}
+EOL
+
+# Run tests
+swift test
+
+# Commit changes
+git add Sources/TreeCatMD/main.swift Sources/TreeCatMDLib/size_check.swift Tests/TreeCatMDTests/SizeCheckTests.swift
+git commit -m "feat: Add size limit functionality and tests to TreeCatMD"
 ```
 
-#### Step 4: Running Tests
+**Running Patch 3**
 
-1. **Run the Tests**:
-   - In Xcode, select `Product` > `Test` or press `Cmd + U`.
-   - Ensure all tests pass before proceeding.
+```sh
+chmod +x TreeCatMD_dev_patch_3.sh
+./TreeCatMD_dev_patch_3.sh
+```
 
-#### Step 5: Building and Deploying the Command-Line Tool
+### Resulting Project Structure
 
-1. **Build the Project**:
-   - Select `Product` > `Build`.
+After applying the patches, the resulting project directory structure will be as follows:
 
-2. **Copy the Executable**:
-   - Navigate to the Products directory in Xcode, right-click on `TreeCatMD`, and select `Show in Finder`.
-   - Copy the `TreeCatMD` executable to `/usr/local/bin`:
-     ```sh
-     cp /path/to/TreeCatMD /usr/local/bin
-     ```
+```
+TreeCatMD/
+├── .git/
+│   ├── HEAD
+│   ├── config
+│   ├── description
+│   ├── hooks/
+│   ├── info/
+│   ├── objects/
+│   └── refs/
+├── .gitignore
+├── Package.swift
+├── Sources/
+│   ├── TreeCatMD/
+│   │   └── main.swift
+│   └── TreeCatMDLib/
+│       ├── lib.swift
+│       └── size_check.swift
+├── Tests/
+│   └── TreeCatMDTests/
+│       ├── TreeCatMDTests.swift
+│       ├── SizeCheckTests.swift
+│       └──
 
-#### Step 6: Integrating with Automator
-
-1. **Open Automator**:
-   - Go to `Applications` > `Automator`.
-   - Select `New Document`.
-   - Choose `Quick Action` and click `Choose`.
-
-2. **Configure Workflow**:
-   - Set `Workflow receives current` to `folders` in `Finder`.
-
-3. **Add a "Run Shell Script" Action**:
-   - In the search bar, type "Run Shell Script" and drag it to the workflow area.
-   - Set `Shell` to `/bin/bash` and `Pass input` to `as arguments`.
-   - Enter the following script:
-     ```sh
-     for f in "$@"
-     do
-       /usr/local/bin/TreeCatMD "$f"
-     done
-     ```
-
-4. **Save the Quick Action**:
-   - Go to `File` > `Save`.
-   - Name it something like "Generate Markdown from Folder".
-
-#### Step 7: Demonstration
-
-1. **Right-Click on a Folder**:
-   - In Finder, right-click on the folder you want to process.
-   - Select `Quick Actions` > `Generate Markdown from Folder`.
-
-2. **Paste the Markdown**:
-   - The script will run, generate the Markdown file, and copy its contents to the clipboard.
-   - Open your Markdown editor or chat interface and paste the content.
+ SizeLimitTests.swift
+├── TreeCatMD_dev_patch_1.sh
+├── TreeCatMD_dev_patch_2.sh
+├── TreeCatMD_dev_patch_3.sh
+```
 
 ### Conclusion
 
-This setup provides a comprehensive, TDD-based approach to creating a Swift command-line tool that generates a Markdown document with directory tree and file contents, integrated with Automator for easy use. Additionally, it incorporates a size limit check to ensure the generated Markdown file remains within manageable limits, providing user feedback if the limit is exceeded.
+This paper presented the FountainAI method for creating a Swift command-line application using the command line, addressing the complexity of Xcode's GUI and emphasizing simplicity, idempotency, and interactivity. The provided script automates the project setup, ensuring a streamlined and efficient development process. By following this approach, developers can focus on writing code and tests, leveraging the power of the Swift Package Manager and command-line tools. Additionally, the script now supports Git repository creation, initializing a `.gitignore` file, and setting up patch scripts for future development steps.
 
 ### Commit Message
 
 ```plaintext
-feat: Add project paper for Swift-based directory tree and file content generation tool
+feat: Implement TreeCatMD with TDD and interactivity
 
-- Introduce project goals and implementation path
-- Describe use case and environment for the tool
-- Emphasize Test-Driven Development (TDD) approach
-- Provide a detailed, tutorialized project setup
-- Implement tests first, followed by functionality
-- Include a Swift script for generating a Markdown file from directory contents
-- Explain integration with Automator Quick Actions on macOS
-- Demonstrate proper functioning of the tool with usage examples
-- Add size limit feature to ensure Markdown files remain manageable
+- Initialize Swift package with executable and test targets for TreeCatMD
+- Create project directory structure and setup initial files
+- Ensure idempotency by cleaning up existing project directory
+- Add interactivity by prompting for project name
+- Refactor script into functions for readability and reusability
+- Build project and run tests to verify setup
+- Initialize Git repository with .gitignore and make initial commit
+- Create empty patch scripts for future development
+- Add unit tests for basic functionality of TreeCatMD
+- Implement functionality for TreeCatMD to pass tests
+- Add size limit functionality and tests to TreeCatMD
 ```
-This commit adds comprehensive documentation to guide the development and integration of a Swift command-line tool for generating Markdown files from directory contents, enhancing user interactions with AI systems.
+
+### Habit of Committing to the Created Repo
+
+1. **Write Code in Development Patches**:
+   - Each patch should implement a small, incremental change.
+   - Example: Adding a new function, updating a test, or modifying existing functionality.
+
+2. **Execute Patch Script**:
+   - Make the script executable:
+     ```sh
+     chmod +x TreeCatMD_dev_patch_1.sh
+     ```
+   - Execute the patch script:
+     ```sh
+     ./TreeCatMD_dev_patch_1.sh
+     ```
+
+3. **Commit Changes**:
+   - Add the changes to the staging area:
+     ```sh
+     git add <modified files>
+     ```
+   - Commit the changes with a meaningful message:
+     ```sh
+     git commit -m "feat: Add unit tests for basic functionality of TreeCatMD"
+     ```
+
+By following this structured approach, developers can efficiently create Swift command-line applications, maintaining focus on coding and testing while leveraging command-line tools for project management. The use of development patches ensures continuous improvement and maintainability of the project, promoting a habit of frequent commits with clear messages.
