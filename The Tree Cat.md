@@ -595,9 +595,44 @@ TreeCatMD/
 ├── TreeCatMD_dev_patch_3.sh
 ```
 
+### Step 6: Integrating with Automator
+
+1. **Open Automator**:
+   - Go to `Applications` > `Automator`.
+   - Select `New Document`.
+   - Choose `Quick Action` and click `Choose`.
+
+2. **Configure Workflow**:
+   - Set `Workflow receives current` to `folders` in `Finder`.
+
+3. **Add a "Run Shell Script" Action**:
+   - In the search bar, type "Run Shell Script" and drag it to the workflow area.
+   - Set `Shell` to `/bin/bash` and `Pass input` to `as arguments`.
+   - Enter the following script:
+     ```sh
+     for f in "$@"
+     do
+       /usr/local/bin/TreeCatMD "$f"
+     done
+     ```
+
+4. **Save the Quick Action**:
+   - Go to `File` > `Save`.
+   - Name it something like "Generate Markdown from Folder".
+
+### Step 7: Demonstration
+
+1. **Right-Click on a Folder**:
+   - In Finder, right-click on the folder you want to process.
+   - Select `Quick Actions` > `Generate Markdown from Folder`.
+
+2. **Paste the Markdown**:
+   - The script will run, generate the Markdown file, and copy its contents to the clipboard.
+   - Open your Markdown editor or chat interface and paste the content.
+
 ### Conclusion
 
-This paper presented the FountainAI method for creating a Swift command-line application using the command line, addressing the complexity of Xcode's GUI and emphasizing simplicity, idempotency, and interactivity. The provided script automates the project setup, ensuring a streamlined and efficient development process. By following this approach, developers can focus on writing code and tests, leveraging the power of the Swift Package Manager and command-line tools. Additionally, the script now supports Git repository creation, initializing a `.gitignore` file, and setting up patch scripts for future development steps.
+This paper presented the FountainAI method for creating a Swift command-line application using the command line, addressing the complexity of Xcode's GUI and emphasizing simplicity, idempotency, and interactivity. The provided script automates the project setup, ensuring a streamlined and efficient development process. By following this approach, developers can focus on writing code and tests, leveraging the power of the Swift Package Manager and command-line tools. Additionally, the script now supports Git repository creation, initializing a `.gitignore` file, setting up patch scripts for future development steps, and integrating with Automator for easy use.
 
 ### Commit Message
 
@@ -615,6 +650,7 @@ feat: Implement TreeCatMD with TDD and interactivity
 - Add unit tests for basic functionality of TreeCatMD
 - Implement functionality for TreeCatMD to pass tests
 - Add size limit functionality and tests to TreeCatMD
+- Integrate TreeCatMD with Automator for macOS Quick Actions
 ```
 
 ### Habit of Committing to the Created Repo
