@@ -6,3 +6,5 @@ Packages
 *.xcodeproj/*
 /*.xcworkspace/
 /openAPI/serverSetup.yaml
+dev_ShellScripting/
+dev_Documentation/
