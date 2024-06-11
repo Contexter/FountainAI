@@ -28,7 +28,24 @@ We will follow these steps to set up the FountainAI project:
 5. Create a script to add secrets via GitHub's API.
 6. Create GitHub Actions workflow templates.
 7. Create a script to generate workflows.
-8. Run a comprehensive setup script to finalize the project setup.
+8. Set up Nginx and SSL on the VPS for each Vapor app.
+9. Run a comprehensive setup script to finalize the project setup.
+
+### How Docker Ensures Correct Ports for Nginx Proxy to Vapor Apps
+
+Docker and Nginx work together to route traffic to the appropriate Vapor app running in Docker containers. Here’s how it happens step-by-step:
+
+1. **Docker Container Configuration**:
+    - Each Vapor app is built into a Docker image and run as a Docker container.
+    - During the container run command, a specific port on the host is mapped to the port inside the Docker container where the Vapor app is listening. This is done using the `-p` option in the Docker run command.
+    - The specific ports for each app are assigned and stored as secrets in GitHub, and they are referenced when running the Docker containers.
+
+2. **Nginx Configuration**:
+    - Nginx is set up on the VPS to act as a reverse proxy.
+    - Nginx configuration files for each subdomain are created to route incoming requests to the appropriate Docker containers based on the subdomain and port mapping.
+    - SSL certificates are obtained and configured for each subdomain using Certbot.
+
+Here’s how this process is implemented in the provided setup scripts and workflows:
 
 #### Step 1: Generate a GitHub Personal Access Token
 
@@ -102,6 +119,7 @@ VPS_SSH_KEY=your_vps_private_key
 VPS_USERNAME=your_vps_username
 VPS_IP=your_vps_ip
 APP_NAMES=app1,app2,app3,app4,app5,app6,app7,app8,app9,app10
+DOMAIN=example.com
 ```
 
 **Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. Ensure this file is not tracked by Git and is stored securely. You can add it to your `.gitignore` file to prevent it from being committed to your repository.
@@ -151,7 +169,9 @@ create_github_secret "VPS_USERNAME" "$VPS_USERNAME"
 create_github_secret "VPS_IP" "$VPS_IP"
 
 # Add application-specific secrets
-for app_name in $(echo $APP_NAMES | tr "," "\n"); do
+for i in "${!APP_NAMES_ARRAY[@]}"; do
+    app_name=${APP_NAMES_ARRAY[$i]}
+    port=$((8080 + $i))
     upper_app_name=$(echo $app_name | tr '[:lower:]' '[:upper:]')
 
     create_github_secret "${upper_app_name}_DB_HOST" "<your_db_host>"
@@ -162,7 +182,10 @@ for app_name in $(echo $APP_NAMES | tr "," "\n"); do
     create_github_secret "${upper_app_name}_VPS_SSH_KEY" "$VPS_SSH_KEY"
     create_github_secret "${upper_app_name}_VPS_USERNAME" "$VPS_USERNAME"
     create_github_secret "${upper_app_name}_VPS_IP" "$VPS_IP"
-    create_github_secret "${upper_app_name}_DOMAIN_NAME" "<your_domain_name>"
+    create_github_secret "${upper_app_name}_DOMAIN_NAME" "${app_name}.${DOMAIN}"
+
+
+    create_github_secret "${upper_app_name}_PORT" "$port"
 done
 
 echo "Secrets have been added to GitHub repository."
@@ -185,10 +208,6 @@ fountainai-project/
 
 #### Step 6: Create GitHub Actions Workflow Templates
 
-Create a template for GitHub Actions workflow files. This will automate the CI/CD pipeline for each application.
-
-1. **Example Workflow File**:
-
 Create a file named `ci-cd-template.yml` under `.github/workflows/`:
 
 ```yaml
@@ -201,27 +220,75 @@ on:
       - '.github/workflows/ci-cd-{{app_name}}.yml'
 
 jobs:
-  build:
+  setup-vps:
     runs-on: ubuntu-latest
+    steps:
+      # Set up SSH
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
+      # Install Nginx and Certbot, and configure Nginx for the app
+      - name: Set up Nginx and SSL
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          # Update and install necessary packages
+          sudo apt update
+          sudo apt install nginx certbot python3-certbot-nginx -y
+
+          # Configure Nginx
+          sudo tee /etc/nginx/sites-available/{{app_name}}.${{ secrets.DOMAIN }} > /dev/null <<EOL
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name {{app_name}}.${{ secrets.DOMAIN }};
+
+    ssl_certificate /etc/letsencrypt/live/{{app_name}}.${{ secrets.DOMAIN }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{app_name}}.${{ secrets.DOMAIN }}/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:${{ secrets.{{APP_NAME}}_PORT }};
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+
+          # Enable the site and reload Nginx
+          sudo ln -s /etc/nginx/sites-available/{{app_name}}.${{ secrets.DOMAIN }} /etc/nginx/sites-enabled/
+          sudo systemctl reload nginx
+
+          # Obtain SSL certificate
+          sudo certbot --nginx -d {{app_name}}.${{ secrets.DOMAIN }} --non-interactive --agree-tos -m your-email@example.com
+          sudo systemctl reload nginx
+EOF
+
+  build:
+    needs: setup-vps
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
+      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      # Set up environment variables for the app
       - name: Set up .env file
         run: |
-          echo "DB_HOST=${{ secrets.{{APP_NAME}}_DB_HOST }}" >> {{app_name}}
-
-/.env
+          echo "DB_HOST=${{ secrets.{{APP_NAME}}_DB_HOST }}" >> {{app_name}}/.env
           echo "DB_USER=${{ secrets.{{APP_NAME}}_DB_USER }}" >> {{app_name}}/.env
           echo "DB_PASSWORD=${{ secrets.{{APP_NAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
           echo "API_KEY=${{ secrets.{{APP_NAME}}_API_KEY }}" >> {{app_name}}/.env
 
+      # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
+      # Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           cd {{app_name}}
@@ -232,13 +299,14 @@ jobs:
   unit-test:
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 
+      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      # Set up environment variables for the app
       - name: Set up .env file
         run: |
           echo "DB_HOST=${{ secrets.{{APP_NAME}}_DB_HOST }}" >> {{app_name}}/.env
@@ -246,9 +314,11 @@ jobs:
           echo "DB_PASSWORD=${{ secrets.{{APP_NAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
           echo "API_KEY=${{ secrets.{{APP_NAME}}_API_KEY }}" >> {{app_name}}/.env
 
+      # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
+      # Run Unit Tests
       - name: Run Unit Tests
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/{{app_name}}
@@ -257,23 +327,26 @@ jobs:
   integration-test:
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 
+      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      # Set up environment variables for the app
       - name: Set up .env file
         run: |
-          echo "DB_HOST=${{ secrets.{{APP_NAME}}_DB_HOST }}" >> {{app_name}}/.env
-          echo "DB_USER=${{ secrets.{{APP_NAME}}_DB_USER }}" >> {{app_name}}/.env
-          echo "DB_PASSWORD=${{ secrets.{{APP_NAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
-          echo "API_KEY=${{ secrets.{{APP_NAME}}_API_KEY }}" >> {{app_name}}/.env
+          echo "DB_HOST=${{ secrets.{{APPNAME}}_DB_HOST }}" >> {{app_name}}/.env
+          echo "DB_USER=${{ secrets.{{APPNAME}}_DB_USER }}" >> {{app_name}}/.env
+          echo "DB_PASSWORD=${{ secrets.{{APPNAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
+          echo "API_KEY=${{ secrets.{{APPNAME}}_API_KEY }}" >> {{app_name}}/.env
 
+      # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
+      # Run Integration Tests
       - name: Run Integration Tests
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/{{app_name}}
@@ -282,23 +355,26 @@ jobs:
   end-to-end-test:
     needs: integration-test
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 
+      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      # Set up environment variables for the app
       - name: Set up .env file
         run: |
-          echo "DB_HOST=${{ secrets.{{APP_NAME}}_DB_HOST }}" >> {{app_name}}/.env
-          echo "DB_USER=${{ secrets.{{APP_NAME}}_DB_USER }}" >> {{app_name}}/.env
-          echo "DB_PASSWORD=${{ secrets.{{APP_NAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
-          echo "API_KEY=${{ secrets.{{APP_NAME}}_API_KEY }}" >> {{app_name}}/.env
+          echo "DB_HOST=${{ secrets.{{APPNAME}}_DB_HOST }}" >> {{app_name}}/.env
+          echo "DB_USER=${{ secrets.{{APPNAME}}_DB_USER }}" >> {{app_name}}/.env
+          echo "DB_PASSWORD=${{ secrets.{{APPNAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
+          echo "API_KEY=${{ secrets.{{APPNAME}}_API_KEY }}" >> {{app_name}}/.env
 
+      # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
+      # Run End-to-End Tests
       - name: Run End-to-End Tests
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/{{app_name}}
@@ -307,7 +383,6 @@ jobs:
   deploy:
     needs: [unit-test, integration-test, end-to-end-test]
     runs-on: ubuntu-latest
-
     steps:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -321,23 +396,25 @@ jobs:
           docker pull ghcr.io/${{ github.repository_owner }}/{{app_name}}
           docker stop {{app_name}} || true
           docker rm {{app_name}} || true
-          docker run -d --env-file /path/to/env/file -p 8080:8080 --name {{app_name}} ghcr.io/${{ github.repository_owner }}/{{app_name}}
+          docker run -d --env-file /path/to/env/file -p ${app_port}:${app_port} --name {{app_name}} ghcr.io/${{ github.repository_owner }}/{{app_name}}
           EOF
 
       - name: Verify Nginx and SSL Configuration
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           if ! systemctl is-active --quiet nginx; then
-            echo "Nginx is not running"
+            echo
+
+ "Nginx is not running"
             exit 1
           fi
 
-          if ! openssl s_client -connect ${{ secrets.{{APP_NAME}}_DOMAIN_NAME }}:443 -servername ${{ secrets.{{APP_NAME}}_DOMAIN_NAME }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+          if ! openssl s_client -connect ${{ secrets.{{APPNAME}}_DOMAIN_NAME }}:443 -servername ${{ secrets.{{APPNAME}}_DOMAIN_NAME }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
             echo "SSL certificate is not valid"
             exit 1
           fi
 
-          if ! curl -k https://${{ secrets.{{APP_NAME}}_DOMAIN_NAME }} | grep -q "Expected content or response"; then
+          if ! curl -k https://${{ secrets.{{APPNAME}}_DOMAIN_NAME }} | grep -q "Expected content or response"; then
             echo "Domain is not properly configured"
             exit 1
           fi
@@ -357,7 +434,7 @@ fountainai-project/
 
 #### Step 7: Create Script to Generate Workflows
 
-Create a script named `generate_workflows.sh` that will generate a workflow file for each application by replacing placeholders in the template:
+Create a script named `generate_workflows.sh`:
 
 ```bash
 #!/bin/bash
@@ -372,9 +449,15 @@ IFS=',' read -r -a APP_NAMES_ARRAY <<< "$APP_NAMES"
 mkdir -p .github/workflows
 
 # Loop through app names and create each GitHub Actions workflow
-for app_name in "${APP_NAMES_ARRAY[@]}"; do
+for i in "${!APP_NAMES_ARRAY[@]}"; do
+    app_name=${APP_NAMES_ARRAY[$i]}
+    app_port=$((8080 + $i))
+
     # Replace placeholders in the template and create the workflow file
-    sed "s/{{app_name}}/$app_name/g; s/{{APP_NAME}}/$(echo $app_name | tr '[:lower:]' '[:upper:]')/g" ci-cd-template.yml > .github/workflows/ci-cd-$app_name.yml
+    sed -e "s/{{app_name}}/$app_name/g" \
+        -e "s/{{APPNAME}}/$(echo $app_name | tr '[:lower:]' '[:upper:]')/g" \
+        -e "s/{{app_port}}/$app_port/g" \
+        ci-cd-template.yml > .github/workflows/ci-cd-$app_name.yml
 done
 
 echo "GitHub Actions workflows have been generated."
@@ -409,11 +492,9 @@ fountainai-project/
 │       └── ci-cd-app10.yml
 ```
 
-### Step 8: Comprehensive Setup Script
+#### Step 8: Set up Nginx and SSL on the VPS for Each Vapor App
 
-This step involves running a final script that consolidates all previous steps and finalizes the project setup. This includes creating the Vapor applications, adding secrets, and generating workflows.
-
-1. **Create the `setup.sh` Script**:
+Create a script named `setup_nginx.sh` to automate the Nginx and SSL setup for each subdomain:
 
 ```bash
 #!/bin/bash
@@ -421,50 +502,52 @@ This step involves running a final script that consolidates all previous steps a
 # Load configuration from config.env
 source config.env
 
-# Function to create main project directory
-create_main_directory() {
-    mkdir -p $MAIN_DIR
-    cd $MAIN_DIR
+# Install Nginx and Certbot on the VPS
+ssh $VPS_USERNAME@$VPS_IP << EOF
+sudo apt update
+sudo apt install nginx certbot python3-certbot-nginx -y
+EOF
+
+# Configure Nginx and obtain SSL certificates for each subdomain
+for i in "${!APP_NAMES_ARRAY[@]}"
+do
+    app_name=${APP_NAMES_ARRAY[$i]}
+    port=$((8080 + $i))
+    full_domain="${app_name}.${DOMAIN}"
+
+    ssh $VPS_USERNAME@$VPS_IP << EOF
+    sudo tee /etc/nginx/sites-available/${full_domain} > /dev/null <<EOL
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name ${full_domain};
+
+    ssl_certificate /etc/letsencrypt/live/${full_domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${full_domain}/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:${port};
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
 }
+EOL
 
-# Function to create and initialize a new Vapor app
-create_vapor_app() {
-    local app_name=$1
-    mkdir -p $app_name
-    cd $app_name
-    vapor new $app_name --branch=main --non-interactive
-    cd ..
-}
-
-# Main function to set up the project
-main() {
-    create_main_directory
-
-    # Create and initialize Vapor applications
-    for app_name in $(echo $APP_NAMES | tr "," "\n"); do
-        create_vapor_app $app_name
-    done
-
-    #
-
- Add secrets to GitHub
-    ../add_secrets.sh
-
-    # Generate GitHub Actions workflows
-    ../generate_workflows.sh
-
-    echo "Initial setup for FountainAI project is complete."
-}
-
-# Execute main function
-main
+    sudo ln -s /etc/nginx/sites-available/${full_domain} /etc/nginx/sites-enabled/
+    sudo systemctl reload nginx
+    sudo certbot --nginx -d ${full_domain} --non-interactive --agree-tos -m your-email@example.com
+    sudo systemctl reload nginx
+EOF
+done
 ```
 
 Make the script executable and run it:
 
 ```bash
-chmod +x setup.sh
-./setup.sh
+chmod +x setup_nginx.sh
+./setup_nginx.sh
 ```
 
 #### Directory Structure After Step 8
@@ -474,7 +557,7 @@ fountainai-project/
 ├── config.env
 ├── add_secrets.sh
 ├── generate_workflows.sh
-├── setup.sh
+├── setup_nginx.sh
 ├── .github/
 │   └── workflows/
 │       ├── ci-cd-template.yml
@@ -509,11 +592,71 @@ fountainai-project/
     └── Tests/
 ```
 
+### Final Setup Script
+
+The final setup script will consolidate all the previous steps and ensure a seamless setup of the FountainAI project. This includes creating the Vapor applications, adding secrets, generating workflows, and setting up Nginx and SSL.
+
+Create the `setup.sh` script:
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Function to create main project directory
+create_main_directory() {
+    mkdir -p $MAIN_DIR
+    cd $MAIN_DIR
+}
+
+# Function to create and initialize a new Vapor app
+create_vapor_app() {
+    local app_name=$1
+    mkdir -p $app_name
+    cd $app_name
+    vapor new $app_name --branch=main --non-interactive
+    cd ..
+}
+
+# Main function to set up the project
+main() {
+    create_main_directory
+
+    # Create and initialize Vapor applications
+    for app_name in $(echo $APP_NAMES | tr "," "\n"); do
+        create_vapor_app $app_name
+    done
+
+    # Add secrets to GitHub
+    ../add_secrets.sh
+
+    # Generate GitHub Actions workflows
+    ../generate_workflows.sh
+
+    # Set up Nginx and SSL on the VPS
+    ../setup_nginx.sh
+
+    echo "Initial setup for FountainAI project is complete."
+}
+
+# Execute main function
+main
+```
+
+Make the script executable and run it:
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
 ### Conclusion
 
-By following these detailed steps and using the provided scripts, you can automate the setup of the FountainAI project. This ensures a consistent and efficient setup process, allowing you to focus on developing and deploying your applications effectively. Always remember to manage your sensitive information responsibly and secure your environment variables properly.
+By following these steps and using the provided scripts, you can automate the setup of the FountainAI project, including creating Vapor applications, configuring the VPS, setting up Nginx and SSL, and integrating everything into a CI/CD pipeline with GitHub Actions. This ensures that Docker manages the correct proxy by Nginx to Vapor apps running on distinct ports.
 
 ### Commit Message
+
 ```
 feat: Automated setup for FountainAI project
 
@@ -523,6 +666,8 @@ feat: Automated setup for FountainAI project
 - Added `add_secrets.sh` script to automate adding secrets to GitHub.
 - Provided `ci-cd-template.yml` for GitHub Actions workflow templates.
 - Added `generate_workflows.sh` script to generate GitHub Actions workflows for each application.
-- Created `setup.sh` script to automate the creation of Vapor applications, adding secrets, and generating workflows.
+- Created `setup.sh` script to automate the creation of Vapor applications and generating workflows.
+- Integrated Nginx and SSL setup directly into GitHub Actions workflows.
 - Included directory structures at each step to help users visualize their progress.
+- Explained how Docker and Nginx work together to ensure correct port mapping for Vapor apps.
 ```
