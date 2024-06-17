@@ -106,6 +106,139 @@ Here’s how this process is implemented in the provided setup scripts and workf
 
    **Security Note**: GitHub Secrets allow you to store sensitive information securely. Adding your private key here ensures that it is encrypted and only accessible to GitHub Actions workflows.
 
+#### Visualization of Key Management
+
+**Step 1: Generate SSH Key Pair on Local Machine**
+
+```plaintext
+Local Machine:
++-----------------------------------------+
+| Command:                                |
+| ssh-keygen -t ed25519 -C "your_email@example.com" |
++-----------------------------------------+
+| Files Generated:                        |
+| - Private Key: ~/.ssh/id_ed25519        |
+| - Public Key:  ~/.ssh/id_ed25519.pub    |
++-----------------------------------------+
+```
+
+**Step 2: Copy Public Key to VPS**
+
+```plaintext
+Local Machine:
++-----------------------------------------+
+| Command:                                |
+| cat ~/.ssh/id_ed25519.pub               |
+| (Copy the output)                       |
++-----------------------------------------+
+
+               |
+               v
+
+VPS:
++-----------------------------------------+
+| Command:                                |
+| ssh your_vps_username@your_vps_ip       |
+| echo "<public_key>" >> ~/.ssh/authorized_keys |
+| (Replace <public_key> with the copied   |
+| public key output)                      |
++-----------------------------------------+
+```
+
+**Step 3: Add Private Key to GitHub Secrets**
+
+```plaintext
+Local Machine:
++-----------------------------------------+
+| Command:                                |
+| cat ~/.ssh/id_ed25519                   |
+| (Copy the output)                       |
++-----------------------------------------+
+
+               |
+               v
+
+GitHub:
++-----------------------------------------+
+| Steps:                                  |
+| 1. Go to GitHub Repository Settings     |
+| 2. Navigate to "Secrets and variables"  |
+|    -> "Actions"                         |
+| 3. Add a new secret named `VPS_SSH_KEY` |
+| 4. Paste the copied private key         |
++-----------------------------------------+
+```
+
+### Summary of Actions and Locations
+
+1. **Local Machine**:
+   - **Generate SSH Key Pair**:
+     ```sh
+     ssh-keygen -t ed25519 -C "your_email@example.com"
+     ```
+     - Private Key: `~/.ssh/id_ed25519`
+     - Public Key: `~/.ssh/id_ed25519.pub`
+   - **Copy Public Key**:
+     ```sh
+     cat ~/.ssh/id_ed25519.pub
+     ```
+   - **Copy Private Key**:
+     ```sh
+     cat ~/.ssh/id_ed25519
+     ```
+
+2. **VPS**:
+   - **Add Public Key** to `authorized_keys`:
+     ```sh
+     echo "<public_key>" >> ~/.ssh/authorized_keys
+     ```
+
+3. **GitHub**:
+   - **Add Private Key** to GitHub Secrets:
+     - Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
+     - Add a new secret named `VPS_SSH_KEY` and paste the copied private key.
+
+### Visualization Diagram
+
+```plaintext
++---------------------------+         +---------------------------+
+| Local Machine             |         | VPS                       |
+|                           |         |                           |
+| ssh-keygen -t ed25519     |         |                           |
+| - Generates SSH Key Pair  |         |                           |
+|   - Private Key           |         |                           |
+|     ~/.ssh/id_ed25519     +-------->| ssh your_vps_username@    |
+|   - Public Key            |         | your_vps_ip               |
+|     ~/.ssh/id_ed25519.pub |         | echo "<public_key>" >>    |
+|                           |         | ~/.ssh/authorized_keys    |
+| cat ~/.ssh/id_ed25519.pub |         | (Add Public Key)          |
+| - Copy Public Key         |         |                           |
++-------------+-------------+         +-------------+-------------+
+              |                                     |
+              v                                     v
++-------------+-------------+                       |
+| Local Machine             |                       |
+|                           |                       |
+| cat ~/.ssh/id_ed25519     |                       |
+| - Copy Private Key        |                       |
++-------------+-------------+                       |
+              |                                     |
+              v                                     v
++-------------+-------------+         +---------------------------+
+| GitHub Repository         |         | GitHub Secrets            |
+|                           |         |                           |
+| Go to
+
+ Settings            |         | Add Secret:               |
+| - "Secrets and variables" |         | - Name: VPS_SSH_KEY       |
+| - "Actions"               |         | - Value: <private_key>    |
+| Add New Secret            |         |   (Paste copied key)      |
+| - Name: VPS_SSH_KEY       |         |                           |
+| - Value: <private_key>    |         +---------------------------+
+|   (Paste copied key)      |
++---------------------------+
+```
+
 #### Step 4: Create Configuration File
 
 Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
@@ -316,7 +449,9 @@ EOF
 
       # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository
+
+_owner }} --password-stdin
 
       # Run Unit Tests
       - name: Run Unit Tests
@@ -560,7 +695,9 @@ fountainai-project/
 ├── setup_nginx.sh
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd-template.yml
+│       ├── ci-cd
+
+-template.yml
 │       ├── ci-cd-app1.yml
 │       ├── ci-cd-app2.yml
 │       ├── ci-cd-app3.yml
