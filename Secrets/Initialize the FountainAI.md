@@ -538,9 +538,7 @@ _owner }} --password-stdin
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           if ! systemctl is-active --quiet nginx; then
-            echo
-
- "Nginx is not running"
+            echo "Nginx is not running"
             exit 1
           fi
 
@@ -695,9 +693,9 @@ fountainai-project/
 ├── setup_nginx.sh
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd
+│       ├── ci-cd-template
 
--template.yml
+.yml
 │       ├── ci-cd-app1.yml
 │       ├── ci-cd-app2.yml
 │       ├── ci-cd-app3.yml
@@ -788,9 +786,88 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-### Conclusion
+### Addendum: Explanation for Running Scripts in Steps
 
-By following these steps and using the provided scripts, you can automate the setup of the FountainAI project, including creating Vapor applications, configuring the VPS, setting up Nginx and SSL, and integrating everything into a CI/CD pipeline with GitHub Actions. This ensures that Docker manages the correct proxy by Nginx to Vapor apps running on distinct ports.
+In the context of setting up a project, running scripts at different points in the process serves specific purposes. Let's break down why `add_secrets.sh` is run at step 5 and then discuss the rationale for running scripts again in the final setup script.
+
+#### Step-by-Step Execution Rationale
+
+1. **Step 1 to Step 4**: These steps involve generating the GitHub token, creating SSH keys, adding keys to the VPS and GitHub, and creating the configuration file. These are preparatory steps essential for setting up the environment and ensuring secure communication between various components.
+
+2. **Step 5: Adding Secrets to GitHub**: 
+    - **Why Run `add_secrets.sh` Here?**:
+        - **Immediate Validation**: Running `add_secrets.sh` immediately after creating it ensures that the secrets are correctly added to GitHub. If there's an issue with the script or the provided secrets, it can be identified and corrected at this point, avoiding downstream errors.
+        - **Dependency**: The next steps, including generating workflows and setting up Nginx, rely on the secrets being available in GitHub. By running this script early, you ensure that all necessary secrets are in place before proceeding.
+
+3. **Step 6: Create GitHub Actions Workflow Templates**: This step involves creating a template for GitHub Actions workflows. No immediate script execution is needed here.
+
+4. **Step 7: Generate Workflows**:
+    - **Why Run `generate_workflows.sh` Here?**:
+        - **Immediate Generation**: Running `generate_workflows.sh` right after creating it ensures that the workflows are correctly generated based on the provided templates. It verifies that the workflow generation logic is correct before moving forward.
+
+5. **Step 8: Set up Nginx and SSL**:
+    - **Why Run `setup_nginx.sh` Here?**:
+        - **Immediate Configuration**: Running `setup_nginx.sh` immediately ensures that Nginx and SSL are configured correctly on the VPS. This step ensures that the environment is ready to serve the Vapor applications as soon as they are deployed.
+
+#### Final Setup Script Execution
+
+The final setup script, `setup.sh`, is designed to orchestrate the entire setup process from scratch. This includes creating the project directory, initializing Vapor applications, adding secrets, generating workflows, and setting up Nginx and SSL.
+
+- **Why Run All Scripts Again in `setup.sh`?**:
+    - **Complete Automation**: The goal of `setup.sh` is to provide a one-command setup process for new environments or complete reinitializations. By running all scripts, it ensures that even if the setup process is started from scratch, all necessary steps are performed in the correct order.
+    - **Consistency and Idempotency**: Running all scripts ensures that the setup process is consistent and can be repeated multiple times without unintended side effects. It guarantees that all components are configured correctly and are in sync with each other.
+
+### Final Thoughts
+
+Running the scripts at specific points in the process ensures that each step is validated and dependencies are correctly set up before moving to the next step. The final setup script provides a comprehensive, automated way to set up the entire project from scratch, ensuring consistency and reliability. This approach helps in both validating individual steps and providing a seamless end-to-end setup experience.
+
+Here's the final `setup.sh` script for reference:
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Function to create main project directory
+create_main_directory() {
+    mkdir -p $MAIN_DIR
+    cd $MAIN_DIR
+}
+
+# Function to create and initialize a new Vapor app
+create_vapor_app() {
+    local app_name=$1
+    mkdir -p $app_name
+    cd $app_name
+    vapor new $app_name --branch=main --non-interactive
+    cd ..
+}
+
+# Main function to set up the project
+main() {
+    create_main_directory
+
+    # Create and initialize Vapor applications
+    for app_name in $(echo $APP_NAMES | tr "," "\n"); do
+        create_vapor_app $app_name
+    done
+
+    # Add secrets to GitHub
+    ../add_secrets.sh
+
+    # Generate GitHub Actions workflows
+    ../generate_workflows.sh
+
+    # Set up Nginx and SSL on the VPS
+    ../setup_nginx.sh
+
+    echo "Initial setup for FountainAI project is complete."
+}
+
+# Execute main function
+main
+```
 
 ### Commit Message
 
@@ -807,4 +884,5 @@ feat: Automated setup for FountainAI project
 - Integrated Nginx and SSL setup directly into GitHub Actions workflows.
 - Included directory structures at each step to help users visualize their progress.
 - Explained how Docker and Nginx work together to ensure correct port mapping for Vapor apps.
+- Added detailed explanation for the rationale behind running scripts at specific steps.
 ```
