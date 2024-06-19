@@ -31,22 +31,6 @@ We will follow these steps to set up the FountainAI project:
 8. Set up Nginx and SSL on the VPS for each Vapor app.
 9. Run a comprehensive setup script to finalize the project setup.
 
-### How Docker Ensures Correct Ports for Nginx Proxy to Vapor Apps
-
-Docker and Nginx work together to route traffic to the appropriate Vapor app running in Docker containers. Here’s how it happens step-by-step:
-
-1. **Docker Container Configuration**:
-    - Each Vapor app is built into a Docker image and run as a Docker container.
-    - During the container run command, a specific port on the host is mapped to the port inside the Docker container where the Vapor app is listening. This is done using the `-p` option in the Docker run command.
-    - The specific ports for each app are assigned and stored as secrets in GitHub, and they are referenced when running the Docker containers.
-
-2. **Nginx Configuration**:
-    - Nginx is set up on the VPS to act as a reverse proxy.
-    - Nginx configuration files for each subdomain are created to route incoming requests to the appropriate Docker containers based on the subdomain and port mapping.
-    - SSL certificates are obtained and configured for each subdomain using Certbot.
-
-Here’s how this process is implemented in the provided setup scripts and workflows:
-
 #### Step 1: Generate a GitHub Personal Access Token
 
 1. **Generate the Token**:
@@ -227,9 +211,7 @@ GitHub:
 +-------------+-------------+         +---------------------------+
 | GitHub Repository         |         | GitHub Secrets            |
 |                           |         |                           |
-| Go to
-
- Settings            |         | Add Secret:               |
+| Go to Settings            |         | Add Secret:               |
 | - "Secrets and variables" |         | - Name: VPS_SSH_KEY       |
 | - "Actions"               |         | - Value: <private_key>    |
 | Add New Secret            |         |   (Paste copied key)      |
@@ -251,7 +233,9 @@ GITHUB_TOKEN=your_github_token
 VPS_SSH_KEY=your_vps_private_key
 VPS_USERNAME=your_vps_username
 VPS_IP=your_vps_ip
-APP_NAMES=app1,app2,app3,app4,app5,app6,app7,app8,app9,app10
+APP_NAMES=app1,app2,app3,app4,app5,app6,app7,app8,app9
+
+,app10
 DOMAIN=example.com
 ```
 
@@ -449,9 +433,7 @@ EOF
 
       # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository
-
-_owner }} --password-stdin
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       # Run Unit Tests
       - name: Run Unit Tests
@@ -475,7 +457,9 @@ _owner }} --password-stdin
           echo "DB_HOST=${{ secrets.{{APPNAME}}_DB_HOST }}" >> {{app_name}}/.env
           echo "DB_USER=${{ secrets.{{APPNAME}}_DB_USER }}" >> {{app_name}}/.env
           echo "DB_PASSWORD=${{ secrets.{{APPNAME}}_DB_PASSWORD }}" >> {{app_name}}/.env
-          echo "API_KEY=${{ secrets.{{APPNAME}}_API_KEY }}" >> {{app_name}}/.env
+          echo "API_KEY=${{ secrets.{{
+
+APPNAME}}_API_KEY }}" >> {{app_name}}/.env
 
       # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
@@ -635,10 +619,24 @@ Create a script named `setup_nginx.sh` to automate the Nginx and SSL setup for e
 # Load configuration from config.env
 source config.env
 
-# Install Nginx and Certbot on the VPS
+# Install Docker, Nginx, and Certbot on the VPS
 ssh $VPS_USERNAME@$VPS_IP << EOF
+# Update the package list
 sudo apt update
-sudo apt install nginx certbot python3-certbot-nginx -y
+
+# Install Docker
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+# Install Nginx and Certbot
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+# Enable and start Docker service
+sudo systemctl enable docker
+sudo systemctl start docker
 EOF
 
 # Configure Nginx and obtain SSL certificates for each subdomain
@@ -693,9 +691,7 @@ fountainai-project/
 ├── setup_nginx.sh
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd-template
-
-.yml
+│       ├── ci-cd-template.yml
 │       ├── ci-cd-app1.yml
 │       ├── ci-cd-app2.yml
 │       ├── ci-cd-app3.yml
@@ -754,6 +750,25 @@ create_vapor_app() {
     cd ..
 }
 
+# Function to install Docker on the VPS
+install_docker_on_vps() {
+    ssh $VPS_USERNAME@$VPS_IP << EOF
+    # Update the package list
+    sudo apt update
+
+    # Install Docker
+    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+    # Enable and start Docker service
+    sudo systemctl enable docker
+    sudo systemctl start docker
+EOF
+}
+
 # Main function to set up the project
 main() {
     create_main_directory
@@ -768,6 +783,9 @@ main() {
 
     # Generate GitHub Actions workflows
     ../generate_workflows.sh
+
+    # Install Docker on the VPS
+    install_docker_on_vps
 
     # Set up Nginx and SSL on the VPS
     ../setup_nginx.sh
@@ -785,6 +803,20 @@ Make the script executable and run it:
 chmod +x setup.sh
 ./setup.sh
 ```
+
+### How Docker Ensures Correct Ports for Nginx Proxy to Vapor Apps
+
+Docker and Nginx work together to route traffic to the appropriate Vapor app running in Docker containers. Here’s how it happens step-by-step:
+
+1. **Docker Container Configuration**:
+    - Each Vapor app is built into a Docker image and run as a Docker container.
+    - During the container run command, a specific port on the host is mapped to the port inside the Docker container where the Vapor app is listening. This is done using the `-p` option in the Docker run command.
+    - The specific ports for each app are assigned and stored as secrets in GitHub, and they are referenced when running the Docker containers.
+
+2. **Nginx Configuration**:
+    - Nginx is set up on the VPS to act as a reverse proxy.
+    - Nginx configuration files for each subdomain are created to route incoming requests to the appropriate Docker containers based on the subdomain and port mapping.
+    - SSL certificates are obtained and configured for each subdomain using Certbot.
 
 ### Addendum: Explanation for Running Scripts in Steps
 
@@ -859,6 +891,9 @@ main() {
     # Generate GitHub Actions workflows
     ../generate_workflows.sh
 
+    # Install Docker on the VPS
+    install_docker_on_vps
+
     # Set up Nginx and SSL on the VPS
     ../setup_nginx.sh
 
@@ -885,4 +920,5 @@ feat: Automated setup for FountainAI project
 - Included directory structures at each step to help users visualize their progress.
 - Explained how Docker and Nginx work together to ensure correct port mapping for Vapor apps.
 - Added detailed explanation for the rationale behind running scripts at specific steps.
+- Ensured Docker installation on VPS as part of the setup process.
 ```
