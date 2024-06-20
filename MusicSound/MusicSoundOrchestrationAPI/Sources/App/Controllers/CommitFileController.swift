@@ -1,13 +1,21 @@
 import Vapor
 
-struct CommitParams: Content {
-    var fileName: String
-    var message: String
+struct CommitFileController: RouteCollection {
+    func boot(routes: RoutesBuilder) throws {
+        let commit = routes.grouped("commit")
+        commit.post(use: commitFile)
+    }
+    
+    func commitFile(req: Request) throws -> EventLoopFuture<Response> {
+        let params = try req.content.decode(CommitFileParams.self)
+        let repoPath = "path/to/repo"
+        
+        return req.eventLoop.future(try gitAddAndCommit(filePath: "output/\(params.fileName)", message: params.message, repoPath: repoPath))
+            .map { _ in Response(status: .ok, body: .init(string: "File committed")) }
+    }
 }
 
-func commitFile(_ req: Request) throws -> EventLoopFuture<Response> {
-    let params = try req.content.decode(CommitParams.self)
-    return gitAddAndCommit(filePath: "output/\(params.fileName)", message: params.message, on: req).map {
-        Response(status: .ok, body: .init(string: ./setup_project.sh))
-    }
+struct CommitFileParams: Content {
+    var fileName: String
+    var message: String
 }

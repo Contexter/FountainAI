@@ -1,42 +1,64 @@
 import Vapor
 import MIDIKit
 
-struct MIDIParams: Content {
+struct GenerateMIDIFileController {
+    func generate(req: Request) throws -> EventLoopFuture<Response> {
+        let params = try req.content.decode(GenerateMIDIFileParams.self)
+        
+        let midi = MIDIFile()
+        var track = MIDIFileTrack()
+        
+        for event in params.events {
+            switch event.type {
+            case .noteOn:
+                let noteOn = MIDIEvent.noteOn(
+                    note: MIDINote(event.note!),
+                    velocity: .unitInterval(event.velocity! / 127.0),
+                    channel: .init(event.channel),
+                    group: 0
+                )
+                track.events.append(.noteOn(noteOn))
+            case .noteOff:
+                let noteOff = MIDIEvent.noteOff(
+                    note: MIDINote(event.note!),
+                    velocity: .unitInterval(event.velocity! / 127.0),
+                    channel: .init(event.channel),
+                    group: 0
+                )
+                track.events.append(.noteOff(noteOff))
+            case .programChange:
+                let programChange = MIDIEvent.programChange(
+                    program: .init(event.program!),
+                    channel: .init(event.channel),
+                    group: 0
+                )
+                track.events.append(.programChange(programChange))
+            }
+        }
+        
+        midi.tracks.append(track)
+        
+        let midiFilePath = "output/\(params.fileName)"
+        try midi.write(to: URL(fileURLWithPath: midiFilePath))
+        
+        return req.eventLoop.future(Response(status: .ok, body: .init(string: "MIDI file generated at \(midiFilePath)")))
+    }
+}
+
+struct GenerateMIDIFileParams: Content {
+    var fileName: String
     var events: [MIDIEventParams]
-    var outputFile: String
 }
 
 struct MIDIEventParams: Content {
-    var type: String
-    var channel: UInt8
-    var note: UInt8?
-    var velocity: UInt8?
-    var program: UInt8?
-    var time: UInt32
+    var type: MIDIEventType
+    var channel: Int
+    var note: Int?
+    var velocity: Int?
+    var program: Int?
+    var time: Int
 }
 
-func generateMIDIFile(_ req: Request) throws -> EventLoopFuture<Response> {
-    let params = try req.content.decode(MIDIParams.self)
-    let midiFilePath = "output/\(params.outputFile)"
-    let midi = MIDIFile()
-    let track = MIDIFileTrack()
-    midi.tracks.append(track)
-
-    // Add events to the track
-    for event in params.events {
-        switch event.type {
-        case "noteOn":
-            track.add(event: MIDIEvent.noteOn(channel: event.channel, note: event.note!, velocity: event.velocity!, time: .ticks(event.time)))
-        case "noteOff":
-            track.add(event: MIDIEvent.noteOff(channel: event.channel, note: event.note!, velocity: event.velocity!, time: .ticks(event.time)))
-        case "programChange":
-            track.add(event: MIDIEvent.programChange(channel: event.channel, program: event.program!, time: .ticks(event.time)))
-        default:
-            break
-        }
-    }
-
-    // Save the MIDI file
-    try midi.write(to: URL(fileURLWithPath: midiFilePath))
-    return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: midiFilePath)))
+enum MIDIEventType: String, Content {
+    case noteOn, noteOff, programChange
 }
