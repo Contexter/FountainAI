@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Fix for MIDIKit integration and other issues
+# Applying necessary changes to the project files
+
+# Correcting GenerateMIDIFileController.swift
+cat <<EOL > Sources/App/Controllers/GenerateMIDIFileController.swift
 import Vapor
 import MIDIKit
 
@@ -46,3 +53,29 @@ func generateMIDIFile(req: Request) throws -> EventLoopFuture<Response> {
 
     return req.eventLoop.makeSucceededFuture(Response(status: .ok))
 }
+EOL
+
+# Correcting routes.swift
+cat <<EOL > Sources/App/routes.swift
+import Vapor
+
+func routes(_ app: Application) throws {
+    app.post("generate_midi_file", use: generateMIDIFile)
+    app.post("commit_file", use: commitFile)
+    app.post("push_to_github", use: pushToGitHub)
+}
+EOL
+
+# Correcting ListFilesController.swift
+cat <<EOL > Sources/App/Controllers/ListFilesController.swift
+import Vapor
+
+func listFiles(req: Request) throws -> EventLoopFuture<Response> {
+    let files = try FileManager.default.contentsOfDirectory(atPath: "output")
+    let jsonData = try JSONEncoder().encode(files)
+    let jsonString = String(data: jsonData, encoding: .utf8) ?? "[]"
+    return req.eventLoop.makeSucceededFuture(Response(status: .ok, body: .init(string: jsonString)))
+}
+EOL
+
+echo "Patch 4 applied successfully."

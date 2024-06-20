@@ -1,6 +1,8 @@
 import Vapor
 
-func listFiles(_ req: Request) throws -> EventLoopFuture<Response> {
+func listFiles(req: Request) throws -> EventLoopFuture<Response> {
     let files = try FileManager.default.contentsOfDirectory(atPath: "output")
-    return req.eventLoop.makeSucceededFuture(Response(status: .ok, body: .init(string: try files.jsonEncodedString())))
+    let jsonData = try JSONEncoder().encode(files)
+    let jsonString = String(data: jsonData, encoding: .utf8) ?? "[]"
+    return req.eventLoop.makeSucceededFuture(Response(status: .ok, body: .init(string: jsonString)))
 }
