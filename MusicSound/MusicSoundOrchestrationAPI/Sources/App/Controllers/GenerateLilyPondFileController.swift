@@ -11,18 +11,18 @@ struct LilyPondParams: Content {
 func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let params = try req.content.decode(LilyPondParams.self)
     let lilypondData = """
-    \version "\(params.version)"
+    \\version "\(params.version)"
 
-    \header {
+    \\header {
       \(params.header)
     }
 
-    \score {
+    \\score {
       \(params.score)
 
-      \layout { }
+      \\layout { }
 
-      \midi {
+      \\midi {
         \(params.midi)
       }
     }
@@ -33,7 +33,6 @@ func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let midiFilePath = outputDir + "\(params.outputFile).midi"
     try lilypondData.write(toFile: lilypondFilePath, atomically: true, encoding: .utf8)
     
-    # Generate PDF and MIDI from LilyPond file
     let command = "lilypond --output=\(outputDir) \(lilypondFilePath)"
     let result = try shell(command)
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: """

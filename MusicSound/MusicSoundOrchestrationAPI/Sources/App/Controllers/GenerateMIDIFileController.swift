@@ -1,5 +1,4 @@
 import Vapor
-import MIDIKit
 
 struct MIDIParams: Content {
     var events: [MIDIEventParams]
@@ -22,7 +21,6 @@ func generateMIDIFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let track = MIDIFileTrack()
     midi.tracks.append(track)
 
-    # Add events to the track
     for event in params.events {
         switch event.type {
         case "noteOn":
@@ -36,7 +34,6 @@ func generateMIDIFile(_ req: Request) throws -> EventLoopFuture<Response> {
         }
     }
 
-    # Save the MIDI file
     try midi.write(to: URL(fileURLWithPath: midiFilePath))
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: midiFilePath)))
 }
