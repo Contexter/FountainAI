@@ -22,8 +22,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
-        .package(url: "https://github.com/matrix-org/MatrixSDK.git", from: "0.17.0")
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0")
     ],
     targets: [
         .target(
@@ -31,8 +30,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Leaf", package: "leaf"),
-                .product(name: "Fluent", package: "fluent"),
-                .product(name: "MatrixSDK", package: "MatrixSDK")
+                .product(name: "Fluent", package: "fluent")
             ],
             path: "Sources/App"
         ),
@@ -213,9 +211,7 @@ func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let command = "lilypond --output=\(outputDir) \(lilypondFilePath)"
     let result = try shell(command)
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: """
-    {"lilyPondFilePath":"\(l
-
-ilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
+    {"lilyPondFilePath":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
     """)))
 }
 EOL
@@ -254,9 +250,7 @@ func generateMIDIFile(_ req: Request) throws -> EventLoopFuture<Response> {
         case "noteOff":
             track.add(event: MIDIEvent.noteOff(channel: event.channel, note: event.note, velocity: event.velocity, time: event.time))
         case "programChange":
-            track.add(event: MIDIEvent.programChange(channel: event.channel
-
-, program: event.program, time: event.time))
+            track.add(event: MIDIEvent.programChange(channel: event.channel, program: event.program, time: event.time))
         default:
             break
         }
@@ -482,9 +476,7 @@ final class CommitFileTests: XCTestCase {
             "message": "Initial commit of Csound file"
         }
         """
-        try app.test(.POST, "/
-
-commit_file", beforeRequest: { req in
+        try app.test(.POST, "/commit_file", beforeRequest: { req in
             req.headers.contentType = .json
             req.body = ByteBuffer(string: requestBody)
         }, afterResponse: { res in
