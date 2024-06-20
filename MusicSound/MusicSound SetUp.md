@@ -3,7 +3,7 @@
 
 **Introduction:**
 
-The MusicSound Orchestration API integrates orchestration functions to generate musical files in Csound, LilyPond, and MIDI formats. This Swift-based API uses Vapor to provide REST endpoints for managing orchestration commands. The API includes functionalities for generating, committing, and pushing files to a GitHub repository, making it an ideal tool for programmatically managing musical compositions.
+The MusicSound Orchestration API is a powerful tool that integrates orchestration functions to generate musical files in Csound, LilyPond, and MIDI formats. Built with Swift and Vapor, this API provides REST endpoints to manage orchestration commands. With functionalities for generating, committing, and pushing files to a GitHub repository, it offers an ideal solution for programmatically managing musical compositions.
 
 ### OpenAPI Specification
 
@@ -12,17 +12,17 @@ openapi: 3.0.1
 info:
   title: MusicSound Orchestration API
   description: |
-    This API integrates orchestration functions directly to generate musical files in Csound, LilyPond, and MIDI formats. The API supports generating and managing orchestration commands through endpoints that map directly to function names implemented using Vapor in Swift.
+    This API enables orchestration functions to generate musical files in Csound, LilyPond, and MIDI formats. The API supports generating and managing orchestration commands through endpoints implemented using Vapor in Swift.
 
     **Dockerized Orchestration**:
-    - **Vapor**: Swift-based Vapor application provides the REST API endpoints for managing orchestration commands.
+    - **Vapor**: Provides REST API endpoints for managing orchestration commands.
     - **Swift, Csound, LilyPond, and midikit**: Orchestration tools include Swift functions, Csound synthesis, LilyPond notation, and MIDI data generation using `midikit`.
 
     **Git Integration**:
     All generated files are committed to a git repository located in the `output/` directory using a custom commit message provided by the user. Additionally, files can be pushed to a GitHub repository.
 
     **Precondition**:
-    Connect the VPS local git repository to a GitHub remote by adding the remote URL. For example:
+    Connect the VPS local git repository to a GitHub remote by adding the remote URL:
     ```bash
     cd output
     git remote add origin https://github.com/username/repo.git
@@ -325,11 +325,11 @@ paths:
 ### Project Structure
 
 ```
-Music
-
-SoundOrchestrationAPI/
+MusicSoundOrchestrationAPI/
 ├── Sources/
-│   ├── App/
+│
+
+   ├── App/
 │   │   ├── Controllers/
 │   │   │   ├── GenerateCsoundFileController.swift
 │   │   │   ├── GenerateLilyPondFileController.swift
@@ -356,6 +356,7 @@ SoundOrchestrationAPI/
 │   │   ├── GetFileContentTests.swift
 │   │   ├── GetFileHistoryTests.swift
 │   │   ├── XCTestManifests.swift
+├── Package.swift
 ├── LinuxMain.swift
 ```
 
@@ -374,6 +375,47 @@ mkdir -p $PROJECT_NAME/Sources/App/Controllers
 mkdir -p $PROJECT_NAME/Sources/App/Utilities
 mkdir -p $PROJECT_NAME/Sources/Run
 mkdir -p $PROJECT_NAME/Tests/AppTests
+
+# Create Package.swift
+cat <<EOL > $PROJECT_NAME/Package.swift
+// swift-tools-version:5.3
+import PackageDescription
+
+let package = Package(
+    name: "MusicSoundOrchestrationAPI",
+    platforms: [
+        .macOS(.v10_15)
+    ],
+    dependencies: [
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
+        .package(url: "https://github.com/matrix-org/MatrixSDK.git", from: "0.17.0")
+    ],
+    targets: [
+        .target(
+            name: "App",
+            dependencies: [
+                .product(name: "Vapor", package: "vapor"),
+                .product(name: "Leaf", package: "leaf"),
+                .product(name: "Fluent", package: "fluent"),
+                .product(name: "MatrixSDK", package: "MatrixSDK")
+            ],
+            path: "Sources/App"
+        ),
+        .target(
+            name: "Run",
+            dependencies: [.target(name: "App")],
+            path: "Sources/Run"
+        ),
+        .testTarget(
+            name: "AppTests",
+            dependencies: [.target(name: "App")],
+            path: "Tests/AppTests"
+        )
+    ]
+)
+EOL
 
 # Create main.swift
 cat <<EOL > $PROJECT_NAME/Sources/Run/main.swift
@@ -538,7 +580,9 @@ func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let command = "lilypond --output=\(outputDir) \(lilypondFilePath)"
     let result = try shell(command)
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: """
-    {"lilyPondFilePath":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
+    {"lilyPondFilePath":"\(l
+
+ilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
     """)))
 }
 EOL
@@ -723,8 +767,8 @@ final class GenerateLilyPondFileTests: XCTestCase {
         {
             "version": "2.24.2",
             "header": "title = \\"Drone Melody\\"\\ncomposer = \\"Your Name\\"",
-            "score": "\\\\new Staff {\\\\clef \\"bass\\"\\\\time 4/4\\\\key c \\\\major\\nc1 c1 c1 c1\\nc1 c1 c1 c1}",
-            "midi": "\\\\tempo 4 = 60",
+            "score": "\\new Staff {\\clef \\"bass\\"\\time 4/4\\key c \\major\\nc1 c1 c1 c1\\nc1 c1 c1 c1}",
+            "midi": "\\tempo 4 = 60",
             "outputFile": "test_notation"
         }
         """
@@ -805,7 +849,9 @@ final class CommitFileTests: XCTestCase {
             "message": "Initial commit of Csound file"
         }
         """
-        try app.test(.POST, "/commit_file", beforeRequest: { req in
+        try app.test(.POST, "/
+
+commit_file", beforeRequest: { req in
             req.headers.contentType = .json
             req.body = ByteBuffer(string: requestBody)
         }, afterResponse: { res in
@@ -1129,7 +1175,9 @@ curl -X GET "http://localhost:8080/get_file_content?fileName=test_output.csd"
 #### Get File History
 
 ```bash
-curl -X GET "http://localhost:8080/get_file_history?fileName=test_output.csd"
+curl -X GET "http://localhost
+
+:8080/get_file_history?fileName=test_output.csd"
 ```
 
 ### Conclusion
