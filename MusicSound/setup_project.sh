@@ -22,7 +22,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0")
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
+        .package(url: "https://github.com/orchetect/MIDIKit.git", from: "0.9.6")
     ],
     targets: [
         .target(
@@ -30,7 +31,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Leaf", package: "leaf"),
-                .product(name: "Fluent", package: "fluent")
+                .product(name: "Fluent", package: "fluent"),
+                .product(name: "MIDIKit", package: "MIDIKit")
             ],
             path: "Sources/App"
         ),
@@ -211,7 +213,9 @@ func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let command = "lilypond --output=\(outputDir) \(lilypondFilePath)"
     let result = try shell(command)
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: """
-    {"lilyPondFilePath":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
+    {"lilyPondFilePath
+
+":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
     """)))
 }
 EOL
@@ -476,7 +480,9 @@ final class CommitFileTests: XCTestCase {
             "message": "Initial commit of Csound file"
         }
         """
-        try app.test(.POST, "/commit_file", beforeRequest: { req in
+        try app.test(.POST
+
+, "/commit_file", beforeRequest: { req in
             req.headers.contentType = .json
             req.body = ByteBuffer(string: requestBody)
         }, afterResponse: { res in
@@ -531,9 +537,7 @@ import Vapor
 final class ListFilesTests: XCTestCase {
     var app: Application!
 
-    override func setUp()
-
- {
+    override func setUp() {
         app = try! Application.testable()
     }
 
