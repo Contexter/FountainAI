@@ -16,7 +16,7 @@ info:
 
     **Dockerized Orchestration**:
     - **Vapor**: Provides REST API endpoints for managing orchestration commands.
-    - **Swift, Csound, LilyPond, and midikit**: Orchestration tools include Swift functions, Csound synthesis, LilyPond notation, and MIDI data generation using `midikit`.
+    - **Swift, Csound, LilyPond, and MIDIKit**: Orchestration tools include Swift functions, Csound synthesis, LilyPond notation, and MIDI data generation using `MIDIKit`.
 
     **Git Integration**:
     All generated files are committed to a git repository located in the `output/` directory using a custom commit message provided by the user. Additionally, files can be pushed to a GitHub repository.
@@ -327,9 +327,9 @@ paths:
 ```
 MusicSoundOrchestrationAPI/
 ├── Sources/
-│
 
-   ├── App/
+
+│   ├── App/
 │   │   ├── Controllers/
 │   │   │   ├── GenerateCsoundFileController.swift
 │   │   │   ├── GenerateLilyPondFileController.swift
@@ -389,7 +389,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0")
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
+        .package(url: "https://github.com/orchetect/MIDIKit.git", from: "0.9.6")
     ],
     targets: [
         .target(
@@ -397,7 +398,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Leaf", package: "leaf"),
-                .product(name: "Fluent", package: "fluent")
+                .product(name: "Fluent", package: "fluent"),
+                .product(name: "MIDIKit", package: "MIDIKit")
             ],
             path: "Sources/App"
         ),
@@ -578,14 +580,14 @@ func generateLilyPondFile(_ req: Request) throws -> EventLoopFuture<Response> {
     let command = "lilypond --output=\(outputDir) \(lilypondFilePath)"
     let result = try shell(command)
     return req.eventLoop.makeSucceededFuture(Response(status: .created, body: .init(string: """
-    {"lilyPondFilePath":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
+    {"lilyPondFilePath
+
+":"\(lilypondFilePath)","pdfFilePath":"\(pdfFilePath)","midiFilePath":"\(midiFilePath)"}
     """)))
 }
 EOL
 
-# Create GenerateMIDIFileController
-
-.swift
+# Create GenerateMIDIFileController.swift
 cat <<EOL > $PROJECT_NAME/Sources/App/Controllers/GenerateMIDIFileController.swift
 import Vapor
 import MIDIKit
@@ -845,13 +847,13 @@ final class CommitFileTests: XCTestCase {
             "message": "Initial commit of Csound file"
         }
         """
-        try app.test(.POST, "/commit_file", beforeRequest: { req in
+        try app.test(.POST
+
+, "/commit_file", beforeRequest: { req in
             req.headers.contentType = .json
             req.body = ByteBuffer(string: requestBody)
         }, afterResponse: { res in
-            XCTAssertEqual(res
-
-.status, .ok)
+            XCTAssertEqual(res.status, .ok)
             XCTAssertNotNil(res.body.string)
         })
     }
@@ -902,9 +904,7 @@ import Vapor
 final class ListFilesTests: XCTestCase {
     var app: Application!
 
-    override func setUp()
-
- {
+    override func setUp() {
         app = try! Application.testable()
     }
 
@@ -1171,14 +1171,14 @@ curl -X GET "http://localhost:8080/get_file_content?fileName=test_output.csd"
 #### Get File History
 
 ```bash
-curl -X GET "http://localhost:8080/get_file_history?fileName=test_output.csd"
+curl -X GET "http
+
+://localhost:8080/get_file_history?fileName=test_output.csd"
 ```
 
 ### Conclusion
 
-We have successfully created the MusicSound Orchestration API using Swift and Vapor. The project includes endpoints for generating musical files
-
- in Csound, LilyPond, and MIDI formats, committing these files to a git repository, and pushing them to a GitHub repository. By following a TDD approach, we ensured that our application is well-defined, tested, and meets the specified requirements.
+We have successfully created the MusicSound Orchestration API using Swift and Vapor. The project includes endpoints for generating musical files in Csound, LilyPond, and MIDI formats, committing these files to a git repository, and pushing them to a GitHub repository. By following a TDD approach, we ensured that our application is well-defined, tested, and meets the specified requirements.
 
 ### Comprehensive Commit Message
 
@@ -1192,6 +1192,7 @@ feat: Initial commit of MusicSound Orchestration API
 - Provided a Dockerfile for containerized deployment.
 - Created a shell script to automate project setup.
 ```
+
 ### Addendum: Using the Dockerfile
 
 To simplify deployment and ensure all dependencies are correctly installed, you can use Docker to containerize the MusicSound Orchestration API application. Below are the steps to build and run the Docker container.
