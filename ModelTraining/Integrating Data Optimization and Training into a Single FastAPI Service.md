@@ -295,9 +295,7 @@ FastAPI automatically provides OpenAPI documentation, accessible at `/docs` (Swa
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "
-
-properties": {
+                        "properties": {
                           "text": {
                             "type": "string"
                           }
