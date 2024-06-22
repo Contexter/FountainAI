@@ -1,20 +1,20 @@
 ### Introduction to the FountainAI Matrix Bot
 
-The **FountainAI Matrix Bot** is a sophisticated assistant designed to enhance script management and editing workflows within the Matrix chat environment. This bot integrates with the FountainAI's suite of APIs, providing seamless interactions for managing various script components. Leveraging the power of OpenAI's GPT models, the bot can understand user intents and perform actions on behalf of the user, effectively bridging human input with automated script management.
+The **FountainAI Matrix Bot** is a sophisticated assistant designed to enhance script management and editing workflows within the Matrix chat environment. This bot integrates with the FountainAI's suite of APIs, providing seamless interactions for managing various script components. The bot leverages OpenAI's GPT models to understand user intents and relay actions, serving as a bridge between human input and automated script management.
 
 #### Key Features:
 
 1. **Script Management**:
-   - **Create, Retrieve, Update, Delete Scripts**: Manage screenplay scripts comprehensively with endpoints for creation, retrieval, updating, and deletion. The bot ensures efficient handling of scripts with features like Redis caching and RedisAI for enhanced performance and validation.
+   - **Create, Retrieve, Update, Delete Scripts**: Manage screenplay scripts comprehensively with endpoints for creation, retrieval, updating, and deletion. The bot handles scripts efficiently with features like Redis caching and RedisAI for enhanced performance and validation.
    - **Endpoint Example**: `POST /scripts` to create a new script.
    - **API URL**: `https://script.fountain.coach`
 
 2. **Section Headings**:
-   - **Organize Script Sections**: Handle section headings in scripts, enabling detailed structuring of screenplays. Operations include listing all section headings and creating new ones, optimized with Redis caching for performance.
+   - **Organize Script Sections**: Manage section headings in scripts, enabling detailed structuring of screenplays. Operations include listing all section headings and creating new ones, optimized with Redis caching for performance.
    - **Endpoint Example**: `GET /sectionHeadings` to list all section headings.
    - **API URL**: `https://sectionheading.fountain.coach`
 
-3. **SpokenWords Management**:
+3. **Spoken Words Management**:
    - **Dialogue Handling**: Manage spoken words or dialogues within scripts, including paraphrases to enhance dialogue diversity. Supports creating, retrieving, and listing dialogues with AI-powered recommendations.
    - **Endpoint Example**: `POST /spokenWords` to create a new spoken word.
    - **API URL**: `https://spokenwords.fountain.coach`
@@ -46,7 +46,7 @@ The **FountainAI Matrix Bot** is a sophisticated assistant designed to enhance s
 
 ### Security Considerations for API Permissions
 
-To ensure the FountainAI Matrix Bot is constructive and avoids destructive behaviors, it is crucial to manage the bot's permissions regarding API calls. The bot should be allowed to perform only non-destructive actions. Here are the recommended permissions for each API:
+To ensure the FountainAI Matrix Bot performs non-destructive actions, it is crucial to manage the bot's permissions regarding API calls. Here are the recommended permissions for each API:
 
 1. **Scripts Management**:
    - **Allowed Actions**: `POST /scripts` (create), `GET /scripts` (list), `GET /scripts/{scriptId}` (retrieve), `PUT /scripts/{scriptId}` (update)
@@ -137,6 +137,12 @@ Scripts API   SectionHeadings API   SpokenWords API  Transition API    Other API
 OpenAI GPT Model
   │
   │ 10. GPT model verifies the API response
+  │    └───> Scenarios:
+  │           a. **Successful Verification**: Confirms successful API action. The bot prepares the final response for the user.
+  │           b. **Partial Mismatch**: Identifies discrepancies, suggests modifications. The bot informs the user or makes further API calls to correct data.
+  │           c. **Failure/Error**: Assesses the error, determines cause, suggests retries or alternative actions.
+  │           d. **Unexpected Response**: Flags unexpected responses, provides error handling, and suggests contacting support or alternative actions.
+  │           e. **No Response/Timeout**: Identifies timeout, suggests retries. The bot may retry a few times before informing the user.
   │
   ▼
 FountainAI Matrix Bot (Vapor App)
@@ -156,7 +162,9 @@ User
 
 #### 1. User Input Interpretation
 
-The user sends a message indicating a need for information or action, which may not be a direct command but implies an intent.
+The user sends a message indicating a need for information or
+
+ action, which may not be a direct command but implies an intent.
 
 - **User Message**: "I'd like to see some recent scripts and maybe write a new one about a sunset."
 
@@ -170,9 +178,7 @@ You are a bot that helps manage screenplay scripts using the FountainAI APIs. He
 
 1. **Scripts API**:
    - **Create Script**: `POST /scripts`
-     - Parameters
-
-: `title` (string), `description` (string), `author` (string), `sequence` (integer)
+     - Parameters: `title` (string), `description` (string), `author` (string), `sequence` (integer)
      - Example: To create a new script titled "Eternal Sunrise" by Jane Doe, the request would be:
        ```
        POST /scripts
@@ -250,7 +256,35 @@ The bot interprets the GPT model's response, understanding it needs to first lis
 
 #### 6. Response Interpretation and Action Execution
 
-The bot executes the API calls suggested by the GPT model, processes the responses, and sends them to the GPT model for verification. The GPT model verifies the API responses, and the bot communicates the verified results back to the user.
+The bot executes the API calls suggested by the GPT model, processes the responses, and sends them to the GPT model for verification.
+
+#### 10. GPT Model Verification
+
+In this step, the GPT model verifies the API response to ensure the actions suggested and executed align with the expected outcomes. Here are the possible scenarios:
+
+1. **Successful Verification**:
+   - **Scenario**: The API response matches the expected outcome as suggested by the GPT model.
+   - **Actions**: The GPT model confirms the success of the API action. The bot prepares the final response to the user, indicating the successful completion of the requested action.
+
+2. **Partial Mismatch**:
+   - **Scenario**: The API response partially matches the expected outcome, but some details differ.
+   - **Actions**: The GPT model identifies the discrepancies and provides a modified response. The bot may inform the user about the discrepancies or make further API calls to correct the data.
+
+3. **Failure/Error in API Response**:
+   - **Scenario**: The API response indicates a failure or error.
+   - **Actions**: The GPT model assesses the error message and determines the cause of the failure. The bot may attempt to resolve the issue by retrying the API call or suggesting alternative actions to the user.
+
+4. **Unexpected API Response**:
+   - **Scenario**: The API response is unexpected and doesn't fit any predefined patterns.
+   - **Actions**: The GPT model flags the unexpected response and provides a generic error handling mechanism. The bot informs the user about the unexpected response and suggests contacting support or trying a different action.
+
+5. **No Response/Timeout**:
+   - **Scenario**: The API call does not return a response within the expected timeframe.
+   - **Actions**: The GPT model identifies the timeout and suggests retrying the API call. The bot may retry the action a specified number of times before informing the user of the failure.
+
+#### 11. User Notification
+
+The bot sends the verified response back to the user, indicating the successful completion, any discrepancies, or errors that occurred during the process.
 
 ### Summary
 
@@ -259,13 +293,13 @@ This detailed breakdown clarifies how the refined autonomous workflow leverages 
 ### Commit Message
 
 ```
-Refactor documentation to enhance clarity, integrate security considerations, and refine workflow logic
+Refactor documentation to clarify bot's role as an executor and highlight GPT model's decision-making
 
 - Removed the initial simplified flow chart to focus solely on the enhanced autonomous workflow.
-- Improved and expanded the description of the bot's key features, including script management, section headings, spoken words, transitions, actions, characters, script notes, and music/sound orchestration.
-- Consolidated and renamed the security considerations section to focus on API permissions, outlining allowed and disallowed actions to ensure non-destructive operations.
-- Provided a refined and detailed flow chart depicting the autonomous workflow of the GPT-powered bot.
-- Detailed each step of the enhanced autonomous workflow, from user input interpretation to response execution, ensuring clarity and comprehensiveness.
-- Emphasized the role of the GPT model in suggesting API calls, with the bot executing the calls and verifying the results through the GPT model before responding to the user.
-- Improved overall readability and structure of the documentation to better assist developers in understanding and implementing the FountainAI Matrix Bot.
+- Expanded the description of the bot's key features, including script management, section headings, spoken words, transitions, actions, characters, script notes, and music/sound orchestration.
+- Renamed and consolidated the security considerations section to focus on API permissions, ensuring non-destructive operations.
+- Provided a refined and detailed flow chart depicting the autonomous workflow, emphasizing the GPT model's role in suggesting and verifying API calls.
+- Detailed each step of the enhanced workflow, clarifying that the bot acts as an executor while the GPT model handles decision-making and verification.
+- Integrated possible scenarios for GPT model verification to cover various outcomes.
+- Improved overall readability and structure to better assist developers in understanding and implementing the FountainAI Matrix Bot.
 ```
