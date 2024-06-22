@@ -162,9 +162,7 @@ User
 
 #### 1. User Input Interpretation
 
-The user sends a message indicating a need for information or
-
- action, which may not be a direct command but implies an intent.
+The user sends a message indicating a need for information or action, which may not be a direct command but implies an intent.
 
 - **User Message**: "I'd like to see some recent scripts and maybe write a new one about a sunset."
 
