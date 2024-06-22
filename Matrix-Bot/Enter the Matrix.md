@@ -126,28 +126,22 @@ OpenAI GPT Model
   ▼
 FountainAI Matrix Bot (Vapor App)
   │
-  │ 8. Bot interprets the GPT response:
-  │    a. Continues the conversation with general info
-  │    b. Selects the appropriate API endpoints and payloads if actions are identified
+  │ 8. Bot executes the API commands suggested by the GPT model
   │
-  │───────────────┬───────────────────┬────────────────┬───────────────────┐
-  │               │                   │                │                   │
-  ▼               ▼                   ▼                ▼                   ▼
+  ▼
 Scripts API   SectionHeadings API   SpokenWords API  Transition API    Other APIs
   │               │                   │                │                   │
-  │ 9. GPT model verifies the API action
+  │ 9. Bot processes the API response and sends it to the GPT model for verification
+  │
+  ▼
+OpenAI GPT Model
+  │
+  │ 10. GPT model verifies the API response
   │
   ▼
 FountainAI Matrix Bot (Vapor App)
   │
-  │ 10. API response is processed and verified
-  │
-  │───────────────┐
-  │               │
-  ▼               ▼
-Handles Off-Topic ────────────────► General Response Handling
-  │
-  │ 11. Bot sends the response back to the user (either general info, API result, or off-topic response)
+  │ 11. Bot sends the verified response back to the user
   │
   ▼
 Matrix Chat Room
@@ -164,9 +158,7 @@ User
 
 The user sends a message indicating a need for information or action, which may not be a direct command but implies an intent.
 
-- **User Message**: "I'd like to see some recent scripts and maybe
-
- write a new one about a sunset."
+- **User Message**: "I'd like to see some recent scripts and maybe write a new one about a sunset."
 
 #### 2. Meta Prompt Retrieval
 
@@ -178,7 +170,9 @@ You are a bot that helps manage screenplay scripts using the FountainAI APIs. He
 
 1. **Scripts API**:
    - **Create Script**: `POST /scripts`
-     - Parameters: `title` (string), `description` (string), `author` (string), `sequence` (integer)
+     - Parameters
+
+: `title` (string), `description` (string), `author` (string), `sequence` (integer)
      - Example: To create a new script titled "Eternal Sunrise" by Jane Doe, the request would be:
        ```
        POST /scripts
@@ -256,11 +250,11 @@ The bot interprets the GPT model's response, understanding it needs to first lis
 
 #### 6. Response Interpretation and Action Execution
 
-The GPT model verifies the API calls and confirms their execution, while the bot communicates the results back to the user.
+The bot executes the API calls suggested by the GPT model, processes the responses, and sends them to the GPT model for verification. The GPT model verifies the API responses, and the bot communicates the verified results back to the user.
 
 ### Summary
 
-This detailed breakdown clarifies how the refined autonomous workflow leverages the GPT model's capabilities to make contextual API call suggestions based on user input and meta prompts. The workflow ensures the bot can interpret the context, generate appropriate API commands, execute actions dynamically, and verify the results before responding to the user.
+This detailed breakdown clarifies how the refined autonomous workflow leverages the GPT model's capabilities to make contextual API call suggestions based on user input and meta prompts. The workflow ensures the bot can interpret the context, execute appropriate API commands, and verify the results with the GPT model before responding to the user.
 
 ### Commit Message
 
@@ -272,6 +266,6 @@ Refactor documentation to enhance clarity, integrate security considerations, an
 - Consolidated and renamed the security considerations section to focus on API permissions, outlining allowed and disallowed actions to ensure non-destructive operations.
 - Provided a refined and detailed flow chart depicting the autonomous workflow of the GPT-powered bot.
 - Detailed each step of the enhanced autonomous workflow, from user input interpretation to response execution, ensuring clarity and comprehensiveness.
-- Emphasized the role of the GPT model in suggesting and verifying API calls, with the bot interpreting and relaying the responses to the user.
+- Emphasized the role of the GPT model in suggesting API calls, with the bot executing the calls and verifying the results through the GPT model before responding to the user.
 - Improved overall readability and structure of the documentation to better assist developers in understanding and implementing the FountainAI Matrix Bot.
 ```
