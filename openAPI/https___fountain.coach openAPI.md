@@ -1,4 +1,24 @@
+### Combined Script Management API
 
+## Table of Contents
+1. [Info](#info)
+2. [Servers](#servers)
+3. [Paths](#paths)
+    1. [Scripts](#scripts)
+    2. [Section Headings](#section-headings)
+    3. [Actions](#actions)
+    4. [Characters](#characters)
+    5. [Spoken Words](#spoken-words)
+    6. [Transitions](#transitions)
+    7. [Music Sound](#music-sound)
+4. [Components](#components)
+    1. [Schemas](#schemas)
+    2. [Security Schemes](#security-schemes)
+5. [Security](#security)
+
+---
+
+## Info
 
 ```yaml
 openapi: 3.0.1
@@ -10,17 +30,34 @@ info:
     **Dockerized Environment**:
     - **Nginx**: An Nginx proxy container handles SSL termination with Let's Encrypt certificates via Certbot.
     - **Vapor Application**: A Swift-based Vapor app runs in a separate Docker container.
-    - **Postgres Database****: The primary persistence layer is a PostgreSQL container managed by Docker Compose.
+    - **Postgres Database**: The primary persistence layer is a PostgreSQL container managed by Docker Compose.
     - **Redis Cache**: A Redis container is used for caching data, optimizing performance for frequent queries.
     - **RedisAI Middleware**: RedisAI provides recommendations, validation, and analysis for various script components.
 
   version: "1.2"
+```
+
+---
+
+## Servers
+
+```yaml
 servers:
   - url: 'https://fountain.coach'
     description: Production server for Script Management API
   - url: 'http://localhost:8080'
     description: Development server (Docker environment)
+```
 
+---
+
+## Paths
+
+### Scripts
+
+#### Retrieve All Scripts
+
+```yaml
 paths:
   /scripts:
     get:
@@ -46,6 +83,11 @@ paths:
                       description: "A screenplay about Hollywood and faded glory."
                       author: "Billy Wilder"
                       sequence: 1
+```
+
+#### Create a New Script
+
+```yaml
     post:
       summary: Create a New Script
       operationId: createScript
@@ -91,7 +133,11 @@ paths:
                 badRequestExample:
                   value:
                     message: "Missing required fields: 'title' or 'author'."
+```
 
+#### Retrieve a Script by ID
+
+```yaml
   /scripts/{scriptId}:
     get:
       summary: Retrieve a Script by ID
@@ -131,6 +177,11 @@ paths:
                 notFoundExample:
                   value:
                     message: "Script not found with ID: 3"
+```
+
+#### Update a Script by ID
+
+```yaml
     put:
       summary: Update a Script by ID
       operationId: updateScript
@@ -193,6 +244,11 @@ paths:
                 notFoundUpdateExample:
                   value:
                     message: "Script not found with ID: 4"
+```
+
+#### Delete a Script by ID
+
+```yaml
     delete:
       summary: Delete a Script by ID
       operationId: deleteScript
@@ -217,7 +273,13 @@ paths:
                 notFoundDeleteExample:
                   value:
                     message: "Script not found with ID: 5"
+```
 
+### Section Headings
+
+#### Retrieve Section Headings
+
+```yaml
   /sectionHeadings:
     get:
       summary: Retrieve Section Headings
@@ -244,6 +306,11 @@ paths:
                       scriptId: 101
                       title: "Rising Action"
                       sequence: 2
+```
+
+#### Create Section Heading
+
+```yaml
     post:
       summary: Create Section Heading
       operationId: createSectionHeading
@@ -254,7 +321,9 @@ paths:
         description: Data required to create a new Section Heading.
         content:
           application/json:
-            schema:
+           
+
+ schema:
               $ref: '#/components/schemas/SectionHeading'
             examples:
               createSectionHeadingExample:
@@ -276,7 +345,13 @@ paths:
                     scriptId: 101
                     title: "Climax"
                     sequence: 3
+```
 
+### Actions
+
+#### Retrieve All Actions
+
+```yaml
   /actions:
     get:
       summary: Retrieve All Actions
@@ -299,8 +374,6 @@ paths:
                     - actionId: 1
                       description: "Character enters the room."
                       sequence: 1
-
-
                     - actionId: 2
                       description: "Character picks up a book."
                       sequence: 2
@@ -328,6 +401,11 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to retrieve actions."
+```
+
+#### Create a New Action
+
+```yaml
     post:
       summary: Create a New Action
       operationId: createAction
@@ -396,7 +474,11 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to create the action."
+```
 
+#### Retrieve All Paraphrases for an Action
+
+```yaml
   /actions/{actionId}/paraphrases:
     get:
       summary: Retrieve All Paraphrases for an Action
@@ -468,6 +550,11 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to retrieve paraphrases."
+```
+
+#### Create a New Paraphrase for an Action
+
+```yaml
     post:
       summary: Create a New Paraphrase for an Action
       operationId: createActionParaphrase
@@ -555,9 +642,17 @@ paths:
                 internalServerErrorExample:
                   summary: Internal server error example
                   value:
-                    code: 500
-                    message: "Internal Server Error - Unable to create the paraphrase."
+                    code: 
 
+500
+                    message: "Internal Server Error - Unable to create the paraphrase."
+```
+
+### Characters
+
+#### Retrieve All Characters
+
+```yaml
   /characters:
     get:
       summary: Retrieve All Characters
@@ -597,12 +692,15 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to retrieve characters."
+```
+
+#### Create a New Character
+
+```yaml
     post:
       summary: Create a New Character
       operationId: createCharacter
-      description
-
-: |
+      description: |
         Allows for the creation of a new character, adding to the pool of characters available for inclusion in screenplays. RedisAI is integrated to provide recommendations and validation for character creation.
       requestBody:
         required: true
@@ -656,7 +754,11 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to create character."
+```
 
+#### Retrieve All Paraphrases for a Character
+
+```yaml
   /characters/{characterId}/paraphrases:
     get:
       summary: Retrieve All Paraphrases for a Character
@@ -715,6 +817,11 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to retrieve paraphrases."
+```
+
+#### Create a New Paraphrase for a Character
+
+```yaml
     post:
       summary: Create a New Paraphrase for a Character
       operationId: createCharacterParaphrase
@@ -792,7 +899,13 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error - Unable to create the paraphrase."
+```
 
+### Spoken Words
+
+#### Retrieve All SpokenWords
+
+```yaml
   /spokenWords:
     get:
       summary: Retrieve All SpokenWords
@@ -818,6 +931,11 @@ paths:
                     - dialogueId: 2
                       text: "I'm fine, thank you!"
                       sequence: 2
+```
+
+#### Create SpokenWord
+
+```yaml
     post:
       summary: Create SpokenWord
       operationId: createSpokenWord
@@ -829,7 +947,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpokenWord'
+              $ref: '#/components/schemas/Spoken
+
+Word'
             examples:
               createSpokenWordExample:
                 value:
@@ -849,7 +969,11 @@ paths:
                     dialogueId: 3
                     text: "Suddenly, he was gone."
                     sequence: 3
+```
 
+#### Retrieve All Paraphrases for a SpokenWord
+
+```yaml
   /spokenWords/{id}/paraphrases:
     get:
       summary: Retrieve All Paraphrases for a SpokenWord
@@ -883,9 +1007,12 @@ paths:
                     - paraphraseId: 2
                       originalId: 2
                       text: "I'm well, thanks for asking!"
-                      commentary: "A polite
+                      commentary: "A polite response."
+```
 
- response."
+#### Create a New Paraphrase for a SpokenWord
+
+```yaml
     post:
       summary: Create a New Paraphrase for a SpokenWord
       operationId: createSpokenWordParaphrase
@@ -926,7 +1053,13 @@ paths:
                     originalId: 1
                     text: "Greetings, how do you do?"
                     commentary: "Formal version for a different context."
+```
 
+### Transitions
+
+#### Get a list of Transitions
+
+```yaml
   /transitions:
     get:
       summary: Get a list of Transitions
@@ -952,6 +1085,11 @@ paths:
                     - transitionId: 2
                       description: "Cut to the next scene."
                       sequence: 2
+```
+
+#### Create a new Transition
+
+```yaml
     post:
       summary: Create a new Transition
       operationId: createTransition
@@ -983,7 +1121,11 @@ paths:
                     transitionId: 3
                     description: "Dissolve to exterior shot."
                     sequence: 3
+```
 
+#### Retrieve All Paraphrases for a Transition
+
+```yaml
   /transitions/{transitionId}/paraphrases:
     get:
       summary: Retrieve All Paraphrases for a Transition
@@ -1014,6 +1156,11 @@ paths:
                       originalId: 1
                       text: "Slowly fade out to a dark scene."
                       commentary: "A detailed version for dramatic effect."
+```
+
+#### Create a New Paraphrase for a Transition
+
+```yaml
     post:
       summary: Create a New Paraphrase for a Transition
       operationId: createTransitionParaphrase
@@ -1054,7 +1201,13 @@ paths:
                     originalId: 2
                     text: "Quickly switch scenes without delay."
                     commentary: "Simplification for faster pace."
+```
 
+### Music Sound
+
+#### Generate Csound File
+
+```yaml
   /generate_csound_file:
     post:
       summary: Generate Csound File
@@ -1072,7 +1225,11 @@ paths:
                   csoundFilePath:
                     type: string
                     description: Path to the generated Csound file.
+```
 
+#### Generate LilyPond File
+
+```yaml
   /generate_lilypond_file:
     post:
       summary: Generate LilyPond File
@@ -1090,7 +1247,11 @@ paths:
                   lilyPondFilePath:
                     type: string
                     description: Path to the generated LilyPond file.
+```
 
+#### Generate MIDI File
+
+```yaml
   /generate_midi_file:
     post:
       summary: Generate MIDI File
@@ -1108,7 +1269,13 @@ paths:
                   midiFilePath:
                     type: string
                     description: Path to the generated MIDI file.
+```
 
+#### Execute Csound
+
+```
+
+yaml
   /execute_csound:
     post:
       summary: Execute Csound
@@ -1137,7 +1304,11 @@ paths:
                   message:
                     type: string
                     description: Message indicating the success of Csound processing.
+```
 
+#### Execute LilyPond
+
+```yaml
   /execute_lilypond:
     post:
       summary: Execute LilyPond
@@ -1166,7 +1337,17 @@ paths:
                   message:
                     type: string
                     description: Message indicating the success of LilyPond processing.
+```
 
+---
+
+## Components
+
+### Schemas
+
+#### Script
+
+```yaml
 components:
   schemas:
     Script:
@@ -1190,7 +1371,11 @@ components:
       required:
         - title
         - author
+```
 
+#### ScriptCreateRequest
+
+```yaml
     ScriptCreateRequest:
       type: object
       properties:
@@ -1205,21 +1390,27 @@ components:
       required:
         - title
         - author
+```
 
+#### ScriptUpdateRequest
+
+```yaml
     ScriptUpdateRequest:
       type: object
       properties:
         title:
-          type
-
-: string
+          type: string
         description:
           type: string
         author:
           type: string
         sequence:
           type: integer
+```
 
+#### SectionHeading
+
+```yaml
     SectionHeading:
       type: object
       description: Represents a structural element within a script, marking the beginning of a new section. Caching via Redis optimizes retrieval performance.
@@ -1240,7 +1431,11 @@ components:
         - scriptId
         - title
         - sequence
+```
 
+#### Action
+
+```yaml
     Action:
       type: object
       description: |
@@ -1264,7 +1459,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Paraphrase'
+```
 
+#### Paraphrase
+
+```yaml
     Paraphrase:
       type: object
       description: |
@@ -1287,7 +1486,11 @@ components:
         commentary:
           type: string
           description: An explanatory note on why the paraphrase is linked to the original action.
+```
 
+#### Character
+
+```yaml
     Character:
       type: object
       description: Represents a character entity within the screenplay application, containing details such as name, description, and associated script IDs. Caching via Redis optimizes retrieval performance.
@@ -1317,7 +1520,11 @@ components:
             $ref: '#/components/schemas/Paraphrase'
       required:
         - name
+```
 
+#### CharacterCreateRequest
+
+```yaml
     CharacterCreateRequest:
       type: object
       description: Schema defining the structure required to create a new character, including name and optionally a description.
@@ -1332,7 +1539,11 @@ components:
           example: "The heroine of Romeo and Juliet."
       required:
         - name
+```
 
+#### CharacterUpdateRequest
+
+```yaml
     CharacterUpdateRequest:
       type: object
       description: Schema for updating the details of an existing character, allowing changes to the name, description, and associated script IDs.
@@ -1345,7 +1556,11 @@ components:
           type: string
           description: Updated description of the character, providing a more detailed background and role in the story.
           example: "A detailed description of Juliet, including background and role in the story."
+```
 
+#### SpokenWord
+
+```yaml
     SpokenWord:
       type: object
       description: Represents a dialogue or spoken word within the script, identified by a unique ID, text, and sequence order. Caching via Redis improves query performance.
@@ -1363,7 +1578,11 @@ components:
         sequence:
           type: integer
           description: Order sequence of the SpokenWord within the script.
+```
 
+#### Transition
+
+```yaml
     Transition:
       type: object
       properties:
@@ -1379,7 +1598,11 @@ components:
       required:
         - description
         - sequence
+```
 
+#### Error
+
+```yaml
     Error:
       type: object
       description: Common error structure for the API.
@@ -1388,13 +1611,25 @@ components:
           type: string
           description: Description of the error encountered.
           example: "Required field missing: 'title'"
+```
 
+### Security Schemes
+
+```yaml
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+```
 
+---
+
+## Security
+
+```yaml
 security:
   - BearerAuth: []
 ```
+
+This `.md` file is structured to optimize readability and navigation on GitHub, providing semantic titling and organized sections for easy access. Let me know if you need any further adjustments.
