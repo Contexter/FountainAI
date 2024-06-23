@@ -1,0 +1,376 @@
+openapi: 3.0.2
+info:
+  title: FountainAI Integrated API
+  version: 1.0.0
+  description: |
+    This API provides endpoints for optimizing data using the OpenAI API, training a GPT-2 model with the optimized data, and initializing the FountainAI database.
+    The FountainAI services use a single PostgreSQL database as the single point of truth.
+    Migrations are namespaced to avoid conflicts, and a centralized migration management script ensures they are applied in the correct order.
+
+servers:
+  - url: https://trainoptimizeseed.fountain.coach
+    description: FountainAI Optimize and Train Server
+
+paths:
+  /optimize_data:
+    post:
+      summary: Optimize Data for Training
+      description: |
+        Optimize the provided data using the OpenAI API to prepare it for training a GPT-2 model.
+        This endpoint preprocesses the data by removing special characters, lowercasing, and tokenizing the text to ensure it is suitable for training purposes.
+      operationId: optimizeData
+      requestBody:
+        description: Data to be optimized for training.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scripts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample script text"
+                section_headings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample heading text"
+                spoken_words:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample spoken words text"
+                transitions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample transition text"
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample action text"
+                characters:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: "Sample character name"
+                      description:
+                        type: string
+                        example: "Sample character description"
+                notes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample note text"
+                music:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Sample music text"
+      responses:
+        '200':
+          description: Successfully optimized data for training.
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /train:
+    post:
+      summary: Train Model
+      description: Train the GPT-2 model with the provided data.
+      operationId: trainModel
+      requestBody:
+        description: Preprocessed data for training.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        example: "Optimized script text"
+      responses:
+        '200':
+          description: Training started successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /initialize_db:
+    post:
+      summary: Initialize Database
+      description: Initialize the FountainAI database with default or provided data.
+      operationId: initializeDatabase
+      requestBody:
+        description: Data to initialize the database.
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scripts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        example: "Initial script title"
+                      content:
+                        type: string
+                        example: "Initial script content"
+                section_headings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      title:
+                        type: string
+                        example: "Introduction"
+                      sequence:
+                        type: integer
+                        example: 1
+                spoken_words:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      text:
+                        type: string
+                        example: "Sample spoken words text"
+                transitions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      description:
+                        type: string
+                        example: "Sample transition text"
+                      sequence:
+                        type: integer
+                        example: 1
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      description:
+                        type: string
+                        example: "Sample action text"
+                      sequence:
+                        type: integer
+                        example: 1
+                characters:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: "Sample character name"
+                      description:
+                        type: string
+                        example: "Sample character description"
+                      scriptIds:
+                        type: array
+                        items:
+                          type: integer
+                        example: [101]
+                notes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      text:
+                        type: string
+                        example: "Sample note text"
+                      sequence:
+                        type: integer
+                        example: 1
+                music:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: integer
+                        example: 101
+                      text:
+                        type: string
+                        example: "Sample music text"
+      responses:
+        '200':
+          description: Database initialized successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      properties:
+        loc:
+          type: array
+          items:
+            type: string
+        msg:
+          type: string
+        type:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+
+x-database:
+  description: |
+    The FountainAI services use a single PostgreSQL database as the single point of truth. This decision ensures simplicity, consistent data handling, resource efficiency, and reduced complexity.
+    Each service has its own namespaced migrations to avoid conflicts. The following migration is specific to the Script service.
+
+  migration:
+    - name: ScriptMigration20230623
+      description: |
+        This migration creates the 'scripts' table with 'id', 'title', and 'content' fields.
+      script: |
+        import Fluent
+
+        struct ScriptMigration20230623: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("scripts")
+                    .id()
+                    .field("title", .string, .required)
+                    .field("content", .string, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("scripts").delete()
+            }
+        }
+
+x-integrationPoints:
+  description: Configuration for integrating with other services and dependencies.
+  services:
+    - name: PostgreSQL Database
+      url: postgres://localhost/fountainai_db
+      description: Centralized PostgreSQL database for all FountainAI services.
+      environmentVariables:
+        - name: DATABASE_URL
+          description: Connection string for the PostgreSQL database.
+    - name: OpenAI API
+      url: https://api.openai.com/v1
+      description: Endpoint for accessing the OpenAI API for data optimization.
+      environmentVariables:
+        - name: OPENAI_API_KEY
+          description: API key for authenticating requests to the OpenAI API.
+    - name: Weights & Biases
+      url: https://api.wandb.ai
+      description: Endpoint for logging and tracking experiments with Weights & Biases.
+      environmentVariables:
+        - name: WANDB_API_KEY
+          description: API key for authenticating requests to the Weights & Biases API.
+    - name: FountainAI Data APIs
+      urls:
+        scripts: https://script.fountain.coach/scripts
+        section_headings: https://sectionheading.fountain.coach/sectionHeadings
+        spoken_words: https://spokenwords.fountain.coach/spokenWords
+        transitions: https://transition.fountain.coach/transitions
+        actions: https://action.fountain.coach/actions
+        characters: https://character.fountain.coach/characters
+        notes: https://note.fountain.coach/notes
+        music: https://musicsound.fountain.coach/generate
+      description: Endpoints for fetching data from the FountainAI APIs.
+
