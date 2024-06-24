@@ -1,10 +1,30 @@
 # FountainAI Matrix Bot API Documentation
 
+## Table of Contents
+1. [Introduction to the FountainAI Matrix Bot](#introduction-to-the-fountainai-matrix-bot)
+2. [Introduction to Matrix Bots](#introduction-to-matrix-bots)
+   - [Reasoning Behind Bots in Matrix](#reasoning-behind-bots-in-matrix)
+   - [How Bots Are Deployed within the Matrix Platform](#how-bots-are-deployed-within-the-matrix-platform)
+   - [Quickest Way to Develop Matrix Bots](#quickest-way-to-develop-matrix-bots)
+3. [Flow Chart: Enhanced Autonomous Workflow](#flow-chart-enhanced-autonomous-workflow)
+4. [OpenAPI Specification](#openapi-specification)
+   - [Info](#info)
+   - [Paths](#paths)
+     - [Retrieve the Latest Meta Prompt](#retrieve-the-latest-meta-prompt)
+     - [Execute an API Command](#execute-an-api-command)
+     - [Verify the Response from an API Call](#verify-the-response-from-an-api-call)
+     - [Send the Final Verified Response to the User](#send-the-final-verified-response-to-the-user)
+   - [Components](#components)
+     - [MetaPrompt Schema](#metaprompt-schema)
+     - [APICall Schema](#apicall-schema)
+     - [VerifyResponse Schema](#verifyresponse-schema)
+     - [UserNotification Schema](#usernotification-schema)
+   - [Security](#security)
+5. [Detailed Breakdown of the API Interactions](#detailed-breakdown-of-the-api-interactions)
+
 ## Introduction to the FountainAI Matrix Bot
 
 The **FountainAI Matrix Bot** is a sophisticated assistant designed to enhance script management and editing workflows within the Matrix chat environment. This bot integrates with FountainAI's suite of APIs, providing seamless interactions for managing various script components. The bot leverages OpenAI's GPT models to understand user intents and relay actions, serving as a bridge between human input and automated script management.
-
----
 
 ## Introduction to Matrix Bots
 
@@ -78,8 +98,6 @@ The quickest way to develop Matrix bots involves using high-level libraries and 
 4. **Run and Test the Bot**: Execute the bot script and test it in your Matrix room by sending the command (e.g., `!hello`).
 
 5. **Deploy the Bot**: For continuous operation, deploy the bot on a server or a cloud platform. Use tools like Docker for containerization and systemd for managing the bot as a service.
-
----
 
 ## Flow Chart: Enhanced Autonomous Workflow
 
@@ -158,8 +176,6 @@ Matrix Chat Room
 User
 ```
 
----
-
 ## OpenAPI Specification
 
 ### Info
@@ -175,9 +191,7 @@ servers:
   - url: https://api.fountain.coach
     description: FountainAI API Server
 ```
-
 ### Paths
-
 #### Retrieve the Latest Meta Prompt
 
 **Step in Workflow: 3. Bot retrieves the latest meta prompt from the Meta Prompt API**
@@ -220,9 +234,7 @@ paths:
                   example: "create_script"
                 payload:
                   type: object
-                  example: { "
-
-title": "Sunset Script", "content": "A beautiful sunset..." }
+                  example: { "title": "Sunset Script", "content": "A beautiful sunset..." }
       responses:
         '200':
           description: The API command executed successfully.
@@ -482,6 +494,4 @@ components:
 12. **User Sees the Response**
     - **Description**: The user sees the response in the Matrix chat room and continues the interaction.
 
----
 
-This documentation provides a comprehensive overview of the FountainAI Matrix Bot's integration and workflow within the Matrix ecosystem, along with the detailed steps and API interactions involved in its operation.
