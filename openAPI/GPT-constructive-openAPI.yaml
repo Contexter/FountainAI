@@ -1,48 +1,3 @@
-Here are the destructive API calls (typically DELETE and PUT methods) that will be removed:
-
-1. **DELETE** `/scripts/{scriptId}`:
-   - Summary: Delete a Script by ID
-   - OperationId: deleteScript
-   - Description: Deletes a specific screenplay script from the system, identified by its scriptId.
-
-2. **PUT** `/scripts/{scriptId}`:
-   - Summary: Update a Script by ID
-   - OperationId: updateScript
-   - Description: Updates an existing screenplay script with new details. RedisAI provides recommendations and validation for updating script content.
-
-3. **DELETE** `/sectionHeadings/{sectionHeadingId}` (assuming this exists but not in the given content):
-   - Summary: Delete a Section Heading by ID
-   - OperationId: deleteSectionHeading
-   - Description: Deletes a specific section heading from the system, identified by its sectionHeadingId.
-
-4. **PUT** `/sectionHeadings/{sectionHeadingId}` (assuming this exists but not in the given content):
-   - Summary: Update a Section Heading by ID
-   - OperationId: updateSectionHeading
-   - Description: Updates an existing section heading with new details.
-
-5. **DELETE** `/actions/{actionId}` (assuming this exists but not in the given content):
-   - Summary: Delete an Action by ID
-   - OperationId: deleteAction
-   - Description: Deletes a specific action from the system, identified by its actionId.
-
-6. **PUT** `/actions/{actionId}` (assuming this exists but not in the given content):
-   - Summary: Update an Action by ID
-   - OperationId: updateAction
-   - Description: Updates an existing action with new details.
-
-7. **DELETE** `/characters/{characterId}` (assuming this exists but not in the given content):
-   - Summary: Delete a Character by ID
-   - OperationId: deleteCharacter
-   - Description: Deletes a specific character from the system, identified by its characterId.
-
-8. **PUT** `/characters/{characterId}` (assuming this exists but not in the given content):
-   - Summary: Update a Character by ID
-   - OperationId: updateCharacter
-   - Description: Updates an existing character with new details.
-
-Now, let's create a constructive-only version of the API:
-
-```yaml
 openapi: 3.0.1
 info:
   title: Combined Script Management API
@@ -1328,6 +1283,3 @@ components:
 
 security:
   - BearerAuth: []
-```
-
-This version removes all the destructive operations, leaving only the constructive ones such as GET and POST.
