@@ -16,8 +16,10 @@ The Matrix Bot Merger Tool is a Swift command-line application designed to help 
     1. [Main Application](#main-application)
     2. [Abstraction for User Input](#abstraction-for-user-input)
     3. [Tests](#tests)
+    4. [Merging Logic and Saving to File](#merging-logic-and-saving-to-file)
 5. [Running the Tool](#running-the-tool)
 6. [Conclusion](#conclusion)
+7. [Commit Message](#commit-message)
 
 ## Features
 - **Automated OpenAPI Spec Analysis**: Utilizes OpenAI GPT to determine the relevance of OpenAPI specs.
@@ -273,10 +275,10 @@ func main() {
         while !filesToProcess.isEmpty {
             let file = filesToProcess.removeFirst()
             let filePath = "\(directoryPath)/\(file)"
-            if let openAPISpec = try? String(contentsOfFile: filePath, encoding: .utf8) {
-                if askGPT(openAPISpec: openAPISpec, question: question
+            if let openAPISpec = try
 
-, apiKey: apiKey) {
+? String(contentsOfFile: filePath, encoding: .utf8) {
+                if askGPT(openAPISpec: openAPISpec, question: question, apiKey: apiKey) {
                     relevantSpecs.append(openAPISpec)
                 }
             }
@@ -401,6 +403,16 @@ class MockInputProvider: InputProvider {
 }
 ```
 
+### Merging Logic and Saving to File
+
+Incorporate the merging logic and saving the result to a file in the main application:
+
+1. **Query the OpenAI API** to get the merged OpenAPI specs.
+2. **Save the response to a file** on the local system.
+3. **Notify the user** about the location of the saved file.
+
+This ensures that the merged spec is properly handled and provided to the user.
+
 ### Running the Tool
 
 1. **Build and Run**:
@@ -414,6 +426,10 @@ class MockInputProvider: InputProvider {
 
 Replace `<ProjectName>` with your actual project name, `<directory_path>` with the path to your directory of OpenAPI specs, and `<your_openai_api_key>` with your actual OpenAI API key.
 
+### Conclusion
+
+This documentation provides a comprehensive guide to setting up, implementing, and testing the Matrix Bot Merger Tool. By following these steps, you can create a robust tool for iterating through and merging relevant OpenAPI specs for creating a Matrix bot, while adhering to the principles of test-driven development. The tool leverages OpenAI's GPT model to assist in determining relevance and merging specs, ensuring a streamlined and efficient process. The implementation also includes user prompts for confirmation and additional criteria before merging, ensuring that the process meets the user's specific requirements.
+
 ### Commit Message
 
 ```plaintext
@@ -426,12 +442,9 @@ feat: Create and configure Matrix Bot Merger Tool
 - Implement OpenAPI spec analysis using OpenAI GPT
 - Implement user interaction for proceeding with specs
 - Implement merging logic with OpenAI GPT
+- Save merged OpenAPI spec to file and notify user
 - Implement user prompts for confirmation and additional criteria
 - Add tests for user input and merging logic
 - Build project and run tests to verify setup
 - Initialize Git repository with .gitignore and make initial commit
 ```
-
-### Conclusion
-
-This documentation provides a comprehensive guide to setting up, implementing, and testing the Matrix Bot Merger Tool. By following these steps, you can create a robust tool for iterating through and merging relevant OpenAPI specs for creating a Matrix bot, while adhering to the principles of test-driven development. The tool leverages OpenAI's GPT model to assist in determining relevance and merging specs, ensuring a streamlined and efficient process. The implementation also includes user prompts for confirmation and additional criteria before merging, ensuring that the process meets the user's specific requirements.
