@@ -4,7 +4,7 @@
 Effortlessly iterate through and merge relevant OpenAPI specs for creating a Matrix bot.
 
 ## Introduction
-The Matrix Bot Merger Tool is a Swift command-line application designed to help developers identify and merge relevant OpenAPI specifications for creating Matrix bots. This tool leverages the OpenAI GPT model to determine the relevance of each spec, prompting the user for confirmation before proceeding with the next spec. It is built using the Vapor framework and follows a test-driven development (TDD) approach.
+The Matrix Bot Merger Tool is a Swift command-line application designed to help developers identify and merge relevant OpenAPI specifications for creating Matrix bots. This tool leverages the OpenAI GPT model to determine the relevance of each spec, automating the entire process based on user-configured inputs. It is built using the Vapor framework and follows a test-driven development (TDD) approach.
 
 ## Table of Contents
 1. [Features](#features)
@@ -18,13 +18,16 @@ The Matrix Bot Merger Tool is a Swift command-line application designed to help 
     3. [Tests](#tests)
     4. [Merging Logic and Saving to File](#merging-logic-and-saving-to-file)
 5. [Running the Tool](#running-the-tool)
-6. [Conclusion](#conclusion)
-7. [Commit Message](#commit-message)
+6. [Example Use](#example-use)
+7. [Conclusion](#conclusion)
+8. [Commit Message](#commit-message)
 
 ## Features
 - **Automated OpenAPI Spec Analysis**: Utilizes OpenAI GPT to determine the relevance of OpenAPI specs.
-- **User Interaction**: Prompts the user for confirmation to proceed with the next spec or specify a file name.
+- **User Interaction**: Single configuration file for user inputs.
 - **Spec Merging**: Merges relevant OpenAPI specs into a single document.
+- **Job Feedback**: Provides job running animation and user feedback.
+- **Merge Report**: Generates a comprehensive merge report.
 - **Test-Driven Development**: Includes tests to ensure reliability and correctness.
 
 ## Prerequisites
@@ -182,6 +185,14 @@ Edit `Sources/<ProjectName>/main.swift` to implement the tool's logic:
 import Foundation
 import OpenAI
 
+struct Configuration: Codable {
+    var directoryPath: String
+    var question: String
+    var apiKey: String
+    var outputFile: String
+    var reportFile: String
+}
+
 struct OpenAPISpec: Codable {
     var spec: String
 }
@@ -216,95 +227,82 @@ func mergeSpecs(specs: [String], question: String, apiKey: String) -> String? {
     }
 }
 
-func promptUserForNextAction(inputProvider: InputProvider) -> String {
-    print("Press 'c' to continue with the next spec, 'f' to specify a file name, or 'q' to quit:")
-    if let response = inputProvider.readInput()?.lowercased() {
-        return response
-    }
-    return "q"
-}
-
-func promptUserForFileName(inputProvider: InputProvider) -> String? {
-    print("Enter the file name of the next spec to process:")
-    return inputProvider.readInput()
-}
-
-func promptUserForMergeConfirmation(inputProvider: InputProvider) -> Bool {
-    print("Do you want to proceed with the merge? (yes/no):")
-    if let response = inputProvider.readInput()?.lowercased() {
-        return response == "yes"
-    }
-    return false
-}
-
-func promptUserForAdditionalCriteria(inputProvider: InputProvider) -> String? {
-    print("Enter any additional criteria to be met before merging (or press Enter to skip):")
-    return inputProvider.readInput()
-}
-
-func saveMergedSpec(mergedSpec: String, fileName: String) {
+func saveToFile(content: String, fileName: String) {
     let fileURL = URL(fileURLWithPath: fileName)
     do {
-        try mergedSpec.write(to: fileURL, atomically: true, encoding: .utf8)
-        print("Merged OpenAPI spec saved to \(fileName)")
+        try content.write(to: fileURL, atomically: true, encoding: .utf8)
+        print("File saved to \(fileName)")
     } catch {
-        print("Failed to save merged spec: \(error)")
+        print("Failed to save file: \(error)")
+    }
+}
+
+func loadConfiguration() -> Configuration? {
+    let configURL = URL(fileURLWithPath: "config.json")
+    do {
+        let data = try Data(contentsOf: configURL)
+        let configuration = try JSONDecoder().decode(Configuration.self, from: data)
+        return configuration
+    } catch {
+        print("Failed to load configuration: \(error)")
+        return nil
+    }
+}
+
+func displayLoadingAnimation() {
+    let animation = ["|", "/", "-", "\\"]
+    var counter = 0
+    while true {
+        print("\r\(animation[counter % animation.count]) Job is running...", terminator: "")
+        fflush(stdout)
+        counter += 1
+        Thread.sleep(forTimeInterval: 0.1)
     }
 }
 
 func main() {
-    let arguments = CommandLine.arguments
-    guard arguments.count == 4 else {
-        print("Usage: <executable> <directory_path> <question> <api_key>")
+    guard let configuration = loadConfiguration() else {
+        print("Failed to load configuration.")
         return
     }
 
-    let directoryPath = arguments[1]
-    let question = arguments[2]
-    let apiKey = arguments[3]
-    let inputProvider = ConsoleInputProvider()
-
     var relevantSpecs = [String]()
-    var filesToProcess = [String]()
+    var mergeReport = "Merge Report\n===========\n"
+
+    DispatchQueue.global(qos: .background).async {
+        displayLoadingAnimation()
+    }
 
     do {
         let fileManager = FileManager.default
-        let files = try fileManager.contentsOfDirectory(atPath: directoryPath)
-        filesToProcess = files
+        let files = try fileManager.contentsOfDirectory(atPath: configuration.directoryPath)
 
-        while !filesToProcess.isEmpty {
-            let file = filesToProcess.removeFirst()
-            let filePath = "\(directoryPath)/\(file)"
-            if let openAPISpec = try
-
-? String(contentsOfFile: filePath, encoding: .utf8) {
-                if askGPT(openAPISpec: openAPISpec, question: question, apiKey: apiKey) {
+        for file in files {
+            let filePath = "\(configuration.directoryPath)/\(file)"
+            if let openAPISpec = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                if askGPT(openAPISpec: openAPISpec, question: configuration.question, apiKey: configuration.apiKey) {
                     relevantSpecs.append(openAPISpec)
-                }
-            }
+                    mergeReport
 
-            let action = promptUserForNextAction(inputProvider: inputProvider)
-            if action == "q" {
-                break
-            } else if action == "f" {
-                if let fileName = promptUserForFileName(inputProvider: inputProvider) {
-                    filesToProcess.insert(fileName, at: 0)
+ += "Relevant: \(file)\n"
+                } else {
+                    mergeReport += "Not Relevant: \(file)\n"
                 }
             }
         }
 
         if !relevantSpecs.isEmpty {
-            if let additionalCriteria = promptUserForAdditionalCriteria(inputProvider: inputProvider), !additionalCriteria.isEmpty {
-                let combinedQuestion = "\(question). Additional criteria: \(additionalCriteria)"
-                if let mergedSpec = mergeSpecs(specs: relevantSpecs, question: combinedQuestion, apiKey: apiKey), promptUserForMergeConfirmation(inputProvider: inputProvider) {
-                    saveMergedSpec(mergedSpec: mergedSpec, fileName: "merged_openapi_spec.yaml")
-                }
+            if let mergedSpec = mergeSpecs(specs: relevantSpecs, question: configuration.question, apiKey: configuration.apiKey) {
+                saveToFile(content: mergedSpec, fileName: configuration.outputFile)
+                mergeReport += "Merged spec saved to \(configuration.outputFile)\n"
             } else {
-                if let mergedSpec = mergeSpecs(specs: relevantSpecs, question: question, apiKey: apiKey), promptUserForMergeConfirmation(inputProvider: inputProvider) {
-                    saveMergedSpec(mergedSpec: mergedSpec, fileName: "merged_openapi_spec.yaml")
-                }
+                mergeReport += "Failed to merge specs.\n"
             }
+        } else {
+            mergeReport += "No relevant specs found.\n"
         }
+
+        saveToFile(content: mergeReport, fileName: configuration.reportFile)
     } catch {
         print("Error reading directory: \(error)")
     }
@@ -421,29 +419,47 @@ This ensures that the merged spec is properly handled and provided to the user.
    ./setup_project.sh
    cd <ProjectName>
    swift build
-   swift run <ProjectName> <directory_path> "Is this OpenAPI spec relevant for creating a matrix bot?" <your_openai_api_key>
+   swift run <ProjectName>
    ```
 
-Replace `<ProjectName>` with your actual project name, `<directory_path>` with the path to your directory of OpenAPI specs, and `<your_openai_api_key>` with your actual OpenAI API key.
+Ensure your `config.json` file is correctly configured with the path to your OpenAPI specs, the relevant question, your OpenAI API key, and the output file names.
+
+### Example Use
+
+Ensure you have a `config.json` file in the root directory of your project:
+
+```json
+{
+    "directoryPath": "./path/to/openapi/specs",
+    "question": "Is this OpenAPI spec relevant for creating a matrix bot?",
+    "apiKey": "your_openai_api_key",
+    "outputFile": "merged_openapi_spec.yaml",
+    "reportFile": "merge_report.txt"
+}
+```
+
+Place your OpenAPI spec files in the directory specified in the `config.json`. Run the tool, and it will process all files in the directory, generate a merged OpenAPI spec, and save a merge report.
 
 ### Conclusion
 
-This documentation provides a comprehensive guide to setting up, implementing, and testing the Matrix Bot Merger Tool. By following these steps, you can create a robust tool for iterating through and merging relevant OpenAPI specs for creating a Matrix bot, while adhering to the principles of test-driven development. The tool leverages OpenAI's GPT model to assist in determining relevance and merging specs, ensuring a streamlined and efficient process. The implementation also includes user prompts for confirmation and additional criteria before merging, ensuring that the process meets the user's specific requirements.
+This documentation provides a comprehensive guide to setting up, implementing, and testing the Matrix Bot Merger Tool. By following these steps, you can create a robust tool for iterating through and merging relevant OpenAPI specs for creating a Matrix bot, while adhering to the principles of test-driven development. The tool leverages OpenAI's GPT model to assist in determining relevance and merging specs, ensuring a streamlined and efficient process. The implementation includes a single configuration file for user inputs, job running animation, and user feedback, resulting in a comprehensive OpenAPI spec and merge report.
 
 ### Commit Message
 
 ```plaintext
-feat: Create and configure Matrix Bot Merger Tool
+feat: Enhance automation in Matrix Bot Merger Tool
 
 - Initialize Swift package with executable and test targets
 - Create project directory structure and setup initial files
 - Ensure idempotency by cleaning up existing project directory
 - Add interactivity by prompting for project name
 - Implement OpenAPI spec analysis using OpenAI GPT
-- Implement user interaction for proceeding with specs
+- Implement automated directory crawl and spec processing
 - Implement merging logic with OpenAI GPT
 - Save merged OpenAPI spec to file and notify user
-- Implement user prompts for confirmation and additional criteria
+- Add configuration file for automated setup
+- Add job running animation and user feedback
+- Generate merge report and save to file
 - Add tests for user input and merging logic
 - Build project and run tests to verify setup
 - Initialize Git repository with .gitignore and make initial commit
