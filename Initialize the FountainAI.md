@@ -69,10 +69,10 @@ Before starting the setup, ensure you have the following:
    - Copy the output (your public key).
 
 2. **Add the Public Key to Your VPS**:
-   - Open A second terminal tab and use an SSH client to connect to your VPS.
+   - Use an SSH client to connect to your VPS.
    - Example command:
      ```sh
-     ssh your_vps_username@your_vps_ip
+     ssh $VPS_USERNAME@$VPS_IP
      ```
    - On your VPS, run the following command to add your public key to the `authorized_keys` file:
      ```sh
@@ -81,7 +81,7 @@ Before starting the setup, ensure you have the following:
    - Replace `<public_key>` with the public key you copied earlier.
 
 3. **Copy the Private Key**:
-   - Back on you local machine (first tab of your terminal), run the following command to display the private key:
+   - Run the following command to display the private key:
      ```sh
      cat ~/.ssh/id_ed25519
      ```
@@ -106,6 +106,8 @@ VPS_USERNAME=your_vps_username
 VPS_IP=your_vps_ip
 APP_NAME=fountainai
 DOMAIN=example.com
+DEPLOY_DIR=/home/your_vps_username/deployment_directory  # Directory on VPS where the app will be deployed
+EMAIL=mail@benedikt-eickhoff.de
 ```
 
 ### Step 5: Create Script to Add Secrets via GitHub's API
@@ -139,12 +141,18 @@ create_github_secret() {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/secrets/$secret_name"
 }
 
-# Add common secrets
-create_github_secret "GHCR_TOKEN" "$GITHUB_TOKEN"
+# Add secrets
+create_github_secret "MAIN_DIR" "$MAIN_DIR"
+create_github_secret "REPO_OWNER" "$REPO_OWNER"
+create_github_secret "REPO_NAME" "$REPO_NAME"
+create_github_secret "GITHUB_TOKEN" "$GITHUB_TOKEN"
 create_github_secret "VPS_SSH_KEY" "$VPS_SSH_KEY"
 create_github_secret "VPS_USERNAME" "$VPS_USERNAME"
 create_github_secret "VPS_IP" "$VPS_IP"
+create_github_secret "APP_NAME" "$APP_NAME"
 create_github_secret "DOMAIN" "$DOMAIN"
+create_github_secret "DEPLOY_DIR" "$DEPLOY_DIR"
+create_github_secret "EMAIL" "$EMAIL"
 
 echo "Secrets have been added to GitHub repository."
 ```
@@ -161,7 +169,7 @@ chmod +x add_secrets.sh
 Create a file named `ci-cd-template.yml` under `.github/workflows/`:
 
 ```yaml
-name: CI/CD Pipeline for FountainAI
+name: CI/CD Pipeline for ${{ secrets.APP_NAME }}
 
 on:
   push:
@@ -200,8 +208,10 @@ server {
 EOL
           sudo ln -s /etc/nginx/sites-available/${{ secrets.DOMAIN }} /etc/nginx/sites-enabled/
           sudo systemctl reload nginx
-          sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m your-email@example.com
+          sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
           sudo systemctl reload nginx
+
+
 EOF
 
   build:
@@ -214,13 +224,11 @@ EOF
         uses: docker/setup-buildx-action@v1
 
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: Build and Push Docker Image
-        run:
-
- |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/fountainai
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
@@ -236,11 +244,11 @@ EOF
       - name: Deploy to VPS
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          cd /path/to/deployment/directory
-          docker pull ghcr.io/${{ github.repository_owner }}/fountainai
-          docker stop fountainai || true
-          docker rm fountainai || true
-          docker run -d --env-file /path/to/env/file -p 8080:8080 --name fountainai ghcr.io/${{ github.repository_owner }}/fountainai
+          cd ${{ secrets.DEPLOY_DIR }}
+          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+          docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+          docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
           EOF
 
       - name: Verify Nginx and SSL Configuration
@@ -312,13 +320,13 @@ main() {
 
     create_vapor_app $APP_NAME
 
-    ../add_secrets.sh
+    ./add_secrets.sh
 
-    ../generate_workflows.sh
+    ./generate_workflows.sh
 
     install_docker_on_vps
 
-    ../setup_nginx.sh
+    ./setup_nginx.sh
 
     echo "Initial setup for FountainAI project is complete."
 }
