@@ -69,7 +69,7 @@ Before starting the setup, ensure you have the following:
    - Copy the output (your public key).
 
 2. **Add the Public Key to Your VPS**:
-   - Use an SSH client to connect to your VPS.
+   - Open A second terminal tab and use an SSH client to connect to your VPS.
    - Example command:
      ```sh
      ssh your_vps_username@your_vps_ip
@@ -81,7 +81,7 @@ Before starting the setup, ensure you have the following:
    - Replace `<public_key>` with the public key you copied earlier.
 
 3. **Copy the Private Key**:
-   - Run the following command to display the private key:
+   - Back on you local machine (first tab of your terminal), run the following command to display the private key:
      ```sh
      cat ~/.ssh/id_ed25519
      ```
