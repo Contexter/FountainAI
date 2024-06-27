@@ -807,6 +807,3 @@ func testGetUser() throws {
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
----
-
-By following this guide, you will have a well-structured and automated setup for developing and deploying your Vapor application with environment-specific configurations for both staging and production.
