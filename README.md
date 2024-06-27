@@ -173,9 +173,7 @@ REDISAI_PORT=6378
      ```sh
      git init
      git add .
-     git commit
-
- -m "Initial project setup"
+     git commit -m "Initial project setup"
      git remote add origin https://github.com/your_github_username/your_repository_name.git
      git push -u origin main
      ```
