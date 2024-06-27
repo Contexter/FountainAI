@@ -8,9 +8,10 @@
   - [Step 2: Create SSH Keys for VPS Access](#step-2-create-ssh-keys-for-vps-access)
   - [Step 3: Add SSH Keys to Your VPS and GitHub](#step-3-add-ssh-keys-to-your-vps-and-github)
   - [Step 4: Create Configuration File](#step-4-create-configuration-file)
-  - [Step 5: Create Script to Add Secrets via GitHub's API](#step-5-create-script-to-add-secrets-via-githubs-api)
-  - [Step 6: Create GitHub Actions Workflow Templates](#step-6-create-github-actions-workflow-templates)
-  - [Step 7: Final Setup Script](#step-7-final-setup-script)
+  - [Step 5: Initialize Git Repository](#step-5-initialize-git-repository)
+  - [Step 6: Create Script to Add Secrets via GitHub's API](#step-6-create-script-to-add-secrets-via-githubs-api)
+  - [Step 7: Create GitHub Actions Workflow Templates](#step-7-create-github-actions-workflow-templates)
+  - [Step 8: Final Setup Script](#step-8-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -122,7 +123,31 @@ REDIS_PORT=6379
 REDISAI_PORT=6378
 ```
 
-### Step 5: Create Script to Add Secrets via GitHub's API
+### Step 5: Initialize Git Repository
+
+1. **Initialize Git Repository**:
+   - Open your terminal and navigate to your project directory.
+   - Run the following commands to initialize a new git repository and commit the initial setup:
+     ```sh
+     git init
+     git add .
+     git commit -m "Initial project setup"
+     git remote add origin https://github.com/your_github_username/your_repository_name.git
+     git push -u origin main
+     ```
+
+2. **Add `config.env` to `.gitignore`**:
+   - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
+     ```sh
+     echo "config.env" >> .gitignore
+     git add .gitignore
+     git commit -m "Add config.env to .gitignore for security"
+     git push
+     ```
+
+**Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. By adding it to `.gitignore`, you ensure this file is not tracked by git and is stored securely. This helps prevent accidental exposure of sensitive data in your repository.
+
+### Step 6: Create Script to Add Secrets via GitHub's API
 
 Create a script named `add_secrets.sh`:
 
@@ -182,7 +207,7 @@ chmod +x add_secrets.sh
 ./add_secrets.sh
 ```
 
-### Step 6: Create GitHub Actions Workflow Templates
+### Step 7: Create GitHub Actions Workflow Templates
 
 Create separate workflows for staging and production. Start with `ci-cd-staging.yml`:
 
@@ -375,7 +400,9 @@ EOF
       - name: Set up Nginx and SSL for Production
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo tee /etc/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
+          sudo tee /etc
+
+/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
 server {
     listen 80;
     listen 443 ssl;
@@ -399,9 +426,7 @@ EOF
 
       - name: Set up PostgreSQL, Redis, and RedisAI
         run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} <<
-
- 'EOF'
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
           sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
           sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
@@ -464,7 +489,7 @@ EOF
           EOF
 ```
 
-### Step 7: Final Setup Script
+### Step 8: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
 
@@ -611,6 +636,8 @@ chmod +x setup.sh
    ```
 
 2. **Manual Workflow Dispatch**:
+
+
    - Optionally, you can configure the workflows to allow manual dispatch from the GitHub Actions interface.
 
 ### Monitoring and Manual Trigger
@@ -656,7 +683,7 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Automatedsetup for FountainAI project
+feat: Automated setup for FountainAI project
 
 - Added comprehensive step-by-step guide to automate the initial setup for a Vapor application.
 - Included security best practices and explanations for managing SSH keys and .env files.
@@ -735,4 +762,3 @@ func testGetUser() throws {
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
-
