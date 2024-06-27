@@ -1,4 +1,3 @@
-
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -19,11 +18,13 @@
 - [Commit Message](#commit-message)
 - [Development Perspective](#development-perspective)
   - [TDD and CI/CD](#tdd-and-cicd)
+  - [Unit Tests](#unit-tests)
+  - [Integration Tests](#integration-tests)
   - [Conclusion](#conclusion)
 
 ## Introduction
 
-This guide provides a comprehensive step-by-step approach to automate the initial setup for a Vapor application, including setting up a Dockerized environment with Nginx, PostgreSQL, Redis, and SSL via Let's Encrypt managed by Certbot. It also covers creating separate environments for staging and production, managed through GitHub Actions.
+This guide provides a comprehensive step-by-step approach to automate the initial setup for a Vapor application, including setting up a Dockerized environment with Nginx, PostgreSQL, Redis, and RedisAI, along with SSL via Let's Encrypt managed by Certbot. It also covers creating separate environments for staging and production, managed through GitHub Actions.
 
 ## OpenAPI Specification
 
@@ -114,6 +115,11 @@ DOMAIN=example.com
 STAGING_DOMAIN=staging.example.com
 DEPLOY_DIR=/home/your_vps_username/deployment_directory  # Directory on VPS where the app will be deployed
 EMAIL=mail@benedikt-eickhoff.de
+DB_NAME=fountainai_db
+DB_USER=fountainai_user
+DB_PASSWORD=your_db_password
+REDIS_PORT=6379
+REDISAI_PORT=6378
 ```
 
 ### Step 5: Create Script to Add Secrets via GitHub's API
@@ -160,6 +166,11 @@ create_github_secret "DOMAIN" "$DOMAIN"
 create_github_secret "STAGING_DOMAIN" "$STAGING_DOMAIN"
 create_github_secret "DEPLOY_DIR" "$DEPLOY_DIR"
 create_github_secret "EMAIL" "$EMAIL"
+create_github_secret "DB_NAME" "$DB_NAME"
+create_github_secret "DB_USER" "$DB_USER"
+create_github_secret "DB_PASSWORD" "$DB_PASSWORD"
+create_github_secret "REDIS_PORT" "$REDIS_PORT"
+create_github_secret "REDISAI_PORT" "$REDISAI_PORT"
 
 echo "Secrets have been added to GitHub repository."
 ```
@@ -197,20 +208,30 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Set up Nginx and SSL for Staging
+      - name: Install Docker and Dependencies
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo apt update
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt update
+          sudo apt install -y docker-ce docker-ce-cli containerd.io
+          sudo systemctl enable docker
+          sudo systemctl start docker
           sudo apt install -y nginx certbot python3-certbot-nginx
+EOF
+
+      - name: Set up Nginx and SSL for Staging
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
 server {
     listen 80;
     listen 443 ssl;
     server_name ${{ secrets.STAGING_DOMAIN }};
     ssl_certificate /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/fullchain.pem;
-    ssl_certificate_key /etc
-
-/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/privkey.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/privkey.pem;
     location / {
         proxy_pass http://localhost:8081;
         proxy_set_header Host \$host;
@@ -224,6 +245,14 @@ EOL
           sudo systemctl reload nginx
           sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
           sudo systemctl reload nginx
+EOF
+
+      - name: Set up PostgreSQL, Redis, and RedisAI
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+          sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+          sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
 EOF
 
   build:
@@ -244,8 +273,30 @@ EOF
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-  deploy:
+  test:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Run Unit Tests
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+          docker run $IMAGE_NAME swift test --filter UnitTests
+
+      - name: Run Integration Tests
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+          docker run $IMAGE_NAME swift test --filter IntegrationTests
+
+  deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Set up SSH
@@ -307,11 +358,23 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Set up Nginx and SSL for Production
+      - name: Install Docker and Dependencies
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo apt update
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt update
+          sudo apt install -y docker-ce docker-ce-cli containerd.io
+          sudo systemctl enable docker
+          sudo systemctl start docker
           sudo apt install -y nginx certbot python3-certbot-nginx
+EOF
+
+      - name: Set up Nginx and SSL for Production
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo tee /etc/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
 server {
     listen 80;
@@ -332,6 +395,16 @@ EOL
           sudo systemctl reload nginx
           sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
           sudo systemctl reload nginx
+EOF
+
+      - name: Set up PostgreSQL, Redis, and RedisAI
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} <<
+
+ 'EOF'
+          sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+          sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+          sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
 EOF
 
   build:
@@ -394,6 +467,7 @@ EOF
 ### Step 7: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
+
 ```bash
 #!/bin/bash
 
@@ -406,7 +480,7 @@ create_main_directory() {
     cd $MAIN_DIR
 }
 
-# Function to create and initialize a new Vapor app in its starter state
+# Function to create and initialize a new Vapor app with required packages
 create_vapor_app() {
     local app_name=$1
     mkdir -p $app_name
@@ -415,6 +489,45 @@ create_vapor_app() {
 
     # Comment indicating the starter nature of the app
     echo "// This is a starter Vapor application. Further customization and implementation required." >> README.md
+
+    # Update Package.swift to include PostgreSQL, Redis, RedisAI, and Leaf
+    sed -i '' '/dependencies:/a\
+        .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
+        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),\
+        .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")
+    ' Package.swift
+
+    sed -i '' '/targets:/a\
+        .target(name: "'$app_name'", dependencies: [.product(name: "Leaf", package: "leaf"), .product(name: "PostgresKit", package: "postgres-kit"), .product(name: "Redis", package: "redis")])
+    ' Package.swift
+
+    # Create the necessary configurations for Leaf, PostgreSQL, and Redis in configure.swift
+    cat <<EOT >> Sources/App/configure.swift
+import Vapor
+import Leaf
+import Fluent
+import FluentPostgresDriver
+import Redis
+
+public func configure(_ app: Application) throws {
+    app.views.use(.leaf)
+
+    app.databases.use(.postgres(
+        hostname: Environment.get("DB_HOST") ?? "localhost",
+        username: Environment.get("DB_USER") ?? "postgres",
+        password: Environment.get("DB_PASSWORD") ?? "password",
+        database: Environment.get("DB_NAME") ?? "database"
+    ), as: .psql)
+
+    app.redis.configuration = try RedisConfiguration(
+        hostname: Environment.get("REDIS_HOST") ?? "localhost",
+        port: Environment.get("REDIS_PORT").flatMap(Int.init(_:)) ?? 6379
+    )
+
+    // Register routes
+    try routes(app)
+}
+EOT
 
     # Return to main directory
     cd ..
@@ -425,8 +538,6 @@ install_docker_on_vps() {
     ssh $VPS_USERNAME@$VPS_IP << EOF
     sudo apt update
     sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-
-
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     sudo apt update
@@ -477,7 +588,7 @@ chmod +x setup.sh
      ```
 
 2. **Verify Deployment**:
-   - The GitHub Actions workflow will automatically build, push the Docker image, and deploy the application to the staging environment.
+   - The GitHub Actions workflow will automatically build, push the Docker image, run tests, and deploy the application to the staging environment.
    - You can monitor the progress in the Actions tab of your GitHub repository.
 
 ### Deploy to Production
@@ -545,7 +656,7 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Automated setup for FountainAI project
+feat: Automatedsetup for FountainAI project
 
 - Added comprehensive step-by-step guide to automate the initial setup for a Vapor application.
 - Included security best practices and explanations for managing SSH keys and .env files.
@@ -582,10 +693,46 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 6. **Deploy to Production**:
    - Once tests pass in the staging environment, merge the changes into the main branch to deploy to the production environment.
 
+### Unit Tests
+
+**Unit Tests** are designed to test individual units of code in isolation. They help ensure that each function, method, or class behaves as expected. Unit tests are typically fast and should cover edge cases, invalid inputs, and typical use cases.
+
+#### Example:
+For a function that adds two numbers, a unit test might look like this:
+
+```swift
+func testAddition() {
+    XCTAssertEqual(add(2, 3), 5)
+    XCTAssertEqual(add(-1, 1), 0)
+    XCTAssertEqual(add(0, 0), 0)
+}
+```
+
+### Integration Tests
+
+**Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
+
+#### Example:
+For an API endpoint that retrieves user data from a database, an integration test might look like this:
+
+```swift
+func testGetUser() throws {
+    // Setup test data
+    let user = User(name: "Test User", email: "test@example.com")
+    try user.save()
+
+    // Make API call
+    let response = try app.getResponse(to: "/users/\(user.id!)", method: .GET)
+
+    // Verify response
+    XCTAssertEqual(response.status, .ok)
+    let receivedUser = try response.content.decode(User.self).wait()
+    XCTAssertEqual(receivedUser.name, "Test User")
+    XCTAssertEqual(receivedUser.email, "test@example.com")
+}
+```
+
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
----
-
-By following this guide, you will have a well-structured and automated setup for developing and deploying your Vapor application with environment-specific configurations for both staging and production.
