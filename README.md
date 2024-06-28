@@ -628,8 +628,6 @@ main() {
 
     install_docker_on_vps
 
-    ./setup_nginx.sh
-
     echo "Initial setup for FountainAI project is complete."
 }
 
