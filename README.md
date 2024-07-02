@@ -849,9 +849,7 @@ func testGetUser() throws {
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing
-
- the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
 ## Addendum: Configuration File Documentation
 
@@ -1146,5 +1144,3 @@ EOF
 ```
 
 By incorporating these principles and examples into the GitHub Actions templates, you can ensure that your workflows are idempotent, providing consistent and reliable deployments across multiple runs.
-
----
