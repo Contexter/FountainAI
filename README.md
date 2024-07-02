@@ -172,9 +172,7 @@ REDISAI_PORT=6378
 ### Step 5: Initialize Git Repository
 
 1. **Initialize Git Repository**:
-   - Open your terminal and navigate to
-
- your project directory.
+   - Open your terminal and navigate to your project directory.
    - Run the following commands to initialize a new git repository and commit the initial setup:
      ```sh
      git init
