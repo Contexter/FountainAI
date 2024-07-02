@@ -1,5 +1,3 @@
-Certainly! Below is the revised guide with the second addendum addressing idempotency in GitHub Actions templates included.
-
 ## Table of Contents
 
 - [Introduction](#introduction)
