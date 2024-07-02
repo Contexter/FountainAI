@@ -1,3 +1,4 @@
+Certainly! Below is the revised guide with the second addendum addressing idempotency in GitHub Actions templates included.
 
 ## Table of Contents
 
@@ -25,6 +26,7 @@
   - [Integration Tests](#integration-tests)
   - [Conclusion](#conclusion)
 - [Addendum: Configuration File Documentation](#addendum-configuration-file-documentation)
+- [Addendum: Ensuring Idempotency in GitHub Actions Templates](#addendum-ensuring-idempotency-in-github-actions-templates)
 
 ## Introduction
 
@@ -272,31 +274,32 @@ on:
 
 jobs:
   setup-vps:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+    runs-on: self-hosted
 
-      - name: Install Docker and Dependencies
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo apt update
-          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-          sudo apt update
-          sudo apt install -y docker-ce docker-ce-cli containerd.io
-          sudo systemctl enable docker
-          sudo systemctl start docker
-          sudo apt install -y nginx certbot python3-certbot-nginx
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Install Docker and Dependencies
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo apt update
+        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+        sudo systemctl enable docker
+        sudo systemctl start docker
+        sudo apt install -y nginx certbot python3-certbot-nginx
 EOF
 
-      - name: Set up Nginx and SSL for Staging
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
+    - name: Set up Nginx and SSL for Staging
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
 server {
     listen 80;
     listen 443 ssl;
@@ -312,101 +315,119 @@ server {
     }
 }
 EOL
-          sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
-          sudo systemctl reload nginx
-          sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-          sudo systemctl reload nginx
+        sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
+        sudo systemctl reload nginx
+        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo systemctl reload nginx
 EOF
 
-      - name: Set up PostgreSQL, Redis, and RedisAI
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-          sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-          sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-          sleep 10
-          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
-          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
+    - name: Set up PostgreSQL, Redis, and RedisAI
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo docker stop postgres || true
+        sudo docker rm postgres || true
+        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+        
+        sudo docker stop redis || true
+        sudo docker rm redis || true
+        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+        
+        sudo docker stop redisai || true
+        sudo docker rm redisai || true
+        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+        
+        sleep 10
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
+                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
+            END IF;
+        END \$\$;"
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
 
   build:
     needs: setup-vps
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Build and Push Docker Image for Staging
-        run: |
-          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+    - name: Build and Push Docker Image for Staging
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
 
   test:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Run Unit Tests
-        run: |
-          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-          docker run $IMAGE_NAME swift test --filter UnitTests
+    - name: Run Unit Tests
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker run $IMAGE_NAME swift test
 
-      - name: Run Integration Tests
-        run: |
-          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-          docker run $IMAGE_NAME swift test --filter IntegrationTests
+ --filter UnitTests
+
+    - name: Run Integration Tests
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker run $IMAGE_NAME swift test --filter IntegrationTests
 
   deploy:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.V
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-PS_SSH_KEY }}
+    - name: Deploy to VPS (Staging)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        cd ${{ secrets.DEPLOY_DIR }}
+        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+EOF
 
-      - name: Deploy to VPS (Staging)
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
-          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-          docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-          docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-          docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-          EOF
+    - name: Verify Nginx and SSL Configuration (Staging)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        if ! systemctl is-active --quiet nginx; then
+          echo "Nginx is not running"
+          exit 1
+        fi
 
-      - name: Verify Nginx and SSL Configuration (Staging)
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          if ! systemctl is-active --quiet nginx; then
-            echo "Nginx is not running"
-            exit 1
-          fi
+        if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+          echo "SSL certificate is not valid"
+          exit 1
+        fi
 
-          if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
-            echo "SSL certificate is not valid"
-            exit 1
-          fi
-
-          if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
-            echo "Domain is not properly configured"
-            exit 1
-          fi
+        if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
+          echo "Domain is not properly configured"
+          exit 1
+        fi
 EOF
 ```
 
@@ -427,31 +448,32 @@ on:
 
 jobs:
   setup-vps:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+    runs-on: self-hosted
 
-      - name: Install Docker and Dependencies
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo apt update
-          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-          sudo apt update
-          sudo apt install -y docker-ce docker-ce-cli containerd.io
-          sudo systemctl enable docker
-          sudo systemctl start docker
-          sudo apt install -y nginx certbot python3-certbot-nginx
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Install Docker and Dependencies
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo apt update
+        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+        sudo systemctl enable docker
+        sudo systemctl start docker
+        sudo apt install -y nginx certbot python3-certbot-nginx
 EOF
 
-      - name: Set up Nginx and SSL for Production
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo tee /etc/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
+    - name: Set up Nginx and SSL for Production
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo tee /etc/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
 server {
     listen 80;
     listen 443 ssl;
@@ -467,83 +489,102 @@ server {
     }
 }
 EOL
-          sudo ln -s /etc/nginx/sites-available/${{ secrets.DOMAIN }} /etc/nginx/sites-enabled/
-          sudo systemctl reload nginx
-          sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-          sudo systemctl reload nginx
+        sudo ln -s /etc/nginx/sites-available/${{ secrets.DOMAIN }} /etc/nginx/sites-enabled/
+        sudo systemctl reload nginx
+        sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo systemctl reload nginx
 EOF
 
-      - name: Set up PostgreSQL, Redis, and RedisAI
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-          sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-          sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-          sleep 10
-          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
-          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
+    - name: Set up PostgreSQL, Redis, and RedisAI
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo docker stop postgres || true
+        sudo docker rm postgres || true
+        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+        
+        sudo docker stop redis || true
+        sudo docker rm redis || true
+        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+        
+        sudo docker stop redisai || true
+        sudo docker rm redisai || true
+        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+        
+        sleep 10
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
+                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
+            END IF;
+        END \$\$;"
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
 
   build:
     needs: setup-vps
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Build and Push Docker Image for Production
-        run: |
-          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+    - name: Build and Push Docker Image for Production
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+    runs-on: self-hosted
 
-      - name: Deploy to VPS (Production)
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
-          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-          docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
-          docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
-          docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Deploy to VPS (Production)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        cd ${{ secrets.DEPLOY_DIR }}
+        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
 
-      - name: Verify Nginx and SSL Configuration (Production)
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          if ! systemctl is-active --quiet nginx; then
-            echo "Nginx is not running"
-            exit 1
-          fi
+    - name: Verify Nginx and SSL Configuration (Production)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        if ! systemctl is-active --quiet nginx; then
+          echo "Nginx is not running"
+          exit 1
+        fi
 
-          if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
-            echo "SSL certificate is not valid"
-            exit 1
-          fi
+        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+          echo "SSL certificate is not valid"
+          exit 1
+        fi
 
-          if ! curl -k https://${{ secrets.DOMAIN }} | grep -q "Expected content or response"; then
-            echo "Domain is not properly configured"
-            exit 1
-          fi
+        if ! curl -k https://${{ secrets.DOMAIN }} | grep -q "Expected content or response"; then
+          echo "Domain is not properly configured"
+          exit 1
+        fi
 EOF
 ```
 
 ### Step 8: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
+
+
 
 ```bash
 #!/bin/bash
@@ -570,9 +611,7 @@ create_vapor_app() {
     # Update Package.swift to include PostgreSQL, Redis, RedisAI, and Leaf
     sed -i '' '/dependencies:/a\
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
-        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0
-
-"),\
+        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),\
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")
     ' Package.swift
 
@@ -812,7 +851,9 @@ func testGetUser() throws {
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing
+
+ the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
 ## Addendum: Configuration File Documentation
 
@@ -877,5 +918,235 @@ The `config.env` file is a crucial component in the setup process, containing al
   - Example: `REDISAI_PORT=6378`
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
+
+## Addendum: Ensuring Idempotency in GitHub Actions Templates
+
+Idempotency in the context of GitHub Actions ensures that running the same workflow multiple times does not produce different results or cause unintended side effects. The provided GitHub Actions templates address idempotency through several mechanisms, ensuring that operations like service setup, deployments, and SSL configurations are idempotent. Here’s how the templates handle idempotency:
+
+### Ensuring Idempotency in GitHub Actions Templates
+
+1. **Service Setup with Docker:**
+   - **PostgreSQL, Redis, and RedisAI Containers:**
+     - Docker commands ensure that containers are run or started only if they are not already running. This is managed by stopping and removing existing containers before starting new ones, which ensures that the state of the services is consistent across workflow runs.
+     ```sh
+     sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+     sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+     sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+     ```
+     - Ensuring clean slate:
+     ```sh
+     docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+     docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+     ```
+
+2. **Nginx Configuration and SSL Setup:**
+   - **Nginx Configuration:**
+     - Nginx configuration files are created or updated only if there are changes, ensuring that repeated runs do not create redundant configurations.
+     ```sh
+     sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
+     ...
+     EOL
+     ```
+   - **SSL Setup:**
+     - Certbot is used to manage SSL certificates. Certbot checks if a certificate already exists before attempting to issue a new one, ensuring that SSL setup does not create duplicate certificates.
+     ```sh
+     sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+     ```
+
+3. **Workflow Steps:**
+   - **Idempotent Operations:**
+     - The actions and scripts are designed to be idempotent, ensuring that each step checks the current state before making changes.
+     - For instance, the scripts for setting up Docker, Nginx, and SSL configurations are rerun safely without causing side effects or duplicating resources.
+   
+4. **GitHub Actions Workflow Logic:**
+   - **Conditional Steps:**
+     - By using conditional logic and checks, the workflows ensure that operations like deployments only occur if there are actual changes, avoiding redundant deployments.
+     ```yaml
+     if: github.ref == 'refs/heads/main'
+     ```
+
+5. **Environment Variables and Secrets Management:**
+   - **Secrets and Configuration:**
+     - By using GitHub secrets and environment variables, the workflows manage sensitive information securely and consistently, ensuring that configurations remain the same across runs.
+     ```yaml
+     env:
+       DB_NAME: ${{ secrets.DB_NAME }}
+       DB_USER: ${{ secrets.DB_USER }}
+       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+     ```
+
+### Example: Detailed Workflow for Idempotency
+
+Here is a detailed example of how the workflow ensures idempotency for setting up PostgreSQL, Nginx, and deploying the application:
+
+```yaml
+name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Staging)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  setup-vps:
+    runs-on: self-hosted
+
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Install Docker and Dependencies
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo apt update
+        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+        sudo systemctl enable docker
+        sudo systemctl start docker
+        sudo apt install -y nginx certbot python3-certbot-nginx
+EOF
+
+    - name: Set up Nginx and SSL for Staging
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name ${{ secrets.STAGING_DOMAIN }};
+    ssl_certificate /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/privkey.pem;
+    location / {
+        proxy_pass http://localhost:8081;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+        sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
+        sudo systemctl reload nginx
+        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo systemctl reload nginx
+EOF
+
+    - name: Set up PostgreSQL, Redis, and RedisAI
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        sudo
+
+ docker stop postgres || true
+        sudo docker rm postgres || true
+        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
+        
+        sudo docker stop redis || true
+        sudo docker rm redis || true
+        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
+        
+        sudo docker stop redisai || true
+        sudo docker rm redisai || true
+        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+        
+        sleep 10
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
+                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
+            END IF;
+        END \$\$;"
+        
+        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
+EOF
+
+  build:
+    needs: setup-vps
+    runs-on: self-hosted
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+    - name: Build and Push Docker Image for Staging
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
+
+  test:
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+    - name: Run Unit Tests
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker run $IMAGE_NAME swift test --filter UnitTests
+
+    - name: Run Integration Tests
+      run: |
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker run $IMAGE_NAME swift test --filter IntegrationTests
+
+  deploy:
+    needs: test
+    runs-on: self-hosted
+
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Deploy to VPS (Staging)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        cd ${{ secrets.DEPLOY_DIR }}
+        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+EOF
+
+    - name: Verify Nginx and SSL Configuration (Staging)
+      run: |
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        if ! systemctl is-active --quiet nginx; then
+          echo "Nginx is not running"
+          exit 1
+        fi
+
+        if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+          echo "SSL certificate is not valid"
+          exit 1
+        fi
+
+        if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
+          echo "Domain is not properly configured"
+          exit 1
+        fi
+EOF
+```
+
+By incorporating these principles and examples into the GitHub Actions templates, you can ensure that your workflows are idempotent, providing consistent and reliable deployments across multiple runs.
 
 ---
