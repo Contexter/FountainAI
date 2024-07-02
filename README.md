@@ -1,3 +1,4 @@
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -23,6 +24,7 @@
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
   - [Conclusion](#conclusion)
+- [Addendum: Configuration File Documentation](#addendum-configuration-file-documentation)
 
 ## Introduction
 
@@ -146,14 +148,16 @@ Before starting the setup, ensure you have the following:
 Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
 
 ```env
-MAIN_DIR=fountainai-project
-REPO_OWNER=your_github_username
-REPO_NAME=your_repository_name
-GITHUB_TOKEN=your_github_token
-VPS_SSH_KEY=your_vps_private_key
+MAIN_DIR=fountainAI-project
+REPO_OWNER=Contexter
+REPO_NAME=fountainAI
+GITHUB_TOKEN=ghp_yourgithubtoken1234567890
+VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----
 VPS_USERNAME=your_vps_username
 VPS_IP=your_vps_ip
-APP_NAME=fountainai
+APP_NAME=fountainAI
 DOMAIN=example.com
 STAGING_DOMAIN=staging.example.com
 DEPLOY_DIR=/home/your_vps_username/deployment_directory  # Directory on VPS where the app will be deployed
@@ -168,13 +172,15 @@ REDISAI_PORT=6378
 ### Step 5: Initialize Git Repository
 
 1. **Initialize Git Repository**:
-   - Open your terminal and navigate to your project directory.
+   - Open your terminal and navigate to
+
+ your project directory.
    - Run the following commands to initialize a new git repository and commit the initial setup:
      ```sh
      git init
      git add .
      git commit -m "Initial project setup"
-     git remote add origin https://github.com/your_github_username/your_repository_name.git
+     git remote add origin https://github.com/Contexter/fountainAI.git
      git push -u origin main
      ```
 
@@ -320,6 +326,9 @@ EOF
           sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
           sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
           sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+          sleep 10
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
 
   build:
@@ -369,7 +378,9 @@ EOF
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+          ssh-private-key: ${{ secrets.V
+
+PS_SSH_KEY }}
 
       - name: Deploy to VPS (Staging)
         run: |
@@ -377,8 +388,6 @@ EOF
           cd ${{ secrets.DEPLOY_DIR }}
           docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
           docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-
-
           docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
           docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
           EOF
@@ -400,7 +409,7 @@ EOF
             echo "Domain is not properly configured"
             exit 1
           fi
-          EOF
+EOF
 ```
 
 Then, create the production workflow:
@@ -472,6 +481,9 @@ EOF
           sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
           sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
           sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
+          sleep 10
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
 
   build:
@@ -509,7 +521,7 @@ EOF
           docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
           docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
           docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-          EOF
+EOF
 
       - name: Verify Nginx and SSL Configuration (Production)
         run: |
@@ -528,7 +540,7 @@ EOF
             echo "Domain is not properly configured"
             exit 1
           fi
-          EOF
+EOF
 ```
 
 ### Step 8: Final Setup Script
@@ -560,7 +572,9 @@ create_vapor_app() {
     # Update Package.swift to include PostgreSQL, Redis, RedisAI, and Leaf
     sed -i '' '/dependencies:/a\
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
-        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),\
+        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0
+
+"),\
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")
     ' Package.swift
 
@@ -581,9 +595,7 @@ public func configure(_ app: Application) throws {
 
     app.databases.use(.postgres(
         hostname: Environment.get("DB_HOST") ?? "localhost",
-        username: Environment.get("DB_USER")
-
- ?? "postgres",
+        username: Environment.get("DB_USER") ?? "postgres",
         password: Environment.get("DB_PASSWORD") ?? "password",
         database: Environment.get("DB_NAME") ?? "database"
     ), as: .psql)
@@ -734,6 +746,7 @@ feat: Automated setup for FountainAI project
 - Integrated Nginx and SSL setup directly into GitHub Actions workflows.
 - Ensured Docker installation on VPS as part of the setup process.
 - Detailed deployment steps for staging and production environments.
+- Enhanced PostgreSQL setup to include automatic user and database creation.
 ```
 
 ## Development Perspective
@@ -803,3 +816,68 @@ func testGetUser() throws {
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
+## Addendum: Configuration File Documentation
+
+### `config.env` File
+
+The `config.env` file is a crucial component in the setup process, containing all the necessary configuration variables. Here’s a breakdown of each variable and its purpose:
+
+- **`MAIN_DIR`**: The main directory for the project on your local machine. This can be the same as the `APP_NAME` or different.
+  - Example: `MAIN_DIR=fountainAI-project`
+  
+- **`REPO_OWNER`**: Your GitHub username or organization name.
+  - Example: `REPO_OWNER=Contexter`
+  
+- **`REPO_NAME`**: The name of your GitHub repository.
+  - Example: `REPO_NAME=fountainAI`
+  
+- **`GITHUB_TOKEN`**: Your GitHub personal access token.
+  - Example: `GITHUB_TOKEN=ghp_yourgithubtoken1234567890`
+  
+- **`VPS_SSH_KEY`**: Your private SSH key for accessing the VPS. This key should be added to GitHub Secrets.
+  - Example:
+    ```env
+    VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+    ...
+    -----END OPENSSH PRIVATE KEY-----
+    ```
+  
+- **`VPS_USERNAME`**: The username for accessing your VPS.
+  - Example: `VPS_USERNAME=your_vps_username`
+  
+- **`VPS_IP`**: The IP address of your VPS.
+  - Example: `VPS_IP=your_vps_ip`
+  
+- **`APP_NAME`**: The name of your application. This will be used in various places, including Docker images and deployment scripts.
+  - Example: `APP_NAME=fountainAI`
+  
+- **`DOMAIN`**: The domain name for your production environment.
+  - Example: `DOMAIN=example.com`
+  
+- **`STAGING_DOMAIN`**: The domain name for your staging environment.
+  - Example: `STAGING_DOMAIN=staging.example.com`
+  
+- **`DEPLOY_DIR`**: The directory on your VPS where the application will be deployed.
+  - Example: `DEPLOY_DIR=/home/your_vps_username/deployment_directory`
+  
+- **`EMAIL`**: The email address for Let's Encrypt SSL certificate registration.
+  - Example: `EMAIL=mail@benedikt-eickhoff.de`
+  
+- **`DB_NAME`**: The name of your PostgreSQL database.
+  - Example: `DB_NAME=fountainai_db`
+  
+- **`DB_USER`**: The username for your PostgreSQL database.
+  - Example: `DB_USER=fountainai_user`
+  
+- **`DB_PASSWORD`**: The password for your PostgreSQL database.
+  - Example: `DB_PASSWORD=your_db_password`
+  
+- **`REDIS_PORT`**: The port for your Redis service.
+  - Example: `REDIS_PORT=6379`
+  
+- **`REDISAI_PORT`**: The port for your RedisAI service.
+  - Example: `REDISAI_PORT=6378`
+
+Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
+
+---
