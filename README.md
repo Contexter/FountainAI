@@ -1,3 +1,5 @@
+Sure, here is the corrected guide with the correct timing for generating the runner token and other steps:
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -8,12 +10,14 @@
   - [Step 1: Generate a GitHub Personal Access Token](#step-1-generate-a-github-personal-access-token)
   - [Step 2: Create SSH Keys for VPS Access](#step-2-create-ssh-keys-for-vps-access)
   - [Step 3: Add SSH Keys to Your VPS and GitHub](#step-3-add-ssh-keys-to-your-vps-and-github)
-  - [Step 4: Create Configuration File](#step-4-create-configuration-file)
-  - [Step 5: Initialize Git Repository](#step-5-initialize-git-repository)
-  - [Step 6: Create Script to Add Secrets via GitHub's API](#step-6-create-script-to-add-secrets-via-githubs-api)
-  - [Step 7: Create GitHub Actions Workflow Templates](#step-7-create-github-actions-workflow-templates)
-  - [Step 8: Prepare Self-Hosted Runner](#step-8-prepare-self-hosted-runner)
-  - [Step 9: Final Setup Script](#step-9-final-setup-script)
+  - [Step 4: Generate a Runner Registration Token](#step-4-generate-a-runner-registration-token)
+  - [Step 5: Create Configuration File](#step-5-create-configuration-file)
+  - [Step 6: Initialize Git Repository](#step-6-initialize-git-repository)
+  - [Step 7: Create Script to Add Secrets via GitHub's API](#step-7-create-script-to-add-secrets-via-githubs-api)
+  - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
+  - [Step 9: Prepare Self-Hosted Runner](#step-9-prepare-self-hosted-runner)
+  - [Step 10: Create Vapor Application Setup Script](#step-10-create-vapor-application-setup-script)
+  - [Step 11: Final Setup Script](#step-11-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -83,8 +87,7 @@ Before starting the setup, ensure you have the following:
 2. **GitHub Personal Access Token**: Required for accessing the GitHub API.
 3. **VPS (Virtual Private Server)**: To deploy your applications.
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
-5. **Docker**: Installed on your local machine for containerization.
-6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
+5. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 
 ## Step-by-Step Setup Guide
 
@@ -154,16 +157,25 @@ Before starting the setup, ensure you have the following:
    - Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
    - Add a new secret named `VPS_SSH_KEY` and paste the copied private key.
 
-### Step 4: Create Configuration File
+### Step 4: Generate a Runner Registration
+
+ Token
+
+1. **Generate the Runner Token**:
+   - Go to your GitHub repository.
+   - Navigate to **Settings** -> **Actions** -> **Runners**.
+   - Click on **New self-hosted runner**.
+   - Select the appropriate operating system for your VPS.
+   - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
+
+### Step 5: Create Configuration File
 
 Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
 
 ```env
 MAIN_DIR=fountainAI-project
 REPO_OWNER=Contexter
-REPO
-
-_NAME=fountainAI
+REPO_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
 VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 ...
@@ -183,7 +195,7 @@ REDISAI_PORT=6378
 RUNNER_TOKEN=your_runner_registration_token
 ```
 
-### Step 5: Initialize Git Repository
+### Step 6: Initialize Git Repository
 
 1. **Initialize Git Repository**:
    - Open your terminal and navigate to your project directory.
@@ -207,7 +219,7 @@ RUNNER_TOKEN=your_runner_registration_token
 
 **Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. By adding it to `.gitignore`, you ensure this file is not tracked by git and is stored securely. This helps prevent accidental exposure of sensitive data in your repository.
 
-### Step 6: Create Script to Add Secrets via GitHub's API
+### Step 7: Create Script to Add Secrets via GitHub's API
 
 Create a script named `add_secrets.sh`:
 
@@ -268,7 +280,7 @@ chmod +x add_secrets.sh
 ./add_secrets.sh
 ```
 
-### Step 7: Create GitHub Actions Workflow Templates
+### Step 8: Create GitHub Actions Workflow Templates
 
 Create separate workflows for staging and production. Start with `ci-cd-staging.yml`:
 
@@ -361,7 +373,9 @@ EOF
 EOF
 
   build:
-    needs: setup-vps
+   
+
+ needs: setup-vps
     runs-on: self-hosted
 
     steps:
@@ -568,16 +582,16 @@ EOF
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:
+
+upper:]' '[:lower:]') || true
         docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
 
     - name: Verify Nginx and SSL Configuration (Production)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${
-
-{ secrets.VPS_IP }} << 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         if ! systemctl is-active --quiet nginx; then
           echo "Nginx is not running"
           exit 1
@@ -595,22 +609,9 @@ EOF
 EOF
 ```
 
-### Step 8: Prepare Self-Hosted Runner
+### Step 9: Prepare Self-Hosted Runner
 
-1. **Generate a Runner Registration Token**:
-   - Go to your GitHub repository.
-   - Navigate to **Settings** -> **Actions** -> **Runners**.
-   - Click on **New self-hosted runner**.
-   - Select the appropriate operating system for your VPS.
-   - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
-
-2. **Add the `RUNNER_TOKEN` to `config.env`**:
-   - Add the `RUNNER_TOKEN` to your `config.env` file:
-     ```env
-     RUNNER_TOKEN=your_runner_registration_token
-     ```
-
-3. **Create a Script to Prepare the Self-Hosted Runner**:
+1. **Create a Script to Prepare the Self-Hosted Runner**:
    - Create a script named `prepare_self_hosted_runner.sh`:
      ```bash
      #!/bin/bash
@@ -635,21 +636,15 @@ EOF
      ./prepare_self_hosted_runner.sh
      ```
 
-### Step 9: Final Setup Script
+### Step 10: Create Vapor Application Setup Script
 
-**Final Setup Script (`setup.sh`)**:
+Create a separate script named `create_vapor_app.sh` for setting up the Vapor application:
 
 ```bash
 #!/bin/bash
 
 # Load configuration from config.env
 source config.env
-
-# Function to create main project directory
-create_main_directory() {
-    mkdir -p $MAIN_DIR
-    cd $MAIN_DIR
-}
 
 # Function to create and initialize a new Vapor app with required packages
 create_vapor_app() {
@@ -704,31 +699,36 @@ EOT
     cd ..
 }
 
-# Function to install Docker on the VPS
-install_docker_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP << EOF
-    sudo apt update
-    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io
-    sudo systemctl enable docker
-    sudo systemctl start docker
-EOF
-}
+# Execute the function
+create_vapor_app $APP_NAME
+```
+
+Make this script executable:
+
+```sh
+chmod +x create_vapor_app.sh
+```
+
+### Step 11: Final Setup Script
+
+**Final Setup Script (`setup.sh`)**:
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
 
 # Main function to set up the project
 main() {
-    create_main_directory
+    mkdir -p $MAIN_DIR
+    cd $MAIN_DIR
 
-    create_vapor_app $APP_NAME
+    ./create_vapor_app.sh
 
     ./add_secrets.sh
 
     ./generate_workflows.sh
-
-    install_docker_on_vps
 
     ./prepare_self_hosted_runner.sh
 
@@ -739,7 +739,8 @@ main() {
 main
 ```
 
-**Execute Final Setup Script**:
+Make the final setup script executable and run it:
+
 ```sh
 chmod +x setup.sh
 ./setup.sh
@@ -827,13 +828,14 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Update GitHub Personal Access Token generation instructions
+refactor: Separate Vapor app setup into its own script
 
-- Revised Step 1 to reflect the new GitHub interface for creating Personal Access Tokens.
-- Updated instructions to include details on selecting repository access and permissions.
-- Specified the necessary permissions under Account permissions.
-- Ensured consistency with the latest GitHub interface for a seamless setup experience.
-- Added instructions for setting up a self-hosted runner with a registration token.
+- Created `create_vapor_app.sh` script to handle the setup of the Vapor application independently.
+- Updated `setup.sh` to call the new `create_vapor_app.sh` script for better modularity.
+- Ensured `create_vapor_app.sh` includes steps to initialize the Vapor app, update `Package.swift`, and configure Leaf, PostgreSQL, and Redis.
+- Updated documentation to reflect changes in the step-by-step setup guide.
+- Removed the requirement to install Docker locally as tasks are handled by self-hosted runners.
+- Improved overall script organization and readability for future maintenance.
 ```
 
 ## Development Perspective
@@ -845,15 +847,15 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 1. **Write Tests First**: 
    - For each API endpoint defined in the OpenAPI, write unit tests and integration tests before implementing the functionality.
 
-2. **Develop the Feature
-
-**:
+2. **Develop the Feature**:
    - Implement the required functionality to pass the written tests.
 
 3. **Run Tests Locally**:
    - Ensure that all tests pass locally.
 
-4. **Commit and Push**:
+4. **Commit and Push**
+
+:
    - Commit the code and push it to GitHub. The CI/CD pipeline will automatically build, test, and deploy the application.
 
 5. **Review CI/CD Pipeline Results**:
