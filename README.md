@@ -14,8 +14,9 @@
   - [Step 7: Create Script to Add Secrets via GitHub's API](#step-7-create-script-to-add-secrets-via-githubs-api)
   - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
   - [Step 9: Prepare Self-Hosted Runner](#step-9-prepare-self-hosted-runner)
-  - [Step 10: Create Vapor Application Setup Script](#step-10-create-vapor-application-setup-script)
-  - [Step 11: Final Setup Script](#step-11-final-setup-script)
+  - [Step 10: Create Vapor Application Locally](#step-10-create-vapor-application-locally)
+  - [Step 11: Build and Push Docker Image to GitHub Container Registry](#step-11-build-and-push-docker-image-to-github-container-registry)
+  - [Step 12: Final Setup Script](#step-12-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -85,7 +86,8 @@ Before starting the setup, ensure you have the following:
 2. **GitHub Personal Access Token**: Required for accessing the GitHub API.
 3. **VPS (Virtual Private Server)**: To deploy your applications.
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
-5. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
+5. **Docker**: Installed on your local machine for containerization.
+6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 
 ## Step-by-Step Setup Guide
 
@@ -148,16 +150,16 @@ Before starting the setup, ensure you have the following:
      ```sh
      cat ~/.ssh/id_ed25519
      ```
-   - Copy the output (your private key).
+  
+
+ - Copy the output (your private key).
 
 4. **Add the Private Key to GitHub Secrets**:
    - Go to your GitHub repository.
    - Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
    - Add a new secret named `VPS_SSH_KEY` and paste the copied private key.
 
-### Step 4
-
-: Generate a Runner Registration Token
+### Step 4: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
    - Go to your GitHub repository.
@@ -362,15 +364,15 @@ EOF
         sleep 10
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{
+
+ secrets.DB_USER }}') THEN
                 CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
             END IF;
         END \$\$;"
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
-
-
 
   build:
     needs: setup-vps
@@ -577,12 +579,12 @@ EOF
 
     - name: Deploy to VPS (Production)
       run: |
+
+
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-        docker stop $(echo ${{ secrets.APP_NAME
-
- }} | tr '[:upper:]' '[:lower:]') || true
+        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
         docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
@@ -610,7 +612,6 @@ EOF
 ### Step 9: Prepare Self-Hosted Runner
 
 1. **Create a Script to Prepare the Self-Hosted Runner**:
-   - Create a script named `prepare_self_hosted_runner.sh`:
      ```bash
      #!/bin/bash
 
@@ -628,15 +629,15 @@ EOF
      EOF
      ```
 
-   - Make the script executable and run it:
+2. **Make the script executable and run it:**
      ```sh
      chmod +x prepare_self_hosted_runner.sh
      ./prepare_self_hosted_runner.sh
      ```
 
-### Step 10: Create Vapor Application Setup Script
+### Step 10: Create Vapor Application Locally
 
-Create a separate script named `create_vapor_app.sh` for setting up the Vapor application:
+Create a script named `create_vapor_app.sh`:
 
 ```bash
 #!/bin/bash
@@ -701,13 +702,66 @@ EOT
 create_vapor_app $APP_NAME
 ```
 
-Make this script executable:
+Make the script executable:
 
 ```sh
 chmod +x create_vapor_app.sh
+./create_vapor_app.sh
 ```
 
-### Step 11: Final Setup Script
+### Step 11: Build and Push Docker Image to GitHub Container Registry
+
+Create a script named `build_and_push_docker_image.sh`:
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Create Dockerfile for Vapor application
+cat <<EOF > Dockerfile
+FROM swift:5.4
+
+WORKDIR /app
+
+# Install Vapor
+RUN git clone https://github.com/vapor/toolbox.git /tmp/toolbox \
+    && cd /tmp/toolbox \
+    && swift build -c release --disable-sandbox \
+    && mv .build/release/vapor /usr/local/bin/vapor
+
+# Copy the Vapor project files
+COPY . .
+
+# Build the Vapor application
+RUN vapor build --release
+
+# Expose the application port
+EXPOSE 8080
+
+# Start the Vapor application
+CMD ["vapor", "run", "serve", "--env", "production"]
+EOF
+
+# Build the Docker image
+docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
+
+# Log in to GitHub Container Registry
+echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
+
+# Push the Docker image to GitHub Container Registry
+docker push ghcr.io/$REPO_OWNER/$APP_NAME
+```
+
+Make the script executable and run it:
+
+```sh
+chmod +x build_and_push_docker_image.sh
+./build_and_push_docker_image.sh
+```
+
+### Step 12: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
 
@@ -717,18 +771,89 @@ chmod +x create_vapor_app.sh
 # Load configuration from config.env
 source config.env
 
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check if required environment variables are set
+check_env_vars() {
+    local missing=0
+    for var in MAIN_DIR REPO_OWNER REPO_NAME GITHUB_TOKEN VPS_SSH_KEY VPS_USERNAME VPS_IP APP_NAME DOMAIN STAGING_DOMAIN DEPLOY_DIR EMAIL DB_NAME DB_USER DB_PASSWORD REDIS_PORT REDISAI_PORT RUNNER_TOKEN; do
+        if [ -z "${!var}" ]; then
+            echo "Error: $var is not set in config.env"
+            missing=1
+        fi
+    done
+    return $missing
+}
+
+# Function to check if required commands are available
+check_commands() {
+    local missing=0
+    for cmd in git curl jq ssh ssh-keygen docker; do
+        if ! command_exists $cmd; then
+            echo "Error: $cmd is not installed"
+            missing=1
+        fi
+    done
+    return $missing
+}
+
+# Function to check if Docker is installed on the VPS
+check_docker_on_vps() {
+    ssh $VPS_USERNAME@$VPS_IP "command -v docker >/dev/null 2>&1"
+}
+
 # Main function to set up the project
 main() {
-    mkdir -p $MAIN_DIR
+    # Check for required environment variables
+    if ! check_env_vars; then
+        echo "One or more required environment variables are missing"
+        exit 1
+    fi
+
+    # Check for required commands
+    if ! check_commands; then
+        echo "One or more required commands are missing"
+        exit 1
+    fi
+
+    # Check if Docker is installed on the VPS
+    if ! check_docker_on_vps; then
+        echo "Docker is not installed on the VPS. Installing Docker..."
+        ssh $VPS_USERNAME@$VPS_IP << EOF
+        sudo apt update
+        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+        sudo systemctl enable docker
+        sudo systemctl start docker
+EOF
+    fi
+
+    # Create main directory
+    mkdir -p $MAIN
+
+_DIR
     cd $MAIN_DIR
 
+    # Add secrets
     ./add_secrets.sh
 
+    # Generate workflows
     ./generate_workflows.sh
 
+    # Prepare self-hosted runner
     ./prepare_self_hosted_runner.sh
 
+    # Create and build Vapor app locally
     ./create_vapor_app.sh
+
+    # Build and push Docker image to GitHub Container Registry
+    ./build_and_push_docker_image.sh
 
     echo "Initial setup for FountainAI project is complete."
 }
@@ -826,14 +951,18 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-refactor: Separate Vapor app setup into its own script
+refactor: Integrate Docker and enhance setup script logic
 
-- Created `create_vapor_app.sh` script to handle the setup of the Vapor application independently.
-- Updated `setup.sh` to call the new `create_vapor_app.sh` script for better modularity.
-- Ensured `create_vapor_app.sh` includes steps to initialize the Vapor app, update `Package.swift`, and configure Leaf, PostgreSQL, and Redis.
-- Updated documentation to reflect changes in the step-by-step setup guide.
-- Removed the requirement to install Docker locally as tasks are handled by self-hosted runners.
-- Improved overall script organization and readability for future maintenance.
+- Updated the setup process to ensure a fully Dockerized environment for the Vapor application.
+- Refactored the `setup.sh` script to include checks for environment variables and required commands.
+- Added a new `create_vapor_app.sh` script to handle the creation and configuration of the Vapor application locally.
+- Created a `build_and_push_docker_image.sh` script to build the Docker image and push it to GitHub Container Registry.
+- Modified the GitHub Actions workflows (`ci-cd-staging.yml` and `ci-cd-production.yml`) to align with the new Docker-based deployment process.
+- Ensured Docker installation on the VPS if not already installed.
+- Updated the documentation to reflect changes in the step-by-step setup guide, including the use of self-hosted runners and Docker.
+- Improved script modularity and readability for better maintainability.
+- Added comprehensive checks and balances in setup scripts to ensure seamless setup and deployment processes.
+
 ```
 
 ## Development Perspective
@@ -851,9 +980,7 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 3. **Run Tests Locally**:
    - Ensure that all tests pass locally.
 
-4.
-
- **Commit and Push**:
+4. **Commit and Push**:
    - Commit the code and push it to GitHub. The CI/CD pipeline will automatically build, test, and deploy the application.
 
 5. **Review CI/CD Pipeline Results**:
@@ -964,7 +1091,9 @@ The `config.env` file is a crucial component in the setup process, containing al
 - **`DOMAIN`**: The domain name for your production environment.
   - Example: `DOMAIN=example.com`
   
-- **`STAGING_DOMAIN`**: The domain name for your staging environment.
+- **`STAGING_DOMAIN`**: The domain name for your staging environment
+
+.
   - Example: `STAGING_DOMAIN=staging.example.com`
   
 - **`DEPLOY_DIR`**: The directory on your VPS where the application will be deployed.
@@ -993,3 +1122,6 @@ The `config.env` file is a crucial component in the setup process, containing al
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
 
+---
+
+This updated guide provides clear and detailed instructions for setting up and deploying the FountainAI project, ensuring a fully Dockerized environment and leveraging the benefits of GitHub Actions for continuous integration and deployment.
