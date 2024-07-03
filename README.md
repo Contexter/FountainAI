@@ -1,5 +1,3 @@
-Sure, here is the corrected guide with the correct timing for generating the runner token and other steps:
-
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -157,9 +155,9 @@ Before starting the setup, ensure you have the following:
    - Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
    - Add a new secret named `VPS_SSH_KEY` and paste the copied private key.
 
-### Step 4: Generate a Runner Registration
+### Step 4
 
- Token
+: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
    - Go to your GitHub repository.
@@ -372,10 +370,10 @@ EOF
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
 
-  build:
-   
 
- needs: setup-vps
+
+  build:
+    needs: setup-vps
     runs-on: self-hosted
 
     steps:
@@ -582,9 +580,9 @@ EOF
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:
+        docker stop $(echo ${{ secrets.APP_NAME
 
-upper:]' '[:lower:]') || true
+ }} | tr '[:upper:]' '[:lower:]') || true
         docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
@@ -729,7 +727,7 @@ main() {
     ./generate_workflows.sh
 
     ./prepare_self_hosted_runner.sh
-    
+
     ./create_vapor_app.sh
 
     echo "Initial setup for FountainAI project is complete."
@@ -853,9 +851,9 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 3. **Run Tests Locally**:
    - Ensure that all tests pass locally.
 
-4. **Commit and Push**
+4.
 
-:
+ **Commit and Push**:
    - Commit the code and push it to GitHub. The CI/CD pipeline will automatically build, test, and deploy the application.
 
 5. **Review CI/CD Pipeline Results**:
@@ -995,6 +993,3 @@ The `config.env` file is a crucial component in the setup process, containing al
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
 
----
-
-This updated guide should provide clear and detailed instructions for setting up and deploying the FountainAI project, along with necessary clarifications and corrections.
