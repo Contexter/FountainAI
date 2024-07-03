@@ -1,4 +1,4 @@
-## Table of Contents
+# Table of Contents
 
 - [Introduction](#introduction)
 - [The Fountain Network Graph](#the-fountain-network-graph)
@@ -23,8 +23,7 @@
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
   - [Conclusion](#conclusion)
-- [Addendum: Configuration File Documentation](#addendum-configuration-file-documentation)
-- [Addendum: Ensuring Idempotency in GitHub Actions Templates](#addendum-ensuring-idempotency-in-github-actions-templates)
+- [Configuration File Documentation](#configuration-file-documentation)
 
 ## Introduction
 
@@ -90,6 +89,8 @@ Before starting the setup, ensure you have the following:
 
 ### Step 1: Generate a GitHub Personal Access Token
 
+To generate a GitHub Personal Access Token with the necessary permissions, follow these steps and select the required permissions:
+
 1. **Generate the Token**:
    - Go to your GitHub account settings.
    - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
@@ -98,17 +99,17 @@ Before starting the setup, ensure you have the following:
    - Set the expiration date as needed.
    - Under **Repository access**, select **All repositories** (or **Only select repositories** if you want to limit access to specific repositories).
    - In the **Permissions** section, click on **Account permissions** and select the following permissions:
-     - **Codespaces user secrets**: Read and write
-     - **Gists**: Read and write
-     - **Git SSH keys**: Read and write
-     - **Email addresses**: Read and write
-     - **Followers**: Read
-     - **GPG keys**: Read and write
-     - **Private repository invitations**: Read and write
-     - **Profile**: Read and write
-     - **SSH signing keys**: Read and write
-     - **Starring**: Read and write
-     - **Watching**: Read and write
+     - Codespaces user secrets: **Read and write**
+     - Gists: **Read and write**
+     - Git SSH keys: **Read and write**
+     - Email addresses: **Read and write**
+     - Followers: **Read**
+     - GPG keys: **Read and write**
+     - Private repository invitations: **Read and write**
+     - Profile: **Read and write**
+     - SSH signing keys: **Read and write**
+     - Starring: **Read and write**
+     - Watching: **Read and write**
    - Click **Generate token** and copy the generated token. This token will be used to authenticate Docker with GitHub's container registry and perform other API operations.
 
 ### Step 2: Create SSH Keys for VPS Access
@@ -159,12 +160,12 @@ Before starting the setup, ensure you have the following:
 Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
 
 ```env
-MAIN
-
-_DIR=fountainAI-project
+MAIN_DIR=fountainAI-project
 REPO_OWNER=Contexter
 REPO_NAME=fountainAI
-GITHUB_TOKEN=ghp_yourgithubtoken1234567890
+GITHUB_TOKEN=ghp
+
+_yourgithubtoken1234567890
 VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 ...
 -----END OPENSSH PRIVATE KEY-----
@@ -374,16 +375,16 @@ EOF
     - name: Build and Push Docker Image for Staging
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker build -t $
-
-IMAGE_NAME .
+        docker build -t $IMAGE_NAME .
         docker push $IMAGE_NAME
 
   test:
     needs: build
     runs-on: self-hosted
 
-    steps:
+   
+
+ steps:
     - uses: actions/checkout@v2
 
     - name: Set up Docker Buildx
@@ -573,12 +574,12 @@ EOF
 
     - name: Verify Nginx and SSL Configuration (Production)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} <<
-
- 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         if ! systemctl is-active --quiet nginx; then
           echo "Nginx is not running"
-          exit 1
+         
+
+ exit 1
         fi
 
         if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
@@ -676,6 +677,18 @@ install_docker_on_vps() {
 EOF
 }
 
+# Function to prepare the VPS as a self-hosted runner
+prepare_self_hosted_runner() {
+    ssh $VPS_USERNAME@$VPS_IP << EOF
+    mkdir actions-runner && cd actions-runner
+    curl -o actions-runner-linux-x64-2.292.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.292.0/actions-runner-linux-x64-2.292.0.tar.gz
+    tar xzf ./actions-runner-linux-x64-2.292.0.tar.gz
+    ./config.sh --url https://github.com/$REPO_OWNER/$REPO_NAME --token YOUR_RUNNER_REGISTRATION_TOKEN
+    sudo ./svc.sh install
+    sudo ./svc.sh start
+EOF
+}
+
 # Main function to set up the project
 main() {
     create_main_directory
@@ -687,6 +700,8 @@ main() {
     ./generate_workflows.sh
 
     install_docker_on_vps
+
+    prepare_self_hosted_runner
 
     echo "Initial setup for FountainAI project is complete."
 }
@@ -789,6 +804,7 @@ feat: Update GitHub Personal Access Token generation instructions
 - Updated instructions to include details on selecting repository access and permissions.
 - Specified the necessary permissions under Account permissions.
 - Ensured consistency with the latest GitHub interface for a seamless setup experience.
+- Added instructions for preparing the VPS as a self-hosted runner.
 ```
 
 ## Development Perspective
@@ -832,7 +848,9 @@ func testAddition() {
 
 ### Integration Tests
 
-**Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
+**Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the
+
+ application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
 
 #### Example:
 For an API endpoint that retrieves user data from a database, an integration test might look like this:
@@ -850,17 +868,39 @@ func testGetUser() throws {
     XCTAssertEqual(response.status, .ok)
     let receivedUser = try response.content.decode(User.self).wait()
     XCTAssertEqual(receivedUser.name, "Test User")
-
-
     XCTAssertEqual(receivedUser.email, "test@example.com")
 }
 ```
+
+### Accessing Compiler Output in GitHub Actions
+
+When working with GitHub Actions, the output of the compilation process is accessible through the Actions tab in your GitHub repository. Here’s how you can access and utilize this information:
+
+1. **Navigate to the Actions Tab**:
+   - Go to your GitHub repository.
+   - Click on the **Actions** tab.
+
+2. **Select a Workflow Run**:
+   - You will see a list of recent workflow runs. Click on the run you are interested in.
+
+3. **View Logs**:
+   - The workflow run details will show a summary of all jobs. Click on a job to expand it and view the individual steps.
+   - Click on a step to view the logs. This will include the output from the compiler and any other commands run during that step.
+
+4. **Download Logs**:
+   - You can download the logs for offline analysis. This is useful for providing detailed feedback or information to a code-generating GPT model.
+
+5. **Using Compiler Output**:
+   - The logs will include information about any compilation errors or warnings. You can use this information to debug issues or improve your code.
+   - When providing information to a code-generating GPT model, include relevant log excerpts to help the model understand the context and specific issues.
+
+By leveraging the detailed logs provided by GitHub Actions, you can gain insights into the compilation process and use this information to improve your code and workflow.
 
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
-## Addendum: Configuration File Documentation
+## Configuration File Documentation
 
 ### `config.env` File
 
@@ -923,233 +963,3 @@ The `config.env` file is a crucial component in the setup process, containing al
   - Example: `REDISAI_PORT=6378`
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
-
-## Addendum: Ensuring Idempotency in GitHub Actions Templates
-
-Idempotency in the context of GitHub Actions ensures that running the same workflow multiple times does not produce different results or cause unintended side effects. The provided GitHub Actions templates address idempotency through several mechanisms, ensuring that operations like service setup, deployments, and SSL configurations are idempotent. Here’s how the templates handle idempotency:
-
-### Ensuring Idempotency in GitHub Actions Templates
-
-1. **Service Setup with Docker:**
-   - **PostgreSQL, Redis, and RedisAI Containers:**
-     - Docker commands ensure that containers are run or started only if they are not already running. This is managed by stopping and removing existing containers before starting new ones, which ensures that the state of the services is consistent across workflow runs.
-     ```sh
-     sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-     sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-     sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-     ```
-     - Ensuring clean slate:
-     ```sh
-     docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-     docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-     ```
-
-2. **Nginx Configuration and SSL Setup:**
-   - **Nginx Configuration:**
-     - Nginx configuration files are created or updated only if there are changes, ensuring that repeated runs do not create redundant configurations.
-     ```sh
-     sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
-     ...
-     EOL
-     ```
-   - **SSL Setup:**
-     - Certbot is used to manage SSL certificates. Certbot checks if a certificate already exists before attempting to issue a new one, ensuring that SSL setup does not create duplicate certificates.
-     ```sh
-     sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-     ```
-
-3. **Workflow Steps:**
-   - **Idempotent Operations:**
-     - The actions and scripts are designed to be idempotent, ensuring that each step checks the current state before making changes.
-     - For instance, the scripts for setting up Docker, Nginx, and SSL configurations are rerun safely without causing side effects or duplicating resources.
-   
-4. **GitHub Actions Workflow Logic:**
-   - **Conditional Steps:**
-     - By using conditional logic and checks, the workflows ensure that operations like deployments only occur if there are actual changes, avoiding redundant deployments.
-     ```yaml
-     if: github.ref == 'refs/heads/main'
-     ```
-
-5. **Environment Variables and Secrets Management:**
-   - **Secrets and Configuration:**
-     - By using GitHub secrets and environment variables, the workflows manage sensitive information securely and consistently, ensuring that configurations remain the same across runs.
-     ```yaml
-     env:
-       DB_NAME: ${{ secrets.DB_NAME }}
-       DB_USER: ${{ secrets.DB_USER }}
-       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-     ```
-
-### Example: Detailed Workflow for Idempotency
-
-Here is a detailed example of how the workflow ensures idempotency for setting up PostgreSQL, Nginx, and deploying the application:
-
-```yaml
-name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Staging)
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  setup-vps:
-    runs-on: self-hosted
-
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Install Docker and Dependencies
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo apt update
-        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt update
-        sudo apt install -y docker-ce docker-ce-cli containerd.io
-        sudo systemctl enable docker
-        sudo systemctl start docker
-        sudo apt install -y nginx certbot python3-certbot-nginx
-EOF
-
-    - name: Set up Nginx and SSL for Staging
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
-server {
-    listen 80;
-    listen 443 ssl;
-    server_name ${{ secrets.STAGING_DOMAIN }};
-    ssl_certificate /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/privkey.pem;
-    location / {
-        proxy_pass http://localhost:8081;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-        sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
-        sudo systemctl reload nginx
-        sudo certbot --nginx -d ${{
-
- secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-        sudo systemctl reload nginx
-EOF
-
-    - name: Set up PostgreSQL, Redis, and RedisAI
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres || true
-        sudo docker rm postgres || true
-        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-        
-        sudo docker stop redis || true
-        sudo docker rm redis || true
-        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-        
-        sudo docker stop redisai || true
-        sudo docker rm redisai || true
-        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-        
-        sleep 10
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
-                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
-            END IF;
-        END \$\$;"
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
-EOF
-
-  build:
-    needs: setup-vps
-    runs-on: self-hosted
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Build and Push Docker Image for Staging
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker build -t $IMAGE_NAME .
-        docker push $IMAGE_NAME
-
-  test:
-    needs: build
-    runs-on: self-hosted
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Run Unit Tests
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter UnitTests
-
-    - name: Run Integration Tests
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter IntegrationTests
-
-  deploy:
-    needs: test
-    runs-on: self-hosted
-
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Deploy to VPS (Staging)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-EOF
-
-    - name: Verify Nginx and SSL Configuration (Staging)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        if ! systemctl is-active --quiet nginx; then
-          echo "Nginx is not running"
-          exit 1
-        fi
-
-        if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
-          echo "SSL certificate is not valid"
-          exit 1
-        fi
-
-        if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
-          echo "Domain is not properly configured"
-          exit 1
-        fi
-EOF
-```
-
-By incorporating these principles and examples into the GitHub Actions templates, you can ensure that your workflows are idempotent, providing consistent and reliable deployments across multiple runs.
