@@ -23,7 +23,6 @@
   - [TDD and CI/CD](#tdd-and-cicd)
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
-  - [Accessing Compiler Output](#accessing-compiler-output)
   - [Conclusion](#conclusion)
 - [Addendum: Configuration File Documentation](#addendum-configuration-file-documentation)
 
@@ -157,14 +156,14 @@ Before starting the setup, ensure you have the following:
 
 ### Step 4: Create Configuration File
 
-Create a file named `config.env` in your project directory
-
-. This file will store all the necessary configuration variables:
+Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
 
 ```env
 MAIN_DIR=fountainAI-project
 REPO_OWNER=Contexter
-REPO_NAME=fountainAI
+REPO
+
+_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
 VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 ...
@@ -197,7 +196,7 @@ RUNNER_TOKEN=your_runner_registration_token
      git push -u origin main
      ```
 
-2. **Add `config.env` to `.gitignore**:
+2. **Add `config.env` to `.gitignore`**:
    - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
      ```sh
      echo "config.env" >> .gitignore
@@ -376,9 +375,9 @@ EOF
 
     - name: Build and Push Docker Image for Staging
       run: |
-        IMAGE_NAME=ghcr.io
+        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
 
-/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+
         docker build -t $IMAGE_NAME .
         docker push $IMAGE_NAME
 
@@ -574,11 +573,11 @@ EOF
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
 
-
-
     - name: Verify Nginx and SSL Configuration (Production)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@${
+
+{ secrets.VPS_IP }} << 'EOF'
         if ! systemctl is-active --quiet nginx; then
           echo "Nginx is not running"
           exit 1
@@ -603,7 +602,7 @@ EOF
    - Navigate to **Settings** -> **Actions** -> **Runners**.
    - Click on **New self-hosted runner**.
    - Select the appropriate operating system for your VPS.
-   - Copy the provided `config` and `run` commands, and note the `RUNNER_TOKEN` generated. You will use this token to register the runner.
+   - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
 
 2. **Add the `RUNNER_TOKEN` to `config.env`**:
    - Add the `RUNNER_TOKEN` to your `config.env` file:
@@ -620,13 +619,13 @@ EOF
      source config.env
 
      # Connect to the VPS and set up the self-hosted runner
-     ssh $VPS_USERNAME@$VPS_IP << EOF
+     ssh $VPS_USERNAME@$VPS_IP << 'EOF'
      mkdir actions-runner && cd actions-runner
      curl -o actions-runner-linux-x64-2.284.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.284.0/actions-runner-linux-x64-2.284.0.tar.gz
      tar xzf ./actions-runner-linux-x64-2.284.0.tar.gz
      ./config.sh --url https://github.com/$REPO_OWNER/$REPO_NAME --token $RUNNER_TOKEN
      sudo ./svc.sh install
-     sudo ./svc.sh start 
+     sudo ./svc.sh start
      EOF
      ```
 
@@ -833,23 +832,22 @@ feat: Update GitHub Personal Access Token generation instructions
 - Revised Step 1 to reflect the new GitHub interface for creating Personal Access Tokens.
 - Updated instructions to include details on selecting repository access and permissions.
 - Specified the necessary permissions under Account permissions.
-- Added documentation for generating and using the runner registration token.
-- Included steps to prepare the self-hosted runner in the setup guide.
 - Ensured consistency with the latest GitHub interface for a seamless setup experience.
+- Added instructions for setting up a self-hosted runner with a registration token.
 ```
 
 ## Development Perspective
 
 ### TDD and CI/CD
 
-Implementing Test-Driven Development (TDD) alongside Continuous Integration/Continuous Deployment (CI/CD) ensures that each feature of the OpenAPI specification is thoroughly tested and automatically deployed. The steps
-
- include:
+Implementing Test-Driven Development (TDD) alongside Continuous Integration/Continuous Deployment (CI/CD) ensures that each feature of the OpenAPI specification is thoroughly tested and automatically deployed. The steps include:
 
 1. **Write Tests First**: 
    - For each API endpoint defined in the OpenAPI, write unit tests and integration tests before implementing the functionality.
 
-2. **Develop the Feature**:
+2. **Develop the Feature
+
+**:
    - Implement the required functionality to pass the written tests.
 
 3. **Run Tests Locally**:
@@ -903,24 +901,26 @@ func testGetUser() throws {
 }
 ```
 
-### Accessing Compiler Output
+### Accessing Compiler Output in GitHub Actions
 
-To access the compiler output for your Vapor application, follow these steps:
+The output of the compiler and other build steps can be accessed through the GitHub Actions interface. Here's how you can access and utilize the compiler output:
 
-1. **Navigate to GitHub Actions**:
-   - Go to the **Actions** tab in your GitHub repository.
+1. **Navigate to Actions**:
+   - Go to your GitHub repository.
+   - Click on the **Actions** tab to view the list of workflow runs.
 
-2. **Select the Relevant Workflow**:
-   - Choose the workflow run you are interested in. The workflows are typically named based on the branches they are triggered by (e.g., `main` for staging, `production` for production).
+2. **Select a Workflow Run**:
+   - Click on a specific workflow run to see the details.
 
-3. **View the Logs**:
-   - Click on the specific job you want to inspect (e.g., `build`, `test`, or `deploy`).
-   - Expand the steps to see detailed logs for each step. The compiler output will be visible in the logs of the `Build and Push Docker Image` or `Run Unit Tests` steps.
+3. **View Logs**:
+   - In the workflow run details, you can see logs for each job and step.
+   - Click on a job to expand it and view the logs for individual steps.
 
-4. **Reading and Using the Output**:
-   - Review the logs for any errors or warnings that occurred during the build or test phases.
-   - Use this information to debug and fix issues in your code.
-   - If you are using a code-generating GPT model, you can provide it with the relevant parts of the compiler output to assist in troubleshooting and improving the code.
+4. **Download Logs**:
+   - You can download the logs for further analysis by clicking on the **Download logs** button.
+
+5. **Retention Period**:
+   - By default, GitHub retains logs for 90 days. You can configure this period in the repository settings under **Settings** -> **Actions** -> **Workflow runs** -> **Retention period**.
 
 ### Conclusion
 
@@ -988,8 +988,11 @@ The `config.env` file is a crucial component in the setup process, containing al
 - **`REDISAI_PORT`**: The port for your RedisAI service.
   - Example: `REDISAI_PORT=6378`
   
-- **`RUNNER_TOKEN`**: The GitHub Actions runner registration token for setting up a self-hosted runner.
+- **`RUNNER_TOKEN`**: The runner registration token for setting up the self-hosted GitHub Actions runner.
   - Example: `RUNNER_TOKEN=your_runner_registration_token`
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
 
+---
+
+This updated guide should provide clear and detailed instructions for setting up and deploying the FountainAI project, along with necessary clarifications and corrections.
