@@ -724,13 +724,13 @@ main() {
     mkdir -p $MAIN_DIR
     cd $MAIN_DIR
 
-    ./create_vapor_app.sh
-
     ./add_secrets.sh
 
     ./generate_workflows.sh
 
     ./prepare_self_hosted_runner.sh
+    
+    ./create_vapor_app.sh
 
     echo "Initial setup for FountainAI project is complete."
 }
