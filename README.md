@@ -92,13 +92,24 @@ Before starting the setup, ensure you have the following:
 
 1. **Generate the Token**:
    - Go to your GitHub account settings.
-   - Navigate to **Developer settings** -> **Personal access tokens**.
-   - Generate a new token with the following scopes:
-     - `write:packages`
-     - `read:packages`
-     - `delete:packages`
-     - `repo` (for accessing private repositories).
-   - Copy the token. This token will be used to authenticate Docker with GitHub's container registry.
+   - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
+   - Click on **Generate new token**.
+   - Fill in the token description (e.g., "FountainAI Project Token").
+   - Set the expiration date as needed.
+   - Under **Repository access**, select **All repositories** (or **Only select repositories** if you want to limit access to specific repositories).
+   - In the **Permissions** section, click on **Account permissions** and select the following permissions:
+     - **Codespaces user secrets**: Read and write
+     - **Gists**: Read and write
+     - **Git SSH keys**: Read and write
+     - **Email addresses**: Read and write
+     - **Followers**: Read
+     - **GPG keys**: Read and write
+     - **Private repository invitations**: Read and write
+     - **Profile**: Read and write
+     - **SSH signing keys**: Read and write
+     - **Starring**: Read and write
+     - **Watching**: Read and write
+   - Click **Generate token** and copy the generated token. This token will be used to authenticate Docker with GitHub's container registry and perform other API operations.
 
 ### Step 2: Create SSH Keys for VPS Access
 
@@ -148,7 +159,9 @@ Before starting the setup, ensure you have the following:
 Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
 
 ```env
-MAIN_DIR=fountainAI-project
+MAIN
+
+_DIR=fountainAI-project
 REPO_OWNER=Contexter
 REPO_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
@@ -361,7 +374,9 @@ EOF
     - name: Build and Push Docker Image for Staging
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker build -t $IMAGE_NAME .
+        docker build -t $
+
+IMAGE_NAME .
         docker push $IMAGE_NAME
 
   test:
@@ -380,9 +395,7 @@ EOF
     - name: Run Unit Tests
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test
-
- --filter UnitTests
+        docker run $IMAGE_NAME swift test --filter UnitTests
 
     - name: Run Integration Tests
       run: |
@@ -560,7 +573,9 @@ EOF
 
     - name: Verify Nginx and SSL Configuration (Production)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} <<
+
+ 'EOF'
         if ! systemctl is-active --quiet nginx; then
           echo "Nginx is not running"
           exit 1
@@ -581,8 +596,6 @@ EOF
 ### Step 8: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
-
-
 
 ```bash
 #!/bin/bash
@@ -770,18 +783,12 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Automated setup for FountainAI project
+feat: Update GitHub Personal Access Token generation instructions
 
-- Added comprehensive step-by-step guide to automate the initial setup for a Vapor application.
-- Included security best practices and explanations for managing SSH keys and .env files.
-- Created configuration file `config.env` to store necessary configuration variables.
-- Added `add_secrets.sh` script to automate adding secrets to GitHub.
-- Provided `ci-cd-template.yml` for GitHub Actions workflow templates.
-- Added `setup.sh` script to automate the creation of Vapor application and generating workflows.
-- Integrated Nginx and SSL setup directly into GitHub Actions workflows.
-- Ensured Docker installation on VPS as part of the setup process.
-- Detailed deployment steps for staging and production environments.
-- Enhanced PostgreSQL setup to include automatic user and database creation.
+- Revised Step 1 to reflect the new GitHub interface for creating Personal Access Tokens.
+- Updated instructions to include details on selecting repository access and permissions.
+- Specified the necessary permissions under Account permissions.
+- Ensured consistency with the latest GitHub interface for a seamless setup experience.
 ```
 
 ## Development Perspective
@@ -843,6 +850,8 @@ func testGetUser() throws {
     XCTAssertEqual(response.status, .ok)
     let receivedUser = try response.content.decode(User.self).wait()
     XCTAssertEqual(receivedUser.name, "Test User")
+
+
     XCTAssertEqual(receivedUser.email, "test@example.com")
 }
 ```
@@ -1029,16 +1038,16 @@ server {
 EOL
         sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
         sudo systemctl reload nginx
-        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo certbot --nginx -d ${{
+
+ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
         sudo systemctl reload nginx
 EOF
 
     - name: Set up PostgreSQL, Redis, and RedisAI
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo
-
- docker stop postgres || true
+        sudo docker stop postgres || true
         sudo docker rm postgres || true
         sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
         
