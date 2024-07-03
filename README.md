@@ -1,4 +1,4 @@
-# Table of Contents
+## Table of Contents
 
 - [Introduction](#introduction)
 - [The Fountain Network Graph](#the-fountain-network-graph)
@@ -12,7 +12,8 @@
   - [Step 5: Initialize Git Repository](#step-5-initialize-git-repository)
   - [Step 6: Create Script to Add Secrets via GitHub's API](#step-6-create-script-to-add-secrets-via-githubs-api)
   - [Step 7: Create GitHub Actions Workflow Templates](#step-7-create-github-actions-workflow-templates)
-  - [Step 8: Final Setup Script](#step-8-final-setup-script)
+  - [Step 8: Prepare Self-Hosted Runner](#step-8-prepare-self-hosted-runner)
+  - [Step 9: Final Setup Script](#step-9-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -22,8 +23,9 @@
   - [TDD and CI/CD](#tdd-and-cicd)
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
+  - [Accessing Compiler Output](#accessing-compiler-output)
   - [Conclusion](#conclusion)
-- [Configuration File Documentation](#configuration-file-documentation)
+- [Addendum: Configuration File Documentation](#addendum-configuration-file-documentation)
 
 ## Introduction
 
@@ -89,8 +91,6 @@ Before starting the setup, ensure you have the following:
 
 ### Step 1: Generate a GitHub Personal Access Token
 
-To generate a GitHub Personal Access Token with the necessary permissions, follow these steps and select the required permissions:
-
 1. **Generate the Token**:
    - Go to your GitHub account settings.
    - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
@@ -99,17 +99,17 @@ To generate a GitHub Personal Access Token with the necessary permissions, follo
    - Set the expiration date as needed.
    - Under **Repository access**, select **All repositories** (or **Only select repositories** if you want to limit access to specific repositories).
    - In the **Permissions** section, click on **Account permissions** and select the following permissions:
-     - Codespaces user secrets: **Read and write**
-     - Gists: **Read and write**
-     - Git SSH keys: **Read and write**
-     - Email addresses: **Read and write**
-     - Followers: **Read**
-     - GPG keys: **Read and write**
-     - Private repository invitations: **Read and write**
-     - Profile: **Read and write**
-     - SSH signing keys: **Read and write**
-     - Starring: **Read and write**
-     - Watching: **Read and write**
+     - Codespaces user secrets: Read and write
+     - Gists: Read and write
+     - Git SSH keys: Read and write
+     - Email addresses: Read and write
+     - Followers: Read
+     - GPG keys: Read and write
+     - Private repository invitations: Read and write
+     - Profile: Read and write
+     - SSH signing keys: Read and write
+     - Starring: Read and write
+     - Watching: Read and write
    - Click **Generate token** and copy the generated token. This token will be used to authenticate Docker with GitHub's container registry and perform other API operations.
 
 ### Step 2: Create SSH Keys for VPS Access
@@ -157,15 +157,15 @@ To generate a GitHub Personal Access Token with the necessary permissions, follo
 
 ### Step 4: Create Configuration File
 
-Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
+Create a file named `config.env` in your project directory
+
+. This file will store all the necessary configuration variables:
 
 ```env
 MAIN_DIR=fountainAI-project
 REPO_OWNER=Contexter
 REPO_NAME=fountainAI
-GITHUB_TOKEN=ghp
-
-_yourgithubtoken1234567890
+GITHUB_TOKEN=ghp_yourgithubtoken1234567890
 VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 ...
 -----END OPENSSH PRIVATE KEY-----
@@ -181,6 +181,7 @@ DB_USER=fountainai_user
 DB_PASSWORD=your_db_password
 REDIS_PORT=6379
 REDISAI_PORT=6378
+RUNNER_TOKEN=your_runner_registration_token
 ```
 
 ### Step 5: Initialize Git Repository
@@ -196,7 +197,7 @@ REDISAI_PORT=6378
      git push -u origin main
      ```
 
-2. **Add `config.env` to `.gitignore`**:
+2. **Add `config.env` to `.gitignore**:
    - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
      ```sh
      echo "config.env" >> .gitignore
@@ -256,6 +257,7 @@ create_github_secret "DB_USER" "$DB_USER"
 create_github_secret "DB_PASSWORD" "$DB_PASSWORD"
 create_github_secret "REDIS_PORT" "$REDIS_PORT"
 create_github_secret "REDISAI_PORT" "$REDISAI_PORT"
+create_github_secret "RUNNER_TOKEN" "$RUNNER_TOKEN"
 
 echo "Secrets have been added to GitHub repository."
 ```
@@ -374,7 +376,9 @@ EOF
 
     - name: Build and Push Docker Image for Staging
       run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
+        IMAGE_NAME=ghcr.io
+
+/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
         docker build -t $IMAGE_NAME .
         docker push $IMAGE_NAME
 
@@ -382,9 +386,7 @@ EOF
     needs: build
     runs-on: self-hosted
 
-   
-
- steps:
+    steps:
     - uses: actions/checkout@v2
 
     - name: Set up Docker Buildx
@@ -572,14 +574,14 @@ EOF
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
 EOF
 
+
+
     - name: Verify Nginx and SSL Configuration (Production)
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         if ! systemctl is-active --quiet nginx; then
           echo "Nginx is not running"
-         
-
- exit 1
+          exit 1
         fi
 
         if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
@@ -594,7 +596,47 @@ EOF
 EOF
 ```
 
-### Step 8: Final Setup Script
+### Step 8: Prepare Self-Hosted Runner
+
+1. **Generate a Runner Registration Token**:
+   - Go to your GitHub repository.
+   - Navigate to **Settings** -> **Actions** -> **Runners**.
+   - Click on **New self-hosted runner**.
+   - Select the appropriate operating system for your VPS.
+   - Copy the provided `config` and `run` commands, and note the `RUNNER_TOKEN` generated. You will use this token to register the runner.
+
+2. **Add the `RUNNER_TOKEN` to `config.env`**:
+   - Add the `RUNNER_TOKEN` to your `config.env` file:
+     ```env
+     RUNNER_TOKEN=your_runner_registration_token
+     ```
+
+3. **Create a Script to Prepare the Self-Hosted Runner**:
+   - Create a script named `prepare_self_hosted_runner.sh`:
+     ```bash
+     #!/bin/bash
+
+     # Load configuration from config.env
+     source config.env
+
+     # Connect to the VPS and set up the self-hosted runner
+     ssh $VPS_USERNAME@$VPS_IP << EOF
+     mkdir actions-runner && cd actions-runner
+     curl -o actions-runner-linux-x64-2.284.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.284.0/actions-runner-linux-x64-2.284.0.tar.gz
+     tar xzf ./actions-runner-linux-x64-2.284.0.tar.gz
+     ./config.sh --url https://github.com/$REPO_OWNER/$REPO_NAME --token $RUNNER_TOKEN
+     sudo ./svc.sh install
+     sudo ./svc.sh start 
+     EOF
+     ```
+
+   - Make the script executable and run it:
+     ```sh
+     chmod +x prepare_self_hosted_runner.sh
+     ./prepare_self_hosted_runner.sh
+     ```
+
+### Step 9: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
 
@@ -677,18 +719,6 @@ install_docker_on_vps() {
 EOF
 }
 
-# Function to prepare the VPS as a self-hosted runner
-prepare_self_hosted_runner() {
-    ssh $VPS_USERNAME@$VPS_IP << EOF
-    mkdir actions-runner && cd actions-runner
-    curl -o actions-runner-linux-x64-2.292.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.292.0/actions-runner-linux-x64-2.292.0.tar.gz
-    tar xzf ./actions-runner-linux-x64-2.292.0.tar.gz
-    ./config.sh --url https://github.com/$REPO_OWNER/$REPO_NAME --token YOUR_RUNNER_REGISTRATION_TOKEN
-    sudo ./svc.sh install
-    sudo ./svc.sh start
-EOF
-}
-
 # Main function to set up the project
 main() {
     create_main_directory
@@ -701,7 +731,7 @@ main() {
 
     install_docker_on_vps
 
-    prepare_self_hosted_runner
+    ./prepare_self_hosted_runner.sh
 
     echo "Initial setup for FountainAI project is complete."
 }
@@ -803,15 +833,18 @@ feat: Update GitHub Personal Access Token generation instructions
 - Revised Step 1 to reflect the new GitHub interface for creating Personal Access Tokens.
 - Updated instructions to include details on selecting repository access and permissions.
 - Specified the necessary permissions under Account permissions.
+- Added documentation for generating and using the runner registration token.
+- Included steps to prepare the self-hosted runner in the setup guide.
 - Ensured consistency with the latest GitHub interface for a seamless setup experience.
-- Added instructions for preparing the VPS as a self-hosted runner.
 ```
 
 ## Development Perspective
 
 ### TDD and CI/CD
 
-Implementing Test-Driven Development (TDD) alongside Continuous Integration/Continuous Deployment (CI/CD) ensures that each feature of the OpenAPI specification is thoroughly tested and automatically deployed. The steps include:
+Implementing Test-Driven Development (TDD) alongside Continuous Integration/Continuous Deployment (CI/CD) ensures that each feature of the OpenAPI specification is thoroughly tested and automatically deployed. The steps
+
+ include:
 
 1. **Write Tests First**: 
    - For each API endpoint defined in the OpenAPI, write unit tests and integration tests before implementing the functionality.
@@ -848,9 +881,7 @@ func testAddition() {
 
 ### Integration Tests
 
-**Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the
-
- application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
+**Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
 
 #### Example:
 For an API endpoint that retrieves user data from a database, an integration test might look like this:
@@ -872,35 +903,30 @@ func testGetUser() throws {
 }
 ```
 
-### Accessing Compiler Output in GitHub Actions
+### Accessing Compiler Output
 
-When working with GitHub Actions, the output of the compilation process is accessible through the Actions tab in your GitHub repository. Here’s how you can access and utilize this information:
+To access the compiler output for your Vapor application, follow these steps:
 
-1. **Navigate to the Actions Tab**:
-   - Go to your GitHub repository.
-   - Click on the **Actions** tab.
+1. **Navigate to GitHub Actions**:
+   - Go to the **Actions** tab in your GitHub repository.
 
-2. **Select a Workflow Run**:
-   - You will see a list of recent workflow runs. Click on the run you are interested in.
+2. **Select the Relevant Workflow**:
+   - Choose the workflow run you are interested in. The workflows are typically named based on the branches they are triggered by (e.g., `main` for staging, `production` for production).
 
-3. **View Logs**:
-   - The workflow run details will show a summary of all jobs. Click on a job to expand it and view the individual steps.
-   - Click on a step to view the logs. This will include the output from the compiler and any other commands run during that step.
+3. **View the Logs**:
+   - Click on the specific job you want to inspect (e.g., `build`, `test`, or `deploy`).
+   - Expand the steps to see detailed logs for each step. The compiler output will be visible in the logs of the `Build and Push Docker Image` or `Run Unit Tests` steps.
 
-4. **Download Logs**:
-   - You can download the logs for offline analysis. This is useful for providing detailed feedback or information to a code-generating GPT model.
-
-5. **Using Compiler Output**:
-   - The logs will include information about any compilation errors or warnings. You can use this information to debug issues or improve your code.
-   - When providing information to a code-generating GPT model, include relevant log excerpts to help the model understand the context and specific issues.
-
-By leveraging the detailed logs provided by GitHub Actions, you can gain insights into the compilation process and use this information to improve your code and workflow.
+4. **Reading and Using the Output**:
+   - Review the logs for any errors or warnings that occurred during the build or test phases.
+   - Use this information to debug and fix issues in your code.
+   - If you are using a code-generating GPT model, you can provide it with the relevant parts of the compiler output to assist in troubleshooting and improving the code.
 
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
-## Configuration File Documentation
+## Addendum: Configuration File Documentation
 
 ### `config.env` File
 
@@ -961,5 +987,9 @@ The `config.env` file is a crucial component in the setup process, containing al
   
 - **`REDISAI_PORT`**: The port for your RedisAI service.
   - Example: `REDISAI_PORT=6378`
+  
+- **`RUNNER_TOKEN`**: The GitHub Actions runner registration token for setting up a self-hosted runner.
+  - Example: `RUNNER_TOKEN=your_runner_registration_token`
 
 Ensure that this file is added to your `.gitignore` to prevent sensitive information from being exposed.
+
