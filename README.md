@@ -87,6 +87,9 @@ Before starting the setup, ensure you have the following:
 3. **VPS (Virtual Private Server)**: To deploy your applications.
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
 5. **Docker**: Installed on your local machine for containerization.
+
+   **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
+
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 
 ## Step-by-Step Setup Guide
@@ -116,49 +119,61 @@ Before starting the setup, ensure you have the following:
 
 ### Step 2: Create SSH Keys for VPS Access
 
-1. **Generate an SSH Key Pair**:
-   - Open your terminal.
+1. **Open your terminal**.
+2. **Generate an SSH Key Pair**:
    - Run the following command, replacing `your_email@example.com` with your email:
      ```sh
      ssh-keygen -t ed25519 -C "your_email@example.com"
      ```
    - Follow the prompts to save the key pair in the default location (`~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`).
+     - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
+     - You can choose to set a passphrase or leave it empty by pressing Enter.
 
 ### Step 3: Add SSH Keys to Your VPS and GitHub
+
+##### Part A : Add the Public Key to Your VPS
 
 1. **Copy the Public Key**:
    - Run the following command to display the public key:
      ```sh
      cat ~/.ssh/id_ed25519.pub
      ```
-   - Copy the output (your public key).
+   - Copy the output (your public key) to your clipboard.
 
-2. **Add the Public Key to Your VPS**:
-   - Use an SSH client to connect to your VPS.
-   - Example command:
+2. **Connect to Your VPS**:
+   - Use an SSH client to connect to your VPS. Replace `your_vps_username` and `your_vps_ip` with your actual VPS username and IP address:
      ```sh
-     ssh $VPS_USERNAME@$VPS_IP
+     ssh your_vps_username@your_vps_ip
      ```
-   - On your VPS, run the following command to add your public key to the `authorized_keys` file:
+
+3. **Add the Public Key to the VPS**:
+   - On your VPS, create the `.ssh` directory if it doesn't exist:
+     ```sh
+     mkdir -p ~/.ssh
+     ```
+   - Add the copied public key to the `authorized_keys` file:
      ```sh
      echo "<public_key>" >> ~/.ssh/authorized_keys
      ```
    - Replace `<public_key>` with the public key you copied earlier.
 
-3. **Copy the Private Key**:
-   - Run the following command to display the private key:
+##### Part B: Add the Private Key to GitHub Secrets
+
+1. **Copy the Private Key**:
+   - On your local machine, run the following command to display the private key:
      ```sh
      cat ~/.ssh/id_ed25519
      ```
-  
+   - Copy the output (your private key) to your clipboard.
 
- - Copy the output (your private key).
-
-4. **Add the Private Key to GitHub Secrets**:
-   - Go to your GitHub repository.
+2. **Add the Private Key to GitHub Secrets**:
+   - Go to your GitHub repository in your web browser.
    - Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
-   - Add a new secret named `VPS_SSH_KEY` and paste the copied private key.
-
+   - Click on **New repository secret**.
+   - Add a new secret with the following details:
+     - **Name**: `VPS_SSH_KEY`
+     - **Value**: Paste the private key you copied earlier.
+   - Click **Add secret** to save.
 ### Step 4: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
@@ -208,7 +223,7 @@ RUNNER_TOKEN=your_runner_registration_token
      git push -u origin main
      ```
 
-2. **Add `config.env` to `.gitignore`**:
+2. **Add `config.env` to `.gitignore**`:
    - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
      ```sh
      echo "config.env" >> .gitignore
@@ -342,7 +357,9 @@ server {
 EOL
         sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
         sudo systemctl reload nginx
-        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo cert
+
+bot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
         sudo systemctl reload nginx
 EOF
 
@@ -364,9 +381,7 @@ EOF
         sleep 10
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{
-
- secrets.DB_USER }}') THEN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
                 CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
             END IF;
         END \$\$;"
@@ -543,7 +558,9 @@ EOF
             IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
                 CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
             END IF;
-        END \$\$;"
+       
+
+ END \$\$;"
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
@@ -579,8 +596,6 @@ EOF
 
     - name: Deploy to VPS (Production)
       run: |
-
-
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
@@ -612,6 +627,7 @@ EOF
 ### Step 9: Prepare Self-Hosted Runner
 
 1. **Create a Script to Prepare the Self-Hosted Runner**:
+   - Create a script named `prepare_self_hosted_runner.sh`:
      ```bash
      #!/bin/bash
 
@@ -629,7 +645,7 @@ EOF
      EOF
      ```
 
-2. **Make the script executable and run it:**
+   - Make the script executable and run it:
      ```sh
      chmod +x prepare_self_hosted_runner.sh
      ./prepare_self_hosted_runner.sh
@@ -802,7 +818,9 @@ check_commands() {
 
 # Function to check if Docker is installed on the VPS
 check_docker_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP "command -v docker >/dev/null 2>&1"
+    ssh $VPS_USERNAME@$
+
+VPS_IP "command -v docker >/dev/null 2>&1"
 }
 
 # Main function to set up the project
@@ -835,9 +853,7 @@ EOF
     fi
 
     # Create main directory
-    mkdir -p $MAIN
-
-_DIR
+    mkdir -p $MAIN_DIR
     cd $MAIN_DIR
 
     # Add secrets
@@ -951,18 +967,18 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-refactor: Integrate Docker and enhance setup script logic
+refactor: Enhance Docker integration and setup script logic
 
 - Updated the setup process to ensure a fully Dockerized environment for the Vapor application.
 - Refactored the `setup.sh` script to include checks for environment variables and required commands.
 - Added a new `create_vapor_app.sh` script to handle the creation and configuration of the Vapor application locally.
-- Created a `build_and_push_docker_image.sh` script to build the Docker image and push it to GitHub Container Registry.
+- Created a `build_and_push_docker_image.sh` script to build the Docker image locally and push it to GitHub Container Registry.
 - Modified the GitHub Actions workflows (`ci-cd-staging.yml` and `ci-cd-production.yml`) to align with the new Docker-based deployment process.
 - Ensured Docker installation on the VPS if not already installed.
 - Updated the documentation to reflect changes in the step-by-step setup guide, including the use of self-hosted runners and Docker.
 - Improved script modularity and readability for better maintainability.
 - Added comprehensive checks and balances in setup scripts to ensure seamless setup and deployment processes.
-
+- Clarified the need for Docker to be installed locally for containerization and building the Docker image.
 ```
 
 ## Development Perspective
@@ -1057,7 +1073,9 @@ Following this guide will set up a robust environment for developing and deployi
 
 ### `config.env` File
 
-The `config.env` file is a crucial component in the setup process, containing all the necessary configuration variables. Here’s a breakdown of each variable and its purpose:
+The `config.env` file is a crucial component in the setup process, containing
+
+ all the necessary configuration variables. Here’s a breakdown of each variable and its purpose:
 
 - **`MAIN_DIR`**: The main directory for the project on your local machine. This can be the same as the `APP_NAME` or different.
   - Example: `MAIN_DIR=fountainAI-project`
@@ -1091,9 +1109,7 @@ The `config.env` file is a crucial component in the setup process, containing al
 - **`DOMAIN`**: The domain name for your production environment.
   - Example: `DOMAIN=example.com`
   
-- **`STAGING_DOMAIN`**: The domain name for your staging environment
-
-.
+- **`STAGING_DOMAIN`**: The domain name for your staging environment.
   - Example: `STAGING_DOMAIN=staging.example.com`
   
 - **`DEPLOY_DIR`**: The directory on your VPS where the application will be deployed.
