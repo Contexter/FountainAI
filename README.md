@@ -11,7 +11,7 @@
   - [Step 4: Generate a Runner Registration Token](#step-4-generate-a-runner-registration-token)
   - [Step 5: Create Configuration File](#step-5-create-configuration-file)
   - [Step 6: Initialize Git Repository](#step-6-initialize-git-repository)
-  - [Step 7: Create Script to Add Secrets via GitHub's API](#step-7-create-script-to-add-secrets-via-githubs-api)
+  - [Step 7: Manually Add Secrets to GitHub](#step-7-manually-add-secrets-to-github)
   - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
   - [Step 9: Create Vapor Application Locally](#step-9-create-vapor-application-locally)
   - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
@@ -102,18 +102,34 @@ Before starting the setup, ensure you have the following:
    - Fill in the token description (e.g., "FountainAI Project Token").
    - Set the expiration date as needed.
    - Under **Repository access**, select **All repositories** (or **Only select repositories** if you want to limit access to specific repositories).
-   - In the **Permissions** section, click on **Account permissions** and select the following permissions:
-     - Codespaces user secrets: Read and write
-     - Gists: Read and write
-     - Git SSH keys: Read and write
-     - Email addresses: Read and write
-     - Followers: Read
-     - GPG keys: Read and write
-     - Private repository invitations: Read and write
-     - Profile: Read and write
-     - SSH signing keys: Read and write
-     - Starring: Read and write
-     - Watching: Read and write
+   - In the **Permissions** section, select the following permissions:
+     - **Repository permissions**:
+       - Actions: Read and write
+       - Administration: Read and write
+       - Codespaces: Read and write
+       - Contents: Read and write
+       - Deployments: Read and write
+       - Environments: Read and write
+       - Issues: Read and write
+       - Metadata: Read and write
+       - Packages: Read and write
+       - Pages: Read and write
+       - Pull requests: Read and write
+       - Secrets: Read and write
+       - Variables: Read and write
+       - Webhooks: Read and write
+     - **Account permissions**:
+       - Codespaces user secrets: Read and write
+       - Gists: Read and write
+       - Git SSH keys: Read and write
+       - Email addresses: Read and write
+       - Followers: Read
+       - GPG keys: Read and write
+       - Private repository invitations: Read and write
+       - Profile: Read and write
+       - SSH signing keys: Read and write
+       - Starring: Read and write
+       - Watching: Read and write
    - Click **Generate token** and copy the generated token. This token will be used to authenticate Docker with GitHub's container registry and perform other API operations.
 
 ### Step 2: Create SSH Keys for VPS Access
@@ -125,7 +141,9 @@ Before starting the setup, ensure you have the following:
      ssh-keygen -t ed25519 -C "your_email@example.com"
      ```
    - Follow the prompts to save the key pair in the default location (`~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`).
-     - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
+     - When asked to "Enter a file in which to
+
+ save the key," press Enter to accept the default location.
      - You can choose to set a passphrase or leave it empty by pressing Enter.
 
 ### Step 3: Add SSH Keys to Your VPS and GitHub
@@ -235,9 +253,9 @@ MAIN_DIR=fountainAI-project
 REPO_OWNER=Contexter
 REPO_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
-VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
 ...
------END OPENSSH PRIVATE KEY-----
+-----END OPENSSH PRIVATE KEY-----'
 VPS_USERNAME=your_vps_username
 VPS_IP=your_vps_ip
 APP_NAME=fountainAI
@@ -277,66 +295,35 @@ RUNNER_TOKEN=your_runner_registration_token
 
 **Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. By adding it to `.gitignore`, you ensure this file is not tracked by git and is stored securely. This helps prevent accidental exposure of sensitive data in your repository.
 
-### Step 7: Create Script to Add Secrets via GitHub's API
+### Step 7: Manually Add Secrets to GitHub
 
-Create a script named `add_secrets.sh`:
+Add the following secrets to your GitHub repository:
 
-```bash
-#!/bin/bash
+1. **MAIN_DIR**
+2. **REPO_OWNER**
+3. **REPO_NAME**
+4. **GITHUB_TOKEN**
+5. **VPS_SSH_KEY**
+6. **VPS_USERNAME**
+7. **VPS_IP**
+8. **APP_NAME**
+9. **DOMAIN**
+10. **STAGING_DOMAIN**
+11. **DEPLOY_DIR**
+12. **EMAIL**
+13. **DB_NAME**
+14. **DB_USER**
+15. **DB_PASSWORD**
+16. **REDIS_PORT**
+17. **REDISAI_PORT**
+18. **RUNNER_TOKEN**
 
-# Load configuration from config.env
-source config.env
+To add these secrets:
 
-# Function to create a secret in GitHub repository
-create_github_secret() {
-    local secret_name=$1
-    local secret_value=$2
-
-    # Get the public key
-    PUB_KEY_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-                            "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/secrets/public-key")
-    PUB_KEY=$(echo "$PUB_KEY_RESPONSE" | jq -r '.key')
-    KEY_ID=$(echo "$PUB_KEY_RESPONSE" | jq -r '.key_id')
-
-    # Encrypt the secret value
-    ENCRYPTED_VALUE=$(echo -n "$secret_value" | openssl rsautl -encrypt -pubin -inkey <(echo "$PUB_KEY" | base64 -d) | base64)
-
-    # Create the secret
-    curl -s -X PUT -H "Authorization: token $GITHUB_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "{\"encrypted_value\":\"$ENCRYPTED_VALUE\",\"key_id\":\"$KEY_ID\"}" \
-        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/secrets/$secret_name"
-}
-
-# Add secrets
-create_github_secret "MAIN_DIR" "$MAIN_DIR"
-create_github_secret "REPO_OWNER" "$REPO_OWNER"
-create_github_secret "REPO_NAME" "$REPO_NAME"
-create_github_secret "GITHUB_TOKEN" "$GITHUB_TOKEN"
-create_github_secret "VPS_SSH_KEY" "$VPS_SSH_KEY"
-create_github_secret "VPS_USERNAME" "$VPS_USERNAME"
-create_github_secret "VPS_IP" "$VPS_IP"
-create_github_secret "APP_NAME" "$APP_NAME"
-create_github_secret "DOMAIN" "$DOMAIN"
-create_github_secret "STAGING_DOMAIN" "$STAGING_DOMAIN"
-create_github_secret "DEPLOY_DIR" "$DEPLOY_DIR"
-create_github_secret "EMAIL" "$EMAIL"
-create_github_secret "DB_NAME" "$DB_NAME"
-create_github_secret "DB_USER" "$DB_USER"
-create_github_secret "DB_PASSWORD" "$DB_PASSWORD"
-create_github_secret "REDIS_PORT" "$REDIS_PORT"
-create_github_secret "REDISAI_PORT" "$REDISAI_PORT"
-create_github_secret "RUNNER_TOKEN" "$RUNNER_TOKEN"
-
-echo "Secrets have been added to GitHub repository."
-```
-
-Make the script executable and run it:
-
-```sh
-chmod +x add_secrets.sh
-./add_secrets.sh
-```
+1. Go to your GitHub repository in your web browser.
+2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
+3. Click on **New repository secret** for each secret and fill in the name and value, mirroring the `config.env` you previously edited in **Step 5**
+4. Click **Add secret** to save each one.
 
 ### Step 8: Create GitHub Actions Workflow Templates
 
@@ -379,9 +366,7 @@ jobs:
         sudo apt install -y nginx certbot python3-certbot-nginx
 EOF
 
-    - name: Set up
-
- Nginx and SSL for Staging
+    - name: Set up Nginx and SSL for Staging
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
@@ -401,7 +386,9 @@ server {
 }
 EOL
         sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
-        sudo systemctl reload nginx
+        sudo
+
+ systemctl reload nginx
         sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
         sudo systemctl reload nginx
 EOF
@@ -581,9 +568,7 @@ EOF
     - name: Set up PostgreSQL, Redis, and RedisAI
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo
-
- docker stop postgres || true
+        sudo docker stop postgres || true
         sudo docker rm postgres || true
         sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
         
@@ -599,7 +584,9 @@ EOF
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
             IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
-                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
+                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB
+
+_PASSWORD }}';
             END IF;
         END \$\$;"
         
@@ -861,7 +848,9 @@ main() {
         sudo apt update
         sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo add-apt-repository "deb
+
+ [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
         sudo apt update
         sudo apt install -y docker-ce docker-ce-cli containerd.io
         sudo systemctl enable docker
@@ -878,9 +867,6 @@ EOF
     # Create main directory
     mkdir -p $MAIN_DIR
     cd $MAIN_DIR
-
-    # Add secrets
-    ./add_secrets.sh
 
     # Generate workflows
     ./generate_workflows.sh
@@ -987,18 +973,14 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-refactor: Enhance Docker integration and setup script logic
+refactor: Transition from scripted to manual secrets creation
 
-- Updated the setup process to ensure a fully Dockerized environment for the Vapor application.
-- Refactored the `setup.sh` script to include checks for environment variables and required commands.
-- Added a new `create_vapor_app.sh` script to handle the creation and configuration of the Vapor application locally.
-- Created a `build_and_push_docker_image.sh` script to build the Docker image locally and push it to GitHub Container Registry.
-- Modified the GitHub Actions workflows (`ci-cd-staging.yml` and `ci-cd-production.yml`) to align with the new Docker-based deployment process.
-- Ensured Docker installation on the VPS if not already installed.
-- Updated the documentation to reflect changes in the step-by-step setup guide, including the use of self-hosted runners and Docker.
-- Improved script modularity and readability for better maintainability.
-- Added comprehensive checks and balances in setup scripts to ensure seamless setup and deployment processes.
-- Clarified the need for Docker to be installed locally for containerization and building the Docker image.
+- Removed the `add_secrets.sh` script for adding secrets via GitHub API.
+- Updated the guide to instruct manual addition of secrets through GitHub UI.
+- Refactored `setup.sh` to eliminate automated secrets creation and ensure proper use of manually added secrets.
+- Adjusted setup process to use secrets set in GitHub repository instead of local `config.env`.
+- Updated documentation to reflect changes in secrets management, focusing on manual steps for better control and security.
+
 ```
 
 ## Development Perspective
@@ -1109,12 +1091,12 @@ The `config.env` file is a crucial component in the setup process, containing al
 - **`GITHUB_TOKEN`**: Your GitHub personal access token.
   - Example: `GITHUB_TOKEN=ghp_yourgithubtoken1234567890`
   
-- **`VPS_SSH_KEY`**: Your private SSH key for accessing the VPS. This key should be added to GitHub Secrets.
+- **`VPS_SSH_KEY`**: Your private SSH key for accessing the VPS.  This key should be added to GitHub Secrets.
   - Example:
     ```env
-    VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+    VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
     ...
-    -----END OPENSSH PRIVATE KEY-----
+    -----END OPENSSH PRIVATE KEY-----'
     ```
   
 - **`VPS_USERNAME`**: The username for accessing your VPS.
