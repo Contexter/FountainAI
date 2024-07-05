@@ -13,10 +13,9 @@
   - [Step 6: Initialize Git Repository](#step-6-initialize-git-repository)
   - [Step 7: Create Script to Add Secrets via GitHub's API](#step-7-create-script-to-add-secrets-via-githubs-api)
   - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
-  - [Step 9: Prepare Self-Hosted Runner](#step-9-prepare-self-hosted-runner)
-  - [Step 10: Create Vapor Application Locally](#step-10-create-vapor-application-locally)
-  - [Step 11: Build and Push Docker Image to GitHub Container Registry](#step-11-build-and-push-docker-image-to-github-container-registry)
-  - [Step 12: Final Setup Script](#step-12-final-setup-script)
+  - [Step 9: Create Vapor Application Locally](#step-9-create-vapor-application-locally)
+  - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
+  - [Step 11: Final Setup Script](#step-11-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -131,7 +130,7 @@ Before starting the setup, ensure you have the following:
 
 ### Step 3: Add SSH Keys to Your VPS and GitHub
 
-##### Part A : Add the Public Key to Your VPS
+##### Part A: Add the Public Key to Your VPS
 
 1. **Copy the Public Key**:
    - Run the following command to display the public key:
@@ -174,6 +173,7 @@ Before starting the setup, ensure you have the following:
      - **Name**: `VPS_SSH_KEY`
      - **Value**: Paste the private key you copied earlier.
    - Click **Add secret** to save.
+
 ### Step 4: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
@@ -182,6 +182,49 @@ Before starting the setup, ensure you have the following:
    - Click on **New self-hosted runner**.
    - Select the appropriate operating system for your VPS.
    - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
+
+2. **Set Up the Runner as a Systemd Service**:
+   - Follow the instructions provided by GitHub to configure and run the self-hosted runner.
+   - Then, create a systemd service file on your VPS to ensure the runner runs as a service:
+     ```sh
+     sudo nano /etc/systemd/system/github-runner.service
+     ```
+   - Add the following content to the service file:
+     ```ini
+     [Unit]
+     Description=GitHub Actions Runner
+     After=network.target
+
+     [Service]
+     ExecStart=/home/your_vps_username/actions-runner/run.sh
+     User=your_vps_username
+     WorkingDirectory=/home/your_vps_username/actions-runner
+     Restart=always
+
+     [Install]
+     WantedBy=multi-user.target
+     ```
+   - Replace `your_vps_username` with your actual VPS username.
+
+3. **Reload the systemd daemon to recognize the new service**:
+   ```sh
+   sudo systemctl daemon-reload
+   ```
+
+4. **Enable the service to start on boot**:
+   ```sh
+   sudo systemctl enable github-runner
+   ```
+
+5. **Start the service**:
+   ```sh
+   sudo systemctl start github-runner
+   ```
+
+6. **Check the status of the service**:
+   ```sh
+   sudo systemctl status github-runner
+   ```
 
 ### Step 5: Create Configuration File
 
@@ -223,7 +266,7 @@ RUNNER_TOKEN=your_runner_registration_token
      git push -u origin main
      ```
 
-2. **Add `config.env` to `.gitignore**`:
+2. **Add `config.env` to `.gitignore`**:
    - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
      ```sh
      echo "config.env" >> .gitignore
@@ -336,7 +379,9 @@ jobs:
         sudo apt install -y nginx certbot python3-certbot-nginx
 EOF
 
-    - name: Set up Nginx and SSL for Staging
+    - name: Set up
+
+ Nginx and SSL for Staging
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
@@ -357,9 +402,7 @@ server {
 EOL
         sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
         sudo systemctl reload nginx
-        sudo cert
-
-bot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
+        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
         sudo systemctl reload nginx
 EOF
 
@@ -405,8 +448,6 @@ EOF
     - name: Build and Push Docker Image for Staging
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-
-
         docker build -t $IMAGE_NAME .
         docker push $IMAGE_NAME
 
@@ -540,7 +581,9 @@ EOF
     - name: Set up PostgreSQL, Redis, and RedisAI
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres || true
+        sudo
+
+ docker stop postgres || true
         sudo docker rm postgres || true
         sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
         
@@ -558,9 +601,7 @@ EOF
             IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
                 CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
             END IF;
-       
-
- END \$\$;"
+        END \$\$;"
         
         PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
 EOF
@@ -624,34 +665,7 @@ EOF
 EOF
 ```
 
-### Step 9: Prepare Self-Hosted Runner
-
-1. **Create a Script to Prepare the Self-Hosted Runner**:
-   - Create a script named `prepare_self_hosted_runner.sh`:
-     ```bash
-     #!/bin/bash
-
-     # Load configuration from config.env
-     source config.env
-
-     # Connect to the VPS and set up the self-hosted runner
-     ssh $VPS_USERNAME@$VPS_IP << 'EOF'
-     mkdir actions-runner && cd actions-runner
-     curl -o actions-runner-linux-x64-2.284.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.284.0/actions-runner-linux-x64-2.284.0.tar.gz
-     tar xzf ./actions-runner-linux-x64-2.284.0.tar.gz
-     ./config.sh --url https://github.com/$REPO_OWNER/$REPO_NAME --token $RUNNER_TOKEN
-     sudo ./svc.sh install
-     sudo ./svc.sh start
-     EOF
-     ```
-
-   - Make the script executable and run it:
-     ```sh
-     chmod +x prepare_self_hosted_runner.sh
-     ./prepare_self_hosted_runner.sh
-     ```
-
-### Step 10: Create Vapor Application Locally
+### Step 9: Create Vapor Application Locally
 
 Create a script named `create_vapor_app.sh`:
 
@@ -725,7 +739,7 @@ chmod +x create_vapor_app.sh
 ./create_vapor_app.sh
 ```
 
-### Step 11: Build and Push Docker Image to GitHub Container Registry
+### Step 10: Build and Push Docker Image to GitHub Container Registry
 
 Create a script named `build_and_push_docker_image.sh`:
 
@@ -777,7 +791,7 @@ chmod +x build_and_push_docker_image.sh
 ./build_and_push_docker_image.sh
 ```
 
-### Step 12: Final Setup Script
+### Step 11: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
 
@@ -818,9 +832,12 @@ check_commands() {
 
 # Function to check if Docker is installed on the VPS
 check_docker_on_vps() {
-    ssh $VPS_USERNAME@$
+    ssh $VPS_USERNAME@$VPS_IP "command -v docker >/dev/null 2>&1"
+}
 
-VPS_IP "command -v docker >/dev/null 2>&1"
+# Function to check if GitHub runner is running on the VPS
+check_runner_on_vps() {
+    ssh $VPS_USERNAME@$VPS_IP "systemctl is-active --quiet github-runner"
 }
 
 # Main function to set up the project
@@ -852,6 +869,12 @@ main() {
 EOF
     fi
 
+    # Check if GitHub runner is running on the VPS
+    if ! check_runner_on_vps; then
+        echo "GitHub runner is not running on the VPS. Please ensure it is set up correctly."
+        exit 1
+    fi
+
     # Create main directory
     mkdir -p $MAIN_DIR
     cd $MAIN_DIR
@@ -861,9 +884,6 @@ EOF
 
     # Generate workflows
     ./generate_workflows.sh
-
-    # Prepare self-hosted runner
-    ./prepare_self_hosted_runner.sh
 
     # Create and build Vapor app locally
     ./create_vapor_app.sh
@@ -1067,15 +1087,15 @@ The output of the compiler and other build steps can be accessed through the Git
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a
+
+ TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
 
 ## Addendum: Configuration File Documentation
 
 ### `config.env` File
 
-The `config.env` file is a crucial component in the setup process, containing
-
- all the necessary configuration variables. Here’s a breakdown of each variable and its purpose:
+The `config.env` file is a crucial component in the setup process, containing all the necessary configuration variables. Here’s a breakdown of each variable and its purpose:
 
 - **`MAIN_DIR`**: The main directory for the project on your local machine. This can be the same as the `APP_NAME` or different.
   - Example: `MAIN_DIR=fountainAI-project`
