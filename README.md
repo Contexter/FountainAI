@@ -1,7 +1,3 @@
-Certainly! Here is the revised guide with the updated sequence for adding `config.env` to `.gitignore` and comprehensive explanations for Step 7: Manually Add Secrets to GitHub.
-
----
-
 ## Table of Contents
 
 - [Introduction](#introduction)
