@@ -313,6 +313,16 @@ NYDUS_PORT=2224
 
 **Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. By adding it to `.gitignore` before committing, you ensure this file is not tracked by git and is stored securely. This helps prevent accidental exposure of sensitive data in your repository.
 
+### Project Directory Tree at Step 6
+
+```
+fountainAI-project/
+├── .git/
+├── .gitignore
+├── config.env
+└── README.md
+```
+
 ### Step 7: Manually Add Secrets to GitHub
 
 Secrets are sensitive information that you don't want to expose in your source code. GitHub Actions allows you to store these secrets securely in your repository settings. For the FountainAI project, you need to add several secrets that will be used by your workflows.
@@ -353,6 +363,8 @@ Secrets are sensitive information that you don't want to expose in your source c
    - **Example**: `your_vps_ip`
 
 8. **`APP_NAME`**: The name of your application.
+
+
    - **Usage**: Used in naming Docker images and deployment directories.
    - **Example**: `fountainAI`
 
@@ -746,6 +758,20 @@ EOF
 EOF
 ```
 
+### Project Directory Tree at Step 8
+
+```
+fountainAI-project/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd-production.yml
+│       └── ci-cd-staging.yml
+├── .git/
+├── .gitignore
+├── config.env
+└── README.md
+```
+
 ### Step 9: Create Vapor Application Locally
 
 Create a script named `create_vapor_app.sh`:
@@ -754,6 +780,8 @@ Create a script named `create_vapor_app.sh`:
 #!/bin/bash
 
 # Load configuration from config.env
+
+
 source config.env
 
 # Function to create and initialize a new Vapor app with required packages
@@ -824,6 +852,29 @@ chmod +x create_vapor_app.sh
 ./create_vapor_app.sh
 ```
 
+### Project Directory Tree at Step 9
+
+```
+fountainAI-project/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd-production.yml
+│       └── ci-cd-staging.yml
+├── .git/
+├── .gitignore
+├── config.env
+├── create_vapor_app.sh
+├── README.md
+└── fountainAI/
+    ├── Package.swift
+    ├── README.md
+    ├── Sources/
+    │   └── App/
+    │       ├── configure.swift
+    │       └── ...
+    └── ...
+```
+
 ### Step 10: Build and Push Docker Image to GitHub Container Registry
 
 Create a script named `build_and_push_docker_image.sh`:
@@ -874,6 +925,31 @@ Make the script executable and run it:
 ```sh
 chmod +x build_and_push_docker_image.sh
 ./build_and_push_docker_image.sh
+```
+
+### Project Directory Tree at Step 10
+
+```
+fountainAI-project/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd-production.yml
+│       └── ci-cd-staging.yml
+├── .git/
+├── .gitignore
+├── config.env
+├── create_vapor_app.sh
+├── build_and_push_docker_image.sh
+├── Dockerfile
+├── README.md
+└── fountainAI/
+    ├── Package.swift
+    ├── README.md
+    ├── Sources/
+    │   └── App/
+    │       ├── configure.swift
+    │       └── ...
+    └── ...
 ```
 
 ### Step 11: Configure UFW on VPS
@@ -987,7 +1063,9 @@ main() {
         ssh $VPS_USERNAME@$VPS_IP << EOF
         sudo apt update
         sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        curl -fsSL https://download.docker.com/linux
+
+/ubuntu/gpg | sudo apt-key add -
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
         sudo apt update
         sudo apt install -y docker-ce docker-ce-cli containerd.io
@@ -1041,6 +1119,32 @@ Make the final setup script executable and run it:
 ```sh
 chmod +x setup.sh
 ./setup.sh
+```
+
+### Project Directory Tree at Step 12
+
+```
+fountainAI-project/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd-production.yml
+│       └── ci-cd-staging.yml
+├── .git/
+├── .gitignore
+├── config.env
+├── create_vapor_app.sh
+├── build_and_push_docker_image.sh
+├── setup.sh
+├── Dockerfile
+├── README.md
+└── fountainAI/
+    ├── Package.swift
+    ├── README.md
+    ├── Sources/
+    │   └── App/
+    │       ├── configure.swift
+    │       └── ...
+    └── ...
 ```
 
 ## How to Deploy
@@ -1125,13 +1229,14 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Add UFW management for VPS security
+feat: Add UFW management and directory tree visualization
 
 - Integrated UFW management into the setup guide to ensure VPS security.
 - Added instructions to configure UFW to allow necessary ports, including the NYDUS service port (2224).
 - Updated the final setup script to automate UFW configuration.
 - Ensured all required ports for SSH, HTTP, HTTPS, PostgreSQL, Redis, RedisAI, and application services are included.
 - Enhanced security by providing a comprehensive guide for managing firewall settings on the VPS.
+- Included project directory tree visualizations at key steps to aid in understanding the project structure.
 
 ```
 
@@ -1221,4 +1326,6 @@ The output of the compiler and other build steps can be accessed through the Git
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure
+
+ and well-functioning application environment.
