@@ -15,7 +15,8 @@
   - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
   - [Step 9: Create Vapor Application Locally](#step-9-create-vapor-application-locally)
   - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
-  - [Step 11: Final Setup Script](#step-11-final-setup-script)
+  - [Step 11: Configure UFW on VPS](#step-11-configure-ufw-on-vps)
+  - [Step 12: Final Setup Script](#step-12-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -288,6 +289,7 @@ DB_PASSWORD=your_db_password
 REDIS_PORT=6379
 REDISAI_PORT=6378
 RUNNER_TOKEN=your_runner_registration_token
+NYDUS_PORT=2224
 ```
 
 ### Step 6: Initialize Git Repository
@@ -354,9 +356,7 @@ Secrets are sensitive information that you don't want to expose in your source c
    - **Usage**: Used in naming Docker images and deployment directories.
    - **Example**: `fountainAI`
 
-9. **`DOMAIN`**: The
-
- domain name for your production environment.
+9. **`DOMAIN`**: The domain name for your production environment.
    - **Usage**: Configures Nginx and SSL certificates for the production environment.
    - **Example**: `example.com`
 
@@ -395,6 +395,10 @@ Secrets are sensitive information that you don't want to expose in your source c
 18. **`RUNNER_TOKEN`**: The runner registration token for setting up the self-hosted GitHub Actions runner.
     - **Usage**: Registers the self-hosted runner with GitHub Actions.
     - **Example**: `your_runner_registration_token`
+
+19. **`NYDUS_PORT`**: The port for the NYDUS service, which connects the host system's service dashboard with the VPS instance.
+    - **Usage**: Ensures the NYDUS service can connect to the VPS.
+    - **Example**: `2224`
 
 #### Adding Secrets to GitHub:
 
@@ -560,7 +564,9 @@ EOF
 
     - name: Deploy to VPS (Staging)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@
+
+${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
 
@@ -761,7 +767,9 @@ create_vapor_app() {
     echo "// This is a starter Vapor application. Further customization and implementation required." >> README.md
 
     # Update Package.swift to include PostgreSQL, Redis, RedisAI, and Leaf
-    sed -i '' '/dependencies:/a\
+    sed -i ''
+
+ '/dependencies:/a\
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
         .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
 
@@ -868,7 +876,49 @@ chmod +x build_and_push_docker_image.sh
 ./build_and_push_docker_image.sh
 ```
 
-### Step 11: Final Setup Script
+### Step 11: Configure UFW on VPS
+
+To ensure that your VPS is secure and properly configured, it's essential to manage the firewall settings using UFW (Uncomplicated Firewall). This step will guide you on how to configure UFW to allow necessary ports for your services, including the special port for the NYDUS service, which connects your VPS instance to the host system's service dashboard.
+
+#### NYDUS Port Configuration
+
+**NYDUS_PORT**: The NYDUS service requires access through a specific port, which in this case is **2224**. This port must remain accessible to ensure proper connectivity between the VPS instance and the NYDUS service dashboard.
+
+#### UFW Configuration Steps
+
+1. **Install UFW**:
+   - Ensure UFW is installed on your VPS. If it's not installed, you can install it using the following command:
+     ```sh
+     sudo apt install ufw
+     ```
+
+2. **Enable UFW**:
+   - Enable UFW to start managing your firewall settings:
+     ```sh
+     sudo ufw enable
+     ```
+
+3. **Allow Necessary Ports**:
+   - Configure UFW to allow traffic on the necessary ports for your application, database, and other services:
+     ```sh
+     sudo ufw allow 22/tcp   # SSH
+     sudo ufw allow 80/tcp   # HTTP
+     sudo ufw allow 443/tcp  # HTTPS
+     sudo ufw allow 5432/tcp # PostgreSQL
+     sudo ufw allow 6379/tcp # Redis
+     sudo ufw allow 6378/tcp # RedisAI
+     sudo ufw allow 8080/tcp # Application (Production)
+     sudo ufw allow 8081/tcp # Application (Staging)
+     sudo ufw allow 2224/tcp # NYDUS Service
+     ```
+
+4. **Check UFW Status**:
+   - Verify the UFW status and ensure the rules are correctly applied:
+     ```sh
+     sudo ufw status
+     ```
+
+### Step 12: Final Setup Script
 
 **Final Setup Script (`setup.sh`)**:
 
@@ -886,7 +936,7 @@ command_exists() {
 # Function to check if required environment variables are set
 check_env_vars() {
     local missing=0
-    for var in MAIN_DIR REPO_OWNER REPO_NAME GITHUB_TOKEN VPS_SSH_KEY VPS_USERNAME VPS_IP APP_NAME DOMAIN STAGING_DOMAIN DEPLOY_DIR EMAIL DB_NAME DB_USER DB_PASSWORD REDIS_PORT REDISAI_PORT RUNNER_TOKEN; do
+    for var in MAIN_DIR REPO_OWNER REPO_NAME GITHUB_TOKEN VPS_SSH_KEY VPS_USERNAME VPS_IP APP_NAME DOMAIN STAGING_DOMAIN DEPLOY_DIR EMAIL DB_NAME DB_USER DB_PASSWORD REDIS_PORT REDISAI_PORT RUNNER_TOKEN NYDUS_PORT; do
         if [ -z "${!var}" ]; then
             echo "Error: $var is not set in config.env"
             missing=1
@@ -951,6 +1001,20 @@ EOF
         echo "GitHub runner is not running on the VPS. Please ensure it is set up correctly."
         exit 1
     fi
+
+    # Configure UFW on the VPS
+    ssh $VPS_USERNAME@$VPS_IP << EOF
+    sudo ufw allow 22/tcp
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw allow 5432/tcp
+    sudo ufw allow 6379/tcp
+    sudo ufw allow 6378/tcp
+    sudo ufw allow 8080/tcp
+    sudo ufw allow 8081/tcp
+    sudo ufw allow $NYDUS_PORT/tcp
+    sudo ufw enable
+EOF
 
     # Create main directory
     mkdir -p $MAIN_DIR
@@ -1061,14 +1125,13 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-docs: Enhance explanations and goal descriptions
+feat: Add UFW management for VPS security
 
-- Added detailed vision and goal descriptions for the Fountain Network Graph, OpenAPI Specification, and Implementation sections to provide better context and understanding.
-- Clarified the conceptual foundation and transition from high-level models to detailed specifications and implementations.
-- Enhanced Step 7 with comprehensive explanations for each secret, their usage, and the importance of securing them.
-- Adjusted the sequence of steps to ensure the `config.env` file is added to `.gitignore` before any commits, preventing accidental exposure of sensitive information.
-- Improved the overall structure and readability of the guide, making it more informative and easier to follow.
-- Ensured the workflows and setup scripts are clearly explained, highlighting their purpose and functionality.
+- Integrated UFW management into the setup guide to ensure VPS security.
+- Added instructions to configure UFW to allow necessary ports, including the NYDUS service port (2224).
+- Updated the final setup script to automate UFW configuration.
+- Ensured all required ports for SSH, HTTP, HTTPS, PostgreSQL, Redis, RedisAI, and application services are included.
+- Enhanced security by providing a comprehensive guide for managing firewall settings on the VPS.
 
 ```
 
@@ -1158,4 +1221,4 @@ The output of the compiler and other build steps can be accessed through the Git
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment.
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
