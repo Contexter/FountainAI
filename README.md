@@ -1,27 +1,26 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [The FountainAI Project](#the-fountainai-project)
 - [The Fountain Network Graph](#the-fountain-network-graph)
 - [OpenAPI Specification](#openapi-specification)
 - [Implementation](#implementation)
 - [Prerequisites](#prerequisites)
 - [Step-by-Step Setup Guide](#step-by-step-setup-guide)
-  - [Step 1: Generate a GitHub Personal Access Token](#step-1-generate-a-github-personal-access-token)
-  - [Step 2: Create SSH Keys for VPS Access](#step-2-create-ssh-keys-for-vps-access)
-  - [Step 3: Add SSH Keys to Your VPS and GitHub](#step-3-add-ssh-keys-to-your-vps-and-github)
-  - [Step 4: Generate a Runner Registration Token](#step-4-generate-a-runner-registration-token)
-  - [Step 5: Create Configuration File](#step-5-create-configuration-file)
-  - [Step 6: Initialize Git Repository](#step-6-initialize-git-repository)
-  - [Step 7: Manually Add Secrets to GitHub](#step-7-manually-add-secrets-to-github)
-  - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
-  - [Step 9: Create Vapor Application Manually](#step-9-create-vapor-application-manually)
-  - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
-  - [Step 11: Configure UFW on VPS](#step-11-configure-ufw-on-vps)
+  - [Step 1: Create GitHub Repository and Configuration File](#step-1-create-github-repository-and-configuration-file)
+  - [Step 2: Generate a GitHub Personal Access Token](#step-2-generate-a-github-personal-access-token)
+  - [Step 3: Create SSH Keys for VPS Access](#step-3-create-ssh-keys-for-vps-access)
+  - [Step 4: Add SSH Keys to Your VPS and GitHub](#step-4-add-ssh-keys-to-your-vps-and-github)
+  - [Step 5: Generate a Runner Registration Token](#step-5-generate-a-runner-registration-token)
+  - [Step 6: Manually Add Secrets to GitHub](#step-6-manually-add-secrets-to-github)
+  - [Step 7: Create GitHub Actions Workflow Templates](#step-7-create-github-actions-workflow-templates)
+  - [Step 8: Create Vapor Application Manually](#step-8-create-vapor-application-manually)
+  - [Step 9: Build and Push Docker Image to GitHub Container Registry](#step-9-build-and-push-docker-image-to-github-container-registry)
+  - [Step 10: Configure UFW on VPS](#step-10-configure-ufw-on-vps)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
   - [Monitoring and Manual Trigger](#monitoring-and-manual-trigger)
-- [Commit Message](#commit-message)
 - [Development Perspective](#development-perspective)
   - [TDD and CI/CD](#tdd-and-cicd)
   - [Unit Tests](#unit-tests)
@@ -29,22 +28,26 @@
   - [Accessing Compiler Output in GitHub Actions](#accessing-compiler-output-in-github-actions)
   - [Conclusion](#conclusion)
 
-### Introduction
+## Introduction
 
-This guide provides a comprehensive step-by-step approach to create a generic Vapor application manually and then set it up with an optimal implementation environment using modern DevOps practices. Initially, you will manually create a basic Vapor application, which serves as a robust foundation for further development. Following this, the guide details how to establish a scalable and flexible environment for your application, leveraging Docker to manage all services, including Nginx, PostgreSQL, and the envisioned future integration of Redis and RedisAI.
-
-By configuring GitHub Actions, the guide ensures automated setup, testing, and deployment, facilitating a seamless workflow from development to production. This setup guarantees continuous integration and continuous deployment (CI/CD), offering complete flexibility and scalability as your application grows. Through the detailed steps provided, you will achieve a streamlined and efficient development process, ready to accommodate future enhancements and integrations.
+This guide provides a comprehensive approach to creating and deploying a Vapor application using modern DevOps practices. You'll start by manually setting up a basic Vapor application and then configure a scalable environment leveraging Docker for services like Nginx, PostgreSQL, Redis, and RedisAI. Through detailed steps, you will establish automated testing and deployment using GitHub Actions, ensuring a streamlined workflow from development to production with CI/CD (Continuous Integration/Continuous Deployment). This setup is designed to enhance efficiency, reliability, and scalability for your application.
 
 ### Vision and Goals
 
-**The Vision**: To establish an automated, efficient, and reliable pipeline for developing and deploying Vapor applications. By integrating Docker and GitHub Actions, we aim to streamline the development process, reduce deployment errors, and ensure consistent application performance across different environments.
+**The Vision**: Establish an automated, efficient, and reliable pipeline for developing and deploying Vapor applications.
 
 **Goals**:
-1. **Automate Setup**: Simplify the initial setup of a Vapor application with automated scripts and workflows.
-2. **Leverage Containerization**: Use Docker to create isolated, consistent environments for development, staging, and production.
+1. **Automate Setup**: Simplify the initial setup with automated scripts and workflows.
+2. **Leverage Containerization**: Create isolated, consistent environments for development, staging, and production using Docker.
 3. **Implement CI/CD**: Integrate GitHub Actions for automated building, testing, and deployment.
-4. **Enhance Security and Reliability**: Securely manage secrets and configurations, ensuring reliable deployment processes.
-5. **Ensure Scalability**: Design the setup to easily scale with the growth of the application.
+4. **Enhance Security and Reliability**: Securely manage secrets and configurations to ensure reliable deployment processes.
+5. **Ensure Scalability**: Design the setup to scale easily as the application grows.
+
+## The FountainAI Project
+
+In this guide, we will focus on implementing a specific project, FountainAI. FountainAI is a conceptual AI model designed to analyze and process scripts. The project involves creating a network graph, defining an OpenAPI specification, and implementing the application using Vapor. 
+
+The following sections provide detailed steps on how to conceptualize the FountainAI network graph, specify the OpenAPI, and implement the application using Vapor, a popular server-side Swift framework.
 
 ## The Fountain Network Graph
 
@@ -96,7 +99,7 @@ The OpenAPI specification serves as the detailed blueprint for FountainAI, trans
 
 ### Explanation
 
-The implementation phase involves creating the actual codebase for FountainAI using Vapor, a popular server-side Swift framework. By adhering to the OpenAPI specification, we ensure that the implementation is consistent with the defined API standards. The focus is on writing scalable, maintainable, and efficient code, leveraging Vapor's features and best practices. This phase translates the conceptual and API models into a working application, ready for deployment and real-world use.
+The implementation phase involves creating the actual codebase for FountainAI using Vapor. By adhering to the OpenAPI specification, we ensure that the implementation is consistent with the defined API standards. The focus is on writing scalable, maintainable, and efficient code, leveraging Vapor's features and best practices. This phase translates the conceptual and API models into a working application, ready for deployment and real-world use.
 
 ## Prerequisites
 
@@ -114,7 +117,108 @@ Before starting the setup, ensure you have the following:
 
 ## Step-by-Step Setup Guide
 
-### Step 1: Generate a GitHub Personal Access Token
+### Step 1: Create GitHub Repository and Configuration File
+
+1. **Create a new GitHub Repository**:
+   - Go to your GitHub account and create a new repository named `fountainAI`.
+   - Initialize the repository with a `README.md` file.
+
+2. **Clone the Repository Locally**:
+   - Clone the repository to your local machine:
+     ```sh
+     git clone https://github.com/Contexter/fountainAI.git
+     cd fountainAI
+     ```
+
+3. **Create Configuration File**:
+   - Create a file named `config.env` in
+
+ your project directory. This file will store all the necessary configuration variables.
+   - Add the following content to `config.env`:
+
+```env
+# Name of your application
+APP_NAME=fountainAI
+
+# GitHub repository owner (your GitHub username or organization name)
+REPO_OWNER=Contexter
+
+# Name of your GitHub repository
+REPO_NAME=fountainAI
+
+# GitHub personal access token (generated in Step 2)
+GITHUB_TOKEN=ghp_yourgithubtoken1234567890  # Placeholder, will update in Step 2
+
+# Private SSH key for accessing the VPS (will be generated in Step 3)
+VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----'  # Placeholder, will update in Step 4
+
+# Username for accessing your VPS
+VPS_USERNAME=your_vps_username
+
+# IP address of your VPS
+VPS_IP=your_vps_ip
+
+# Domain name for your production environment
+DOMAIN=example.com
+
+# Domain name for your staging environment
+STAGING_DOMAIN=staging.example.com
+
+# Directory on VPS where the app will be deployed
+DEPLOY_DIR=/home/your_vps_username/deployment_directory
+
+# Email address for Let's Encrypt SSL certificate registration
+EMAIL=mail@benedikt-eickhoff.de
+
+# Name of your PostgreSQL database
+DB_NAME=fountainai_db
+
+# Username for your PostgreSQL database
+DB_USER=fountainai_user
+
+# Password for your PostgreSQL database
+DB_PASSWORD=your_db_password
+
+# Port for your Redis service
+REDIS_PORT=6379
+
+# Port for your RedisAI service
+REDISAI_PORT=6378
+
+# Runner registration token (generated in Step 5)
+RUNNER_TOKEN=your_runner_registration_token  # Placeholder, will update in Step 5
+
+# Port for the NYDUS service
+NYDUS_PORT=2224
+```
+
+4. **Add `config.env` to `.gitignore`**:
+   - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
+     ```sh
+     echo "config.env" >> .gitignore
+     ```
+
+5. **Commit and Push the Changes**:
+   - Commit the changes and push them to GitHub:
+     ```sh
+     git add .
+     git commit -m "Initial setup with config.env and .gitignore"
+     git push origin main
+     ```
+
+### Project Directory Tree at Step 1
+
+```
+fountainAI/
+├── .git/
+├── .gitignore
+├── config.env
+└── README.md
+```
+
+### Step 2: Generate a GitHub Personal Access Token
 
 1. **Generate the Token**:
    - Go to your GitHub account settings.
@@ -151,9 +255,13 @@ Before starting the setup, ensure you have the following:
        - SSH signing keys: Read and write
        - Starring: Read and write
        - Watching: Read and write
-   - Click **Generate token** and copy the generated token. This token will be used to authenticate Docker with GitHub's container registry and perform other API operations.
+   - Click **Generate token** and copy the generated token. **Immediately add this token to the `config.env` file** under the `GITHUB_TOKEN` variable to keep track of it.
 
-### Step 2: Create SSH Keys for VPS Access
+```env
+GITHUB_TOKEN=your_generated_token
+```
+
+### Step 3: Create SSH Keys for VPS Access
 
 1. **Open your terminal**.
 2. **Generate an SSH Key Pair**:
@@ -165,7 +273,14 @@ Before starting the setup, ensure you have the following:
      - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
      - You can choose to set a passphrase or leave it empty by pressing Enter.
 
-### Step 3: Add SSH Keys to Your VPS and GitHub
+3. **Add the generated keys to the `config.env` file**:
+   - Add the following lines to your `config.env` file:
+
+```env
+VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
+```
+
+### Step 4: Add SSH Keys to Your VPS and GitHub
 
 ##### Part A: Add the Public Key to Your VPS
 
@@ -211,7 +326,7 @@ Before starting the setup, ensure you have the following:
      - **Value**: Paste the private key you copied earlier.
    - Click **Add secret** to save.
 
-### Step 4: Generate a Runner Registration Token
+### Step 5: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
    - Go to your GitHub repository.
@@ -219,6 +334,11 @@ Before starting the setup, ensure you have the following:
    - Click on **New self-hosted runner**.
    - Select the appropriate operating system for your VPS.
    - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
+   - **Immediately add this token to the `config.env` file** under the `RUNNER_TOKEN` variable to keep track of it.
+
+```env
+RUNNER_TOKEN=your_generated_runner_token
+```
 
 2. **Set Up the Runner as a Systemd Service**:
    - Follow the instructions provided by GitHub to configure and run the self-hosted runner.
@@ -263,153 +383,9 @@ Before starting the setup, ensure you have the following:
    sudo systemctl status github-runner
    ```
 
-### Step 5: Create Configuration File
+### Step 6: Manually Add Secrets to GitHub
 
-Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables:
-
-```env
-MAIN_DIR=fountainAI-project
-REPO_OWNER=Contexter
-REPO_NAME=fountainAI
-GITHUB_TOKEN=ghp_yourgithubtoken1234567890
-VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
-...
------END OPENSSH PRIVATE KEY-----'
-VPS_USERNAME=your_vps_username
-VPS_IP=your_vps_ip
-APP_NAME=fountainAI
-DOMAIN=example.com
-STAGING_DOMAIN=staging.example.com
-DEPLOY_DIR=/home/your_vps_username/deployment_directory  # Directory on VPS where the app will be deployed
-EMAIL=mail@benedikt-eickhoff.de
-DB_NAME=fountainai_db
-DB_USER=fountainai_user
-DB_PASSWORD=your_db_password
-REDIS_PORT=6379
-REDISAI_PORT=6378
-RUNNER_TOKEN=your_runner_registration_token
-NYDUS_PORT=2224
-```
-
-### Step 6: Initialize Git Repository
-
-1. **Add `config.env` to `.gitignore`**:
-   - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
-     ```sh
-     echo "config.env" >> .gitignore
-     ```
-
-2. **Initialize Git Repository**:
-   - Open your terminal and navigate to your project directory.
-   - Run the following commands to initialize a new git repository and commit the initial setup:
-     ```sh
-     git init
-     git add .
-     git commit -m "Initial project setup"
-     git remote add origin https://github.com/Contexter/fountainAI.git
-     git push -u origin main
-     ```
-
-**Security Note**: The `config.env` file contains sensitive information such as your GitHub token and private key. By adding it to `.gitignore` before committing, you ensure this file is not tracked by git and is stored securely. This helps prevent accidental exposure of sensitive data in your repository.
-
-### Project Directory Tree at Step 6
-
-```
-fountainAI-project/
-├── .git/
-├── .gitignore
-├── config.env
-└── README.md
-```
-
-### Step 7: Manually Add Secrets to GitHub
-
-Secrets are sensitive information that you don't want to expose in your source code. GitHub Actions allows you to store these secrets securely in your repository settings. For the FountainAI project, you need to add several secrets that will be used by your workflows.
-
-#### Comprehensive Explanation of Each Secret:
-
-1. **`MAIN_DIR`**: This is the main directory for the project on your local machine.
-   - **Usage**: Organizes the project files and scripts.
-   - **Example**: `fountainAI-project`
-
-2. **`REPO_OWNER`**: Your GitHub username or organization name.
-   - **Usage**: Identifies the owner of the repository.
-   - **Example**: `Contexter`
-
-3. **`REPO_NAME`**: The name of your GitHub repository.
-   - **Usage**: Specifies the repository where the workflows will be executed.
-   - **Example**: `fountainAI`
-
-4. **`GITHUB_TOKEN`**: Your GitHub personal access token.
-   - **Usage**: Authenticates GitHub API requests, such as pushing Docker images to GitHub Container Registry.
-   - **Example**: `ghp_yourgithubtoken1234567890`
-
-5. **`VPS_SSH_KEY`**: Your private SSH key for accessing the VPS.
-   - **Usage**: Allows secure SSH connections to your VPS for deployments.
-   - **Example**:
-     ```env
-     -----BEGIN OPENSSH PRIVATE KEY-----
-     ...
-     -----END OPENSSH PRIVATE KEY-----
-     ```
-
-6. **`VPS_USERNAME`**: The username for accessing your VPS.
-   - **Usage**: Used in SSH commands to connect to your VPS.
-   - **Example**: `your_vps_username`
-
-7. **`VPS_IP`**: The IP address of your VPS.
-   - **Usage**: Specifies the VPS to which you will connect for deployment.
-   - **Example**: `your_vps_ip`
-
-8. **`APP_NAME`**: The name of your application.
-   - **Usage**: Used in naming Docker images and deployment directories.
-   - **Example**: `fountainAI`
-
-9. **`DOMAIN`**: The domain name for your production environment.
-   - **Usage**: Configures Nginx and SSL certificates for the production environment.
-   - **Example**: `example.com`
-
-10. **`STAGING_DOMAIN`**: The domain name for your staging environment.
-    - **Usage**: Configures Nginx and SSL certificates for the staging environment.
-    - **Example**: `staging.example.com`
-
-11. **`DEPLOY_DIR`**: The directory on your VPS where the application will be deployed.
-    - **Usage**: Specifies where the application files will be stored on the VPS.
-    - **Example**: `/home/your_vps_username/deployment_directory`
-
-12. **`EMAIL`**: The email address for Let's Encrypt SSL certificate registration.
-    - **Usage**: Required by Certbot for generating SSL certificates.
-    - **Example**: `mail@benedikt-eickhoff.de`
-
-13. **`DB_NAME`**: The name of your PostgreSQL database.
-    - **Usage**: Configures the database connection in your application.
-    - **Example**: `fountainai_db`
-
-14. **`DB_USER`**: The username for your PostgreSQL database.
-    - **Usage**: Authenticates connections to your PostgreSQL database.
-    - **Example**: `fountainai_user`
-
-15. **`DB_PASSWORD`**: The password for your PostgreSQL database.
-    - **Usage**: Authenticates connections to your PostgreSQL database.
-    - **Example**: `your_db_password`
-
-16. **`REDIS_PORT`**: The port for your Redis service.
-    - **Usage**: Configures the Redis connection in your application.
-    - **Example**: `6379`
-
-17. **`REDISAI_PORT`**: The port for your RedisAI service.
-    - **Usage**: Configures the RedisAI connection in your application.
-    - **Example**: `6378`
-
-18. **`RUNNER_TOKEN`**: The runner registration token for setting up the self-hosted GitHub Actions runner.
-    - **Usage**: Registers the self-hosted runner with GitHub Actions.
-    - **Example**: `your_runner_registration_token`
-
-19. **`NYDUS_PORT`**: The port for the NYDUS service, which connects the host system's service dashboard with the VPS instance.
-    - **Usage**: Ensures the NYDUS service can connect to the VPS.
-    - **Example**: `2224`
-
-#### Adding Secrets to GitHub:
+For security reasons, sensitive information such as tokens, keys, and passwords should not be stored directly in the source code. Instead, GitHub Actions allows you to store these secrets securely. You need to replicate the contents of your `config.env` file as secrets in your GitHub repository.
 
 1. **Navigate to Your Repository Settings**:
    - Go to your GitHub repository in your web browser.
@@ -421,10 +397,14 @@ Secrets are sensitive information that you don't want to expose in your source c
 
 3. **Add a New Repository Secret**:
    - Click on **New repository secret**.
-   - Enter the **Name** and **Value** for each secret as described above.
-   - Click **Add secret** to save.
+   - For each variable in your `config.env` file, add a new secret with the same name and value. For example:
+     - **Name**: `APP_NAME`
+     - **Value**: `fountainAI`
+   - Repeat this for all variables in the `config.env` file.
 
-### Step 8: Create GitHub Actions Workflow Templates
+This ensures that your GitHub Actions workflows can access these sensitive values securely.
+
+### Step 7: Create GitHub Actions Workflow Templates
 
 Create separate workflows for staging and production. Start with `ci-cd-staging.yml`:
 
@@ -494,9 +474,7 @@ EOF
     - name: Set up PostgreSQL, Redis, and RedisAI
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres
-
- || true
+        sudo docker stop postgres || true
         sudo docker rm postgres || true
         sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
         
@@ -614,7 +592,9 @@ on:
       - production
     paths:
       - '**'
-  workflow_dispatch: # Add this line to allow manual dispatch
+  workflow_dispatch: # Add this
+
+ line to allow manual dispatch
 
 jobs:
   setup-vps:
@@ -751,21 +731,7 @@ EOF
 EOF
 ```
 
-### Project Directory Tree at Step 8
-
-```
-fountainAI-project/
-├── .github/
-│   └── workflows/
-│       ├── ci-cd-production.yml
-│       └── ci-cd-staging.yml
-├── .git/
-├── .gitignore
-├── config.env
-└── README.md
-```
-
-### Step 9: Create Vapor Application Manually
+### Step 8: Create Vapor Application Manually
 
 Create a script named `create_vapor_app.sh` in the root directory of your project. This script will create the Vapor application interactively using the Vapor toolbox.
 
@@ -774,10 +740,6 @@ Create a script named `create_vapor_app.sh` in the root directory of your projec
 
 # Load configuration from config.env
 source config.env
-
-# Navigate to the main directory
-mkdir -p "$MAIN_DIR"
-cd "$MAIN_DIR"
 
 # Check if Vapor is installed
 if ! command -v vapor &> /dev/null
@@ -789,14 +751,11 @@ fi
 # Create a new Vapor project interactively
 vapor new $APP_NAME
 
-# Navigate into the newly created Vapor project directory
-cd $APP_NAME
-
 # Indicate that the Vapor app was created
 echo "Vapor application $APP_NAME created successfully."
 
 # Return to the root directory
-cd ../..
+cd ..
 ```
 
 Make the script executable:
@@ -811,10 +770,10 @@ Run the script:
 ./create_vapor_app.sh
 ```
 
-### Project Directory Tree at Step 9
+### Project Directory Tree at Step 8
 
 ```
-fountainAI-project/
+fountainAI/
 ├── .github/
 │   └── workflows/
 │       ├── ci-cd-production.yml
@@ -823,7 +782,7 @@ fountainAI-project/
 ├── .gitignore
 ├── config.env
 ├── create_vapor_app.sh
-├── README.md
+└── README.md
 └── fountainAI/
     ├── Package.swift
     ├── README.md
@@ -840,7 +799,7 @@ fountainAI-project/
     └── Dockerfile
 ```
 
-### Step 10: Build and Push Docker Image to GitHub Container Registry
+### Step 9: Build and Push Docker Image to GitHub Container Registry
 
 Create a script named `build_and_push_docker_image.sh` in the root directory of your project.
 
@@ -851,7 +810,7 @@ Create a script named `build_and_push_docker_image.sh` in the root directory of 
 source config.env
 
 # Navigate to the directory containing the Vapor app
-cd "$MAIN_DIR/fountainAI"
+cd "$APP_NAME"
 
 # Build the Docker image
 docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
@@ -863,7 +822,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
 docker push ghcr.io/$REPO_OWNER/$APP_NAME
 
 # Navigate back to the root directory
-cd ../..
+cd ..
 ```
 
 Make the script executable:
@@ -872,10 +831,10 @@ Make the script executable:
 chmod +x build_and_push_docker_image.sh
 ```
 
-### Project Directory Tree After Step 10
+### Project Directory Tree at Step 9
 
 ```
-fountainAI-project/
+fountainAI/
 ├── .github/
 │   └── workflows/
 │       ├── ci-cd-production.yml
@@ -885,7 +844,7 @@ fountainAI-project/
 ├── build_and_push_docker_image.sh
 ├── config.env
 ├── create_vapor_app.sh
-├── README.md
+└── README.md
 └── fountainAI/
     ├── Package.swift
     ├── README.md
@@ -902,7 +861,7 @@ fountainAI-project/
     └── Dockerfile
 ```
 
-### Step 11: Configure UFW on VPS
+### Step 10: Configure UFW on VPS
 
 To ensure that your VPS is secure and properly configured, it's essential to manage the firewall settings using UFW (Uncomplicated Firewall). This step will guide you on how to configure UFW to allow necessary ports for your services, including the special port for the NYDUS service, which connects your VPS instance to the host system's service dashboard.
 
@@ -964,9 +923,7 @@ To ensure that your VPS is secure and properly configured, it's essential to man
 ### Deploy to Production
 
 1. **Create or Merge into a `production` Branch**:
-   - Typically, you will create a separate branch named `production` for deploying to the
-
- production environment.
+   - Typically, you will create a separate branch named `production` for deploying to the production environment.
    - Merge changes from `main` (or another branch) into the `production` branch to trigger the production deployment.
 
    To create a `production` branch and push it:
@@ -1024,18 +981,6 @@ on:
 ```
 
 With these configurations, you can manually trigger deployments from the Actions tab in your GitHub repository.
-
-## Commit Message
-
-```plaintext
-feat: Refactor setup and deployment process
-
-- Removed the final setup script and integrated its functions into GitHub Actions workflows.
-- Updated CI/CD workflows for staging and production to handle setup, build, test, and deployment.
-- Manual Vapor application creation with interactive generator and Dockerfile integration.
-- Added steps for UFW configuration on VPS.
-- Streamlined the deployment process with automated and manual triggers.
-```
 
 ## Development Perspective
 
