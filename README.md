@@ -114,6 +114,12 @@ Before starting the setup, ensure you have the following:
    **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
    
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
+7. YAML Linter: Installed on your local machine to ensure error-free YAML configuration files.
+
+Install yamllint via Homebrew:
+```
+brew install yamllint
+```
 
 ## Step-by-Step Setup Guide
 
