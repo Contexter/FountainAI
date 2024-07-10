@@ -3,6 +3,7 @@
 - [Introduction](#introduction)
 - [The Fountain Network Graph](#the-fountain-network-graph)
 - [OpenAPI Specification](#openapi-specification)
+- [Implementation](#implementation)
 - [Prerequisites](#prerequisites)
 - [Step-by-Step Setup Guide](#step-by-step-setup-guide)
   - [Step 1: Generate a GitHub Personal Access Token](#step-1-generate-a-github-personal-access-token)
@@ -26,6 +27,7 @@
   - [TDD and CI/CD](#tdd-and-cicd)
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
+  - [Accessing Compiler Output in GitHub Actions](#accessing-compiler-output-in-github-actions)
   - [Conclusion](#conclusion)
 
 ## Introduction
@@ -97,8 +99,6 @@ The OpenAPI specification for this project can be found [here](https://github.co
 
 The implementation phase involves creating the actual codebase for FountainAI using Vapor, a popular server-side Swift framework. By adhering to the OpenAPI specification, we ensure that the implementation is consistent with the defined API standards. The focus is on writing scalable, maintainable, and efficient code, leveraging Vapor's features and best practices. This phase translates the conceptual and API models into a working application, ready for deployment and real-world use.
 
----
-
 ## Prerequisites
 
 Before starting the setup, ensure you have the following:
@@ -108,9 +108,9 @@ Before starting the setup, ensure you have the following:
 3. **VPS (Virtual Private Server)**: To deploy your applications.
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
 5. **Docker**: Installed on your local machine for containerization.
-
+   
    **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
-
+   
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 
 ## Step-by-Step Setup Guide
@@ -363,8 +363,6 @@ Secrets are sensitive information that you don't want to expose in your source c
    - **Example**: `your_vps_ip`
 
 8. **`APP_NAME`**: The name of your application.
-
-
    - **Usage**: Used in naming Docker images and deployment directories.
    - **Example**: `fountainAI`
 
@@ -426,8 +424,6 @@ Secrets are sensitive information that you don't want to expose in your source c
    - Click on **New repository secret**.
    - Enter the **Name** and **Value** for each secret as described above.
    - Click **Add secret** to save.
-
----
 
 ### Step 8: Create GitHub Actions Workflow Templates
 
@@ -562,7 +558,9 @@ EOF
     - name: Run Integration Tests
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter IntegrationTests
+        docker run $IMAGE_NAME swift test --filter
+
+ IntegrationTests
 
   deploy:
     needs: test
@@ -576,9 +574,7 @@ EOF
 
     - name: Deploy to VPS (Staging)
       run: |
-        ssh ${{ secrets.VPS_USERNAME }}@
-
-${{ secrets.VPS_IP }} << 'EOF'
+        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
 
@@ -780,34 +776,46 @@ Create a script named `create_vapor_app.sh`:
 #!/bin/bash
 
 # Load configuration from config.env
-
-
 source config.env
 
 # Function to create and initialize a new Vapor app with required packages
 create_vapor_app() {
     local app_name=$1
+    
+    # Clean up any existing directory
+    if [ -d "$app_name" ]; then
+        echo "Removing existing directory $app_name"
+        rm -rf $app_name
+    fi
+
     mkdir -p $app_name
     cd $app_name
-    vapor new $app_name --branch=main --non-interactive
+
+    # Create a new Vapor project using expect to handle interactive prompts
+    expect <<EOF
+spawn vapor new $app_name
+expect "Would you like to use Fluent (ORM)? (--fluent/--no-fluent)"
+send "y\r"
+expect "Which database would you like to use? (--fluent.db)"
+send "1\r"
+expect "Would you like to use Leaf (templating)? (--leaf/--no-leaf)"
+send "y\r"
+expect eof
+EOF
+
+    cd $app_name
 
     # Comment indicating the starter nature of the app
     echo "// This is a starter Vapor application. Further customization and implementation required." >> README.md
 
-    # Update Package.swift to include PostgreSQL, Redis, RedisAI, and Leaf
-    sed -i ''
-
- '/dependencies:/a\
+    # Update Package.swift to include PostgreSQL, Redis, and Leaf
+    sed -i '' '/dependencies:/a\
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
-        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
-
-\
-        .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")
-    ' Package.swift
+        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),\
+        .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")' Package.swift
 
     sed -i '' '/targets:/a\
-        .target(name: "'$app_name'", dependencies: [.product(name: "Leaf", package: "leaf"), .product(name: "PostgresKit", package: "postgres-kit"), .product(name: "Redis", package: "redis")])
-    ' Package.swift
+        .target(name: "'$app_name'", dependencies: [.product(name: "Leaf", package: "leaf"), .product(name: "PostgresKit", package: "postgres-kit"), .product(name: "Redis", package: "redis")])' Package.swift
 
     # Create the necessary configurations for Leaf, PostgreSQL, and Redis in configure.swift
     cat <<EOT >> Sources/App/configure.swift
@@ -838,7 +846,7 @@ public func configure(_ app: Application) throws {
 EOT
 
     # Return to main directory
-    cd ..
+    cd ../..
 }
 
 # Execute the function
@@ -1040,7 +1048,9 @@ check_docker_on_vps() {
 
 # Function to check if GitHub runner is running on the VPS
 check_runner_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP "systemctl is-active --quiet github-runner"
+    ssh $VPS_USERNAME@$VPS_IP "systemctl is
+
+-active --quiet github-runner"
 }
 
 # Main function to set up the project
@@ -1063,9 +1073,7 @@ main() {
         ssh $VPS_USERNAME@$VPS_IP << EOF
         sudo apt update
         sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux
-
-/ubuntu/gpg | sudo apt-key add -
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
         sudo apt update
         sudo apt install -y docker-ce docker-ce-cli containerd.io
@@ -1229,14 +1237,15 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Add UFW management and directory tree visualization
+feat: Update create_vapor_app.sh script for interactive Vapor project setup
 
-- Integrated UFW management into the setup guide to ensure VPS security.
-- Added instructions to configure UFW to allow necessary ports, including the NYDUS service port (2224).
-- Updated the final setup script to automate UFW configuration.
-- Ensured all required ports for SSH, HTTP, HTTPS, PostgreSQL, Redis, RedisAI, and application services are included.
-- Enhanced security by providing a comprehensive guide for managing firewall settings on the VPS.
-- Included project directory tree visualizations at key steps to aid in understanding the project structure.
+- Integrated the use of `expect` to handle interactive prompts during Vapor project creation.
+- Removed `--branch=main --no-interaction` from the `vapor new` command due to argument issues.
+- Added automated responses for `vapor new` interactive prompts to select Fluent ORM with PostgreSQL and Leaf templating.
+- Ensured the script is idempotent by cleaning up any existing directory before creating a new project.
+- Fixed issues with `sed` commands by properly modifying `Package.swift` to include dependencies for PostgreSQL, Redis, and Leaf.
+- Updated the `configure.swift` to include necessary configurations for Leaf, PostgreSQL, and Redis.
+- Confirmed the script's functionality in handling interactive prompts and setting up a Vapor application as required.
 
 ```
 
@@ -1326,6 +1335,6 @@ The output of the compiler and other build steps can be accessed through the Git
 
 ### Conclusion
 
-Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure
+Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
 
- and well-functioning application environment.
+---
