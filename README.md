@@ -1,3 +1,90 @@
+Certainly! Here's a shell script that sources the `config.env` file to create the Vapor application interactively using the Vapor toolbox. The script will be named `create_vapor_app.sh` and should be placed in the root directory of your project.
+
+### create_vapor_app.sh
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Navigate to the main directory
+mkdir -p "$MAIN_DIR"
+cd "$MAIN_DIR"
+
+# Check if Vapor is installed
+if ! command -v vapor &> /dev/null
+then
+    echo "Vapor toolbox could not be found. Please install it first."
+    exit
+fi
+
+# Create a new Vapor project interactively
+vapor new $APP_NAME
+
+# Navigate into the newly created Vapor project directory
+cd $APP_NAME
+
+# Indicate that the Vapor app was created
+echo "Vapor application $APP_NAME created successfully."
+
+# Return to the root directory
+cd ../..
+```
+
+Make the script executable:
+
+```sh
+chmod +x create_vapor_app.sh
+```
+
+### Updated Step 9 in the Guide
+
+### Step 9: Create Vapor Application Manually
+
+Create a script named `create_vapor_app.sh` in the root directory of your project. This script will create the Vapor application interactively using the Vapor toolbox.
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Navigate to the main directory
+mkdir -p "$MAIN_DIR"
+cd "$MAIN_DIR"
+
+# Check if Vapor is installed
+if ! command -v vapor &> /dev/null
+then
+    echo "Vapor toolbox could not be found. Please install it first."
+    exit
+fi
+
+# Create a new Vapor project interactively
+vapor new $APP_NAME
+
+# Navigate into the newly created Vapor project directory
+cd $APP_NAME
+
+# Indicate that the Vapor app was created
+echo "Vapor application $APP_NAME created successfully."
+
+# Return to the root directory
+cd ../..
+```
+
+Make the script executable:
+
+```sh
+chmod +x create_vapor_app.sh
+```
+
+Run the script:
+
+```sh
+./create_vapor_app.sh
+```
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -78,9 +165,7 @@ The Fountain Network Graph illustrates the conceptual model of FountainAI, with 
 
 ### Explanation
 
-The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model.
-
-The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
+The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
 
 ## Implementation
 
@@ -269,7 +354,7 @@ Create a file named `config.env` in your project directory. This file will store
 
 ```env
 MAIN_DIR=fountainAI-project
-REPO_OWNER=contexter
+REPO_OWNER=Contexter
 REPO_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
 VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
@@ -494,7 +579,9 @@ EOF
     - name: Set up PostgreSQL, Redis, and RedisAI
       run: |
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres || true
+        sudo docker stop postgres
+
+ || true
         sudo docker rm postgres || true
         sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
         
@@ -565,9 +652,7 @@ EOF
 
     steps:
     - name: Set up SSH
-      uses: webfactory/ssh-agent@v
-
-0.5.3
+      uses: webfactory/ssh-agent@v0.5.3
       with:
         ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
@@ -767,20 +852,49 @@ fountainAI-project/
 
 ### Step 9: Create Vapor Application Manually
 
-Create the Vapor application interactively using the Vapor toolbox and use the generated Dockerfile for
+Create a script named `create_vapor_app.sh` in the root directory of your project. This script will create the Vapor application interactively using the Vapor toolbox.
 
- the CI/CD pipeline.
+```bash
+#!/bin/bash
 
-1. **Install Vapor Toolbox**:
-   ```sh
-   brew install vapor
-   ```
+# Load configuration from config.env
+source config.env
 
-2. **Generate a New Vapor Application**:
-   ```sh
-   vapor new fountainAI
-   cd fountainAI
-   ```
+# Navigate to the main directory
+mkdir -p "$MAIN_DIR"
+cd "$MAIN_DIR"
+
+# Check if Vapor is installed
+if ! command -v vapor &> /dev/null
+then
+    echo "Vapor toolbox could not be found. Please install it first."
+    exit
+fi
+
+# Create a new Vapor project interactively
+vapor new $APP_NAME
+
+# Navigate into the newly created Vapor project directory
+cd $APP_NAME
+
+# Indicate that the Vapor app was created
+echo "Vapor application $APP_NAME created successfully."
+
+# Return to the root directory
+cd ../..
+```
+
+Make the script executable:
+
+```sh
+chmod +x create_vapor_app.sh
+```
+
+Run the script:
+
+```sh
+./create_vapor_app.sh
+```
 
 ### Project Directory Tree at Step 9
 
@@ -793,6 +907,7 @@ fountainAI-project/
 ├── .git/
 ├── .gitignore
 ├── config.env
+├── create_vapor_app.sh
 ├── README.md
 └── fountainAI/
     ├── Package.swift
@@ -812,14 +927,65 @@ fountainAI-project/
 
 ### Step 10: Build and Push Docker Image to GitHub Container Registry
 
-Use the existing Dockerfile generated by Vapor.
+Create a script named `build_and_push_docker_image.sh` in the root directory of your project.
 
-1. **Build and Push Docker Image**:
-   ```sh
-   docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
-   echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
-   docker push ghcr.io/$REPO_OWNER/$APP_NAME
-   ```
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Navigate to the directory containing the Vapor app
+cd "$MAIN_DIR/fountainAI"
+
+# Build the Docker image
+docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
+
+# Log in to GitHub Container Registry
+echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
+
+# Push the Docker image to GitHub Container Registry
+docker push ghcr.io/$REPO_OWNER/$APP_NAME
+
+# Navigate back to the root directory
+cd ../..
+```
+
+Make the script executable:
+
+```sh
+chmod +x build_and_push_docker_image.sh
+```
+
+### Project Directory Tree After Step 10
+
+```
+fountainAI-project/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd-production.yml
+│       └── ci-cd-staging.yml
+├── .git/
+├── .gitignore
+├── build_and_push_docker_image.sh
+├── config.env
+├── create_vapor_app.sh
+├── README.md
+└── fountainAI/
+    ├── Package.swift
+    ├── README.md
+    ├── Sources/
+    │   └── App/
+    │       ├── configure.swift
+    │       └── ...
+    ├── Tests/
+    │   ├── ...
+    ├── Public/
+    │   ├── ...
+    ├── Resources/
+    │   ├── ...
+    └── Dockerfile
+```
 
 ### Step 11: Configure UFW on VPS
 
@@ -883,7 +1049,9 @@ To ensure that your VPS is secure and properly configured, it's essential to man
 ### Deploy to Production
 
 1. **Create or Merge into a `production` Branch**:
-   - Typically, you will create a separate branch named `production` for deploying to the production environment.
+   - Typically, you will create a separate branch named `production` for deploying to the
+
+ production environment.
    - Merge changes from `main` (or another branch) into the `production` branch to trigger the production deployment.
 
    To create a `production` branch and push it:
@@ -1032,9 +1200,7 @@ The output of the compiler and other build steps can be accessed through the Git
    - In the workflow run details, you can see logs for each job and step.
    - Click on a job to expand it and view the logs for individual steps.
 
-4. **Download Logs**
-
-:
+4. **Download Logs**:
    - You can download the logs for further analysis by clicking on the **Download logs** button.
 
 5. **Retention Period**:
