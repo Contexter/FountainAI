@@ -119,7 +119,9 @@ Before starting the setup, ensure you have the following:
 
 1. **Generate the Token**:
    - Go to your GitHub account settings.
-   - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
+   - Navigate to **Developer settings** -> **Personal
+
+ access tokens** -> **Fine-grained tokens**.
    - Click on **Generate new token**.
    - Fill in the token description (e.g., "FountainAI Project Token").
    - Set the expiration date as needed.
@@ -548,7 +550,9 @@ EOF
       uses: docker/setup-buildx-action@v1
 
     - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner
+
+ }} --password-stdin
 
     - name: Run Unit Tests
       run: |
@@ -558,9 +562,7 @@ EOF
     - name: Run Integration Tests
       run: |
         IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter
-
- IntegrationTests
+        docker run $IMAGE_NAME swift test --filter IntegrationTests
 
   deploy:
     needs: test
@@ -577,8 +579,6 @@ EOF
         ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
         cd ${{ secrets.DEPLOY_DIR }}
         docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-
-
         docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
         docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
         docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
@@ -742,7 +742,9 @@ EOF
           exit 1
         fi
 
-        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates
+
+; then
           echo "SSL certificate is not valid"
           exit 1
         fi
@@ -778,75 +780,26 @@ Create a script named `create_vapor_app.sh`:
 # Load configuration from config.env
 source config.env
 
-# Function to create and initialize a new Vapor app with required packages
+# Function to create and initialize a new Vapor app
 create_vapor_app() {
     local app_name=$1
-    
+
     # Clean up any existing directory
     if [ -d "$app_name" ]; then
         echo "Removing existing directory $app_name"
         rm -rf $app_name
     fi
 
-    mkdir -p $app_name
-    cd $app_name
-
-    # Create a new Vapor project using expect to handle interactive prompts
-    expect <<EOF
-spawn vapor new $app_name
-expect "Would you like to use Fluent (ORM)? (--fluent/--no-fluent)"
-send "y\r"
-expect "Which database would you like to use? (--fluent.db)"
-send "1\r"
-expect "Would you like to use Leaf (templating)? (--leaf/--no-leaf)"
-send "y\r"
-expect eof
-EOF
+    # Create new Vapor app interactively
+    vapor new $app_name
 
     cd $app_name
 
     # Comment indicating the starter nature of the app
     echo "// This is a starter Vapor application. Further customization and implementation required." >> README.md
 
-    # Update Package.swift to include PostgreSQL, Redis, and Leaf
-    sed -i '' '/dependencies:/a\
-        .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),\
-        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),\
-        .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0")' Package.swift
-
-    sed -i '' '/targets:/a\
-        .target(name: "'$app_name'", dependencies: [.product(name: "Leaf", package: "leaf"), .product(name: "PostgresKit", package: "postgres-kit"), .product(name: "Redis", package: "redis")])' Package.swift
-
-    # Create the necessary configurations for Leaf, PostgreSQL, and Redis in configure.swift
-    cat <<EOT >> Sources/App/configure.swift
-import Vapor
-import Leaf
-import Fluent
-import FluentPostgresDriver
-import Redis
-
-public func configure(_ app: Application) throws {
-    app.views.use(.leaf)
-
-    app.databases.use(.postgres(
-        hostname: Environment.get("DB_HOST") ?? "localhost",
-        username: Environment.get("DB_USER") ?? "postgres",
-        password: Environment.get("DB_PASSWORD") ?? "password",
-        database: Environment.get("DB_NAME") ?? "database"
-    ), as: .psql)
-
-    app.redis.configuration = try RedisConfiguration(
-        hostname: Environment.get("REDIS_HOST") ?? "localhost",
-        port: Environment.get("REDIS_PORT").flatMap(Int.init(_:)) ?? 6379
-    )
-
-    // Register routes
-    try routes(app)
-}
-EOT
-
     # Return to main directory
-    cd ../..
+    cd ..
 }
 
 # Execute the function
@@ -1048,9 +1001,27 @@ check_docker_on_vps() {
 
 # Function to check if GitHub runner is running on the VPS
 check_runner_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP "systemctl is
+    ssh $VPS_USERNAME@$VPS_IP "systemctl is-active --quiet github-runner"
+}
 
--active --quiet github-runner"
+# Function to check if UFW is configured correctly on the VPS
+check_ufw_on_vps() {
+    local required_ports=("22/tcp" "80/tcp" "443/tcp" "5432/tcp" "6379/tcp" "6378/tcp" "8080/tcp" "8081/tcp" "$NYDUS_PORT/tcp")
+    for port in "${required_ports[@]}"; do
+        if ! ssh $VPS_USERNAME@$VPS_IP "sudo ufw status | grep -q '$port ALLOW'"; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Function to check if Docker image is pushed to GitHub Container Registry
+check_docker_image() {
+    local image_name="ghcr.io/$REPO_OWNER/$APP_NAME"
+    if ! docker pull $image_name; then
+        return 1
+    fi
+    return 0
 }
 
 # Main function to set up the project
@@ -1071,6 +1042,8 @@ main() {
     if ! check_docker_on_vps; then
         echo "Docker is not installed on the VPS. Installing Docker..."
         ssh $VPS_USERNAME@$VPS_IP << EOF
+
+
         sudo apt update
         sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -1088,19 +1061,28 @@ EOF
         exit 1
     fi
 
-    # Configure UFW on the VPS
-    ssh $VPS_USERNAME@$VPS_IP << EOF
-    sudo ufw allow 22/tcp
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    sudo ufw allow 5432/tcp
-    sudo ufw allow 6379/tcp
-    sudo ufw allow 6378/tcp
-    sudo ufw allow 8080/tcp
-    sudo ufw allow 8081/tcp
-    sudo ufw allow $NYDUS_PORT/tcp
-    sudo ufw enable
+    # Check if UFW is configured correctly on the VPS
+    if ! check_ufw_on_vps; then
+        echo "UFW is not configured correctly on the VPS. Configuring UFW..."
+        ssh $VPS_USERNAME@$VPS_IP << EOF
+        sudo ufw allow 22/tcp
+        sudo ufw allow 80/tcp
+        sudo ufw allow 443/tcp
+        sudo ufw allow 5432/tcp
+        sudo ufw allow 6379/tcp
+        sudo ufw allow 6378/tcp
+        sudo ufw allow 8080/tcp
+        sudo ufw allow 8081/tcp
+        sudo ufw allow $NYDUS_PORT/tcp
+        sudo ufw enable
 EOF
+    fi
+
+    # Check if Docker image is pushed to GitHub Container Registry
+    if ! check_docker_image; then
+        echo "Docker image is not pushed to GitHub Container Registry. Please run build_and_push_docker_image.sh first."
+        exit 1
+    fi
 
     # Create main directory
     mkdir -p $MAIN_DIR
@@ -1111,9 +1093,6 @@ EOF
 
     # Create and build Vapor app locally
     ./create_vapor_app.sh
-
-    # Build and push Docker image to GitHub Container Registry
-    ./build_and_push_docker_image.sh
 
     echo "Initial setup for FountainAI project is complete."
 }
@@ -1237,15 +1216,13 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Update create_vapor_app.sh script for interactive Vapor project setup
+feat: Update setup script to perform checks and ensure setup correctness
 
-- Integrated the use of `expect` to handle interactive prompts during Vapor project creation.
-- Removed `--branch=main --no-interaction` from the `vapor new` command due to argument issues.
-- Added automated responses for `vapor new` interactive prompts to select Fluent ORM with PostgreSQL and Leaf templating.
-- Ensured the script is idempotent by cleaning up any existing directory before creating a new project.
-- Fixed issues with `sed` commands by properly modifying `Package.swift` to include dependencies for PostgreSQL, Redis, and Leaf.
-- Updated the `configure.swift` to include necessary configurations for Leaf, PostgreSQL, and Redis.
-- Confirmed the script's functionality in handling interactive prompts and setting up a Vapor application as required.
+- Updated `setup.sh` to check if required environment variables are set.
+- Added functions to check if required commands are available, Docker is installed on the VPS, GitHub runner is running, and UFW is configured correctly.
+- Modified script to check if the Vapor project is created and Docker image is pushed to GitHub Container Registry.
+- Added checks to prevent re-creation of already existing setups.
+- Removed the build and push steps from the final setup script to be performed manually before running the setup script.
 
 ```
 
@@ -1331,7 +1308,9 @@ The output of the compiler and other build steps can be accessed through the Git
    - You can download the logs for further analysis by clicking on the **Download logs** button.
 
 5. **Retention Period**:
-   - By default, GitHub retains logs for 90 days. You can configure this period in the repository settings under **Settings** -> **Actions** -> **Workflow runs** -> **Retention period**.
+   - By default, GitHub retains logs for 90 days. You can configure this period in the repository settings under **Settings** -> **Actions**
+
+ -> **Workflow runs** -> **Retention period**.
 
 ### Conclusion
 
