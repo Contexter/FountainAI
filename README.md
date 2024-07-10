@@ -736,6 +736,13 @@ EOF
         fi
 EOF
 ```
+Lint the yaml files with:
+
+```
+yamllint .github/workflows/ci-cd-staging.yml
+yamllint .github/workflows/ci-cd-production.yml
+```
+
 
 ### Step 8: Create Vapor Application Manually
 
