@@ -14,10 +14,9 @@
   - [Step 6: Initialize Git Repository](#step-6-initialize-git-repository)
   - [Step 7: Manually Add Secrets to GitHub](#step-7-manually-add-secrets-to-github)
   - [Step 8: Create GitHub Actions Workflow Templates](#step-8-create-github-actions-workflow-templates)
-  - [Step 9: Create Vapor Application Locally](#step-9-create-vapor-application-locally)
+  - [Step 9: Create Vapor Application Manually](#step-9-create-vapor-application-manually)
   - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
   - [Step 11: Configure UFW on VPS](#step-11-configure-ufw-on-vps)
-  - [Step 12: Final Setup Script](#step-12-final-setup-script)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -108,7 +107,7 @@ Before starting the setup, ensure you have the following:
 3. **VPS (Virtual Private Server)**: To deploy your applications.
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
 5. **Docker**: Installed on your local machine for containerization.
-   
+
    **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
    
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
@@ -119,9 +118,7 @@ Before starting the setup, ensure you have the following:
 
 1. **Generate the Token**:
    - Go to your GitHub account settings.
-   - Navigate to **Developer settings** -> **Personal
-
- access tokens** -> **Fine-grained tokens**.
+   - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
    - Click on **Generate new token**.
    - Fill in the token description (e.g., "FountainAI Project Token").
    - Set the expiration date as needed.
@@ -272,7 +269,7 @@ Create a file named `config.env` in your project directory. This file will store
 
 ```env
 MAIN_DIR=fountainAI-project
-REPO_OWNER=Contexter
+REPO_OWNER=contexter
 REPO_NAME=fountainAI
 GITHUB_TOKEN=ghp_yourgithubtoken1234567890
 VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
@@ -550,9 +547,7 @@ EOF
       uses: docker/setup-buildx-action@v1
 
     - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner
-
- }} --password-stdin
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
     - name: Run Unit Tests
       run: |
@@ -570,7 +565,9 @@ EOF
 
     steps:
     - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v
+
+0.5.3
       with:
         ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
@@ -742,9 +739,7 @@ EOF
           exit 1
         fi
 
-        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates
-
-; then
+        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
           echo "SSL certificate is not valid"
           exit 1
         fi
@@ -770,48 +765,22 @@ fountainAI-project/
 └── README.md
 ```
 
-### Step 9: Create Vapor Application Locally
+### Step 9: Create Vapor Application Manually
 
-Create a script named `create_vapor_app.sh`:
+Create the Vapor application interactively using the Vapor toolbox and use the generated Dockerfile for
 
-```bash
-#!/bin/bash
+ the CI/CD pipeline.
 
-# Load configuration from config.env
-source config.env
+1. **Install Vapor Toolbox**:
+   ```sh
+   brew install vapor
+   ```
 
-# Function to create and initialize a new Vapor app
-create_vapor_app() {
-    local app_name=$1
-
-    # Clean up any existing directory
-    if [ -d "$app_name" ]; then
-        echo "Removing existing directory $app_name"
-        rm -rf $app_name
-    fi
-
-    # Create new Vapor app interactively
-    vapor new $app_name
-
-    cd $app_name
-
-    # Comment indicating the starter nature of the app
-    echo "// This is a starter Vapor application. Further customization and implementation required." >> README.md
-
-    # Return to main directory
-    cd ..
-}
-
-# Execute the function
-create_vapor_app $APP_NAME
-```
-
-Make the script executable:
-
-```sh
-chmod +x create_vapor_app.sh
-./create_vapor_app.sh
-```
+2. **Generate a New Vapor Application**:
+   ```sh
+   vapor new fountainAI
+   cd fountainAI
+   ```
 
 ### Project Directory Tree at Step 9
 
@@ -824,7 +793,6 @@ fountainAI-project/
 ├── .git/
 ├── .gitignore
 ├── config.env
-├── create_vapor_app.sh
 ├── README.md
 └── fountainAI/
     ├── Package.swift
@@ -833,85 +801,25 @@ fountainAI-project/
     │   └── App/
     │       ├── configure.swift
     │       └── ...
-    └── ...
+    ├── Tests/
+    │   ├── ...
+    ├── Public/
+    │   ├── ...
+    ├── Resources/
+    │   ├── ...
+    └── Dockerfile
 ```
 
 ### Step 10: Build and Push Docker Image to GitHub Container Registry
 
-Create a script named `build_and_push_docker_image.sh`:
+Use the existing Dockerfile generated by Vapor.
 
-```bash
-#!/bin/bash
-
-# Load configuration from config.env
-source config.env
-
-# Create Dockerfile for Vapor application
-cat <<EOF > Dockerfile
-FROM swift:5.4
-
-WORKDIR /app
-
-# Install Vapor
-RUN git clone https://github.com/vapor/toolbox.git /tmp/toolbox \
-    && cd /tmp/toolbox \
-    && swift build -c release --disable-sandbox \
-    && mv .build/release/vapor /usr/local/bin/vapor
-
-# Copy the Vapor project files
-COPY . .
-
-# Build the Vapor application
-RUN vapor build --release
-
-# Expose the application port
-EXPOSE 8080
-
-# Start the Vapor application
-CMD ["vapor", "run", "serve", "--env", "production"]
-EOF
-
-# Build the Docker image
-docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
-
-# Log in to GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
-
-# Push the Docker image to GitHub Container Registry
-docker push ghcr.io/$REPO_OWNER/$APP_NAME
-```
-
-Make the script executable and run it:
-
-```sh
-chmod +x build_and_push_docker_image.sh
-./build_and_push_docker_image.sh
-```
-
-### Project Directory Tree at Step 10
-
-```
-fountainAI-project/
-├── .github/
-│   └── workflows/
-│       ├── ci-cd-production.yml
-│       └── ci-cd-staging.yml
-├── .git/
-├── .gitignore
-├── config.env
-├── create_vapor_app.sh
-├── build_and_push_docker_image.sh
-├── Dockerfile
-├── README.md
-└── fountainAI/
-    ├── Package.swift
-    ├── README.md
-    ├── Sources/
-    │   └── App/
-    │       ├── configure.swift
-    │       └── ...
-    └── ...
-```
+1. **Build and Push Docker Image**:
+   ```sh
+   docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
+   echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
+   docker push ghcr.io/$REPO_OWNER/$APP_NAME
+   ```
 
 ### Step 11: Configure UFW on VPS
 
@@ -954,185 +862,6 @@ To ensure that your VPS is secure and properly configured, it's essential to man
      ```sh
      sudo ufw status
      ```
-
-### Step 12: Final Setup Script
-
-**Final Setup Script (`setup.sh`)**:
-
-```bash
-#!/bin/bash
-
-# Load configuration from config.env
-source config.env
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Function to check if required environment variables are set
-check_env_vars() {
-    local missing=0
-    for var in MAIN_DIR REPO_OWNER REPO_NAME GITHUB_TOKEN VPS_SSH_KEY VPS_USERNAME VPS_IP APP_NAME DOMAIN STAGING_DOMAIN DEPLOY_DIR EMAIL DB_NAME DB_USER DB_PASSWORD REDIS_PORT REDISAI_PORT RUNNER_TOKEN NYDUS_PORT; do
-        if [ -z "${!var}" ]; then
-            echo "Error: $var is not set in config.env"
-            missing=1
-        fi
-    done
-    return $missing
-}
-
-# Function to check if required commands are available
-check_commands() {
-    local missing=0
-    for cmd in git curl jq ssh ssh-keygen docker; do
-        if ! command_exists $cmd; then
-            echo "Error: $cmd is not installed"
-            missing=1
-        fi
-    done
-    return $missing
-}
-
-# Function to check if Docker is installed on the VPS
-check_docker_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP "command -v docker >/dev/null 2>&1"
-}
-
-# Function to check if GitHub runner is running on the VPS
-check_runner_on_vps() {
-    ssh $VPS_USERNAME@$VPS_IP "systemctl is-active --quiet github-runner"
-}
-
-# Function to check if UFW is configured correctly on the VPS
-check_ufw_on_vps() {
-    local required_ports=("22/tcp" "80/tcp" "443/tcp" "5432/tcp" "6379/tcp" "6378/tcp" "8080/tcp" "8081/tcp" "$NYDUS_PORT/tcp")
-    for port in "${required_ports[@]}"; do
-        if ! ssh $VPS_USERNAME@$VPS_IP "sudo ufw status | grep -q '$port ALLOW'"; then
-            return 1
-        fi
-    done
-    return 0
-}
-
-# Function to check if Docker image is pushed to GitHub Container Registry
-check_docker_image() {
-    local image_name="ghcr.io/$REPO_OWNER/$APP_NAME"
-    if ! docker pull $image_name; then
-        return 1
-    fi
-    return 0
-}
-
-# Main function to set up the project
-main() {
-    # Check for required environment variables
-    if ! check_env_vars; then
-        echo "One or more required environment variables are missing"
-        exit 1
-    fi
-
-    # Check for required commands
-    if ! check_commands; then
-        echo "One or more required commands are missing"
-        exit 1
-    fi
-
-    # Check if Docker is installed on the VPS
-    if ! check_docker_on_vps; then
-        echo "Docker is not installed on the VPS. Installing Docker..."
-        ssh $VPS_USERNAME@$VPS_IP << EOF
-
-
-        sudo apt update
-        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt update
-        sudo apt install -y docker-ce docker-ce-cli containerd.io
-        sudo systemctl enable docker
-        sudo systemctl start docker
-EOF
-    fi
-
-    # Check if GitHub runner is running on the VPS
-    if ! check_runner_on_vps; then
-        echo "GitHub runner is not running on the VPS. Please ensure it is set up correctly."
-        exit 1
-    fi
-
-    # Check if UFW is configured correctly on the VPS
-    if ! check_ufw_on_vps; then
-        echo "UFW is not configured correctly on the VPS. Configuring UFW..."
-        ssh $VPS_USERNAME@$VPS_IP << EOF
-        sudo ufw allow 22/tcp
-        sudo ufw allow 80/tcp
-        sudo ufw allow 443/tcp
-        sudo ufw allow 5432/tcp
-        sudo ufw allow 6379/tcp
-        sudo ufw allow 6378/tcp
-        sudo ufw allow 8080/tcp
-        sudo ufw allow 8081/tcp
-        sudo ufw allow $NYDUS_PORT/tcp
-        sudo ufw enable
-EOF
-    fi
-
-    # Check if Docker image is pushed to GitHub Container Registry
-    if ! check_docker_image; then
-        echo "Docker image is not pushed to GitHub Container Registry. Please run build_and_push_docker_image.sh first."
-        exit 1
-    fi
-
-    # Create main directory
-    mkdir -p $MAIN_DIR
-    cd $MAIN_DIR
-
-    # Generate workflows
-    ./generate_workflows.sh
-
-    # Create and build Vapor app locally
-    ./create_vapor_app.sh
-
-    echo "Initial setup for FountainAI project is complete."
-}
-
-# Execute main function
-main
-```
-
-Make the final setup script executable and run it:
-
-```sh
-chmod +x setup.sh
-./setup.sh
-```
-
-### Project Directory Tree at Step 12
-
-```
-fountainAI-project/
-├── .github/
-│   └── workflows/
-│       ├── ci-cd-production.yml
-│       └── ci-cd-staging.yml
-├── .git/
-├── .gitignore
-├── config.env
-├── create_vapor_app.sh
-├── build_and_push_docker_image.sh
-├── setup.sh
-├── Dockerfile
-├── README.md
-└── fountainAI/
-    ├── Package.swift
-    ├── README.md
-    ├── Sources/
-    │   └── App/
-    │       ├── configure.swift
-    │       └── ...
-    └── ...
-```
 
 ## How to Deploy
 
@@ -1216,14 +945,13 @@ With these configurations, you can manually trigger deployments from the Actions
 ## Commit Message
 
 ```plaintext
-feat: Update setup script to perform checks and ensure setup correctness
+feat: Refactor setup and deployment process
 
-- Updated `setup.sh` to check if required environment variables are set.
-- Added functions to check if required commands are available, Docker is installed on the VPS, GitHub runner is running, and UFW is configured correctly.
-- Modified script to check if the Vapor project is created and Docker image is pushed to GitHub Container Registry.
-- Added checks to prevent re-creation of already existing setups.
-- Removed the build and push steps from the final setup script to be performed manually before running the setup script.
-
+- Removed the final setup script and integrated its functions into GitHub Actions workflows.
+- Updated CI/CD workflows for staging and production to handle setup, build, test, and deployment.
+- Manual Vapor application creation with interactive generator and Dockerfile integration.
+- Added steps for UFW configuration on VPS.
+- Streamlined the deployment process with automated and manual triggers.
 ```
 
 ## Development Perspective
@@ -1304,16 +1032,14 @@ The output of the compiler and other build steps can be accessed through the Git
    - In the workflow run details, you can see logs for each job and step.
    - Click on a job to expand it and view the logs for individual steps.
 
-4. **Download Logs**:
+4. **Download Logs**
+
+:
    - You can download the logs for further analysis by clicking on the **Download logs** button.
 
 5. **Retention Period**:
-   - By default, GitHub retains logs for 90 days. You can configure this period in the repository settings under **Settings** -> **Actions**
-
- -> **Workflow runs** -> **Retention period**.
+   - By default, GitHub retains logs for 90 days. You can configure this period in the repository settings under **Settings** -> **Actions** -> **Workflow runs** -> **Retention period**.
 
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
-
----
