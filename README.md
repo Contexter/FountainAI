@@ -29,9 +29,11 @@
   - [Accessing Compiler Output in GitHub Actions](#accessing-compiler-output-in-github-actions)
   - [Conclusion](#conclusion)
 
-## Introduction
+### Introduction
 
-This guide provides a comprehensive step-by-step approach to automate the initial setup and deployment of a Vapor application, using modern DevOps practices. By following these steps, you will create a robust and scalable environment for your application, leveraging Docker, Nginx, PostgreSQL, Redis, and RedisAI, all managed through GitHub Actions. This setup ensures a seamless workflow from development to production, enabling continuous integration and continuous deployment (CI/CD).
+This guide provides a comprehensive step-by-step approach to create a generic Vapor application manually and then set it up with an optimal implementation environment using modern DevOps practices. Initially, you will manually create a basic Vapor application, which serves as a robust foundation for further development. Following this, the guide details how to establish a scalable and flexible environment for your application, leveraging Docker to manage all services, including Nginx, PostgreSQL, and the envisioned future integration of Redis and RedisAI.
+
+By configuring GitHub Actions, the guide ensures automated setup, testing, and deployment, facilitating a seamless workflow from development to production. This setup guarantees continuous integration and continuous deployment (CI/CD), offering complete flexibility and scalability as your application grows. Through the detailed steps provided, you will achieve a streamlined and efficient development process, ready to accommodate future enhancements and integrations.
 
 ### Vision and Goals
 
