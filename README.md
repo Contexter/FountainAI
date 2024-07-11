@@ -1,3 +1,4 @@
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -7,16 +8,20 @@
 - [Implementation](#implementation)
 - [Prerequisites](#prerequisites)
 - [Step-by-Step Setup Guide](#step-by-step-setup-guide)
-  - [Step 1: Create GitHub Repository and Configuration File](#step-1-create-github-repository-and-configuration-file)
-  - [Step 2: Generate a GitHub Personal Access Token](#step-2-generate-a-github-personal-access-token)
-  - [Step 3: Create SSH Keys for VPS Access](#step-3-create-ssh-keys-for-vps-access)
-  - [Step 4: Add SSH Keys to Your VPS and GitHub](#step-4-add-ssh-keys-to-your-vps-and-github)
-  - [Step 5: Generate a Runner Registration Token](#step-5-generate-a-runner-registration-token)
-  - [Step 6: Manually Add Secrets to GitHub](#step-6-manually-add-secrets-to-github)
-  - [Step 7: Create GitHub Actions Workflow Templates](#step-7-create-github-actions-workflow-templates)
-  - [Step 8: Create Vapor Application Manually](#step-8-create-vapor-application-manually)
-  - [Step 9: Build and Push Docker Image to GitHub Container Registry](#step-9-build-and-push-docker-image-to-github-container-registry)
-  - [Step 10: Configure UFW on VPS](#step-10-configure-ufw-on-vps)
+  - [Part 1: Initial Setup](#part-1-initial-setup)
+    - [Step 1: Create GitHub Repository and Configuration File](#step-1-create-github-repository-and-configuration-file)
+    - [Step 2: Generate a GitHub Personal Access Token](#step-2-generate-a-github-personal-access-token)
+    - [Step 3: Create SSH Keys for VPS Access](#step-3-create-ssh-keys-for-vps-access)
+    - [Step 4: Add SSH Keys to Your VPS and GitHub](#step-4-add-ssh-keys-to-your-vps-and-github)
+    - [Step 5: Generate a Runner Registration Token](#step-5-generate-a-runner-registration-token)
+    - [Step 6: Manually Add Secrets to GitHub](#step-6-manually-add-secrets-to-github)
+    - [Step 7: Create Linting Environment](#step-7-create-linting-environment)
+  - [Part 2: Creating and Handling the Vapor App](#part-2-creating-and-handling-the-vapor-app)
+    - [Step 8: Create Modular GitHub Actions Workflow Templates](#step-8-create-modular-github-actions-workflow-templates)
+    - [Step 9: Create Vapor Application Manually](#step-9-create-vapor-application-manually)
+    - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
+  - [Part 3: Deployment and Monitoring](#part-3-deployment-and-monitoring)
+    - [Step 11: Configure UFW on VPS](#step-11-configure-ufw-on-vps)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -45,7 +50,7 @@ This guide provides a comprehensive approach to creating and deploying a Vapor a
 
 ## The FountainAI Project
 
-In this guide, we will focus on implementing a specific project, FountainAI. FountainAI is a conceptual AI model designed to analyze and process scripts. The project involves creating a network graph, defining an OpenAPI specification, and implementing the application using Vapor. 
+In this guide, we will focus on implementing a specific project, FountainAI. FountainAI is a conceptual AI model designed to analyze and process scripts. The project involves creating a network graph, defining an OpenAPI specification, and implementing the application using Vapor.
 
 The following sections provide detailed steps on how to conceptualize the FountainAI network graph, specify the OpenAPI, and implement the application using Vapor, a popular server-side Swift framework.
 
@@ -112,18 +117,22 @@ Before starting the setup, ensure you have the following:
 5. **Docker**: Installed on your local machine for containerization.
 
    **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
-   
+
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
-7. YAML Linter: Installed on your local machine to ensure error-free YAML configuration files.
+7. **YAML Linter**: Installed on your local machine to ensure error-free YAML configuration files.
 
 Install yamllint via Homebrew:
-```
+```sh
 brew install yamllint
 ```
 
 ## Step-by-Step Setup Guide
 
-### Step 1: Create GitHub Repository and Configuration File
+### Part 1:
+
+ Initial Setup
+
+#### Step 1: Create GitHub Repository and Configuration File
 
 1. **Create a new GitHub Repository**:
    - Go to your GitHub account and create a new repository named `fountainAI`.
@@ -137,9 +146,7 @@ brew install yamllint
      ```
 
 3. **Create Configuration File**:
-   - Create a file named `config.env` in
-
- your project directory. This file will store all the necessary configuration variables.
+   - Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables.
    - Add the following content to `config.env`:
 
 ```env
@@ -214,7 +221,7 @@ NYDUS_PORT=2224
      git push origin main
      ```
 
-### Project Directory Tree at Step 1
+#### Project Directory Tree at Step 1
 
 ```
 fountainAI/
@@ -224,7 +231,7 @@ fountainAI/
 └── README.md
 ```
 
-### Step 2: Generate a GitHub Personal Access Token
+#### Step 2: Generate a GitHub Personal Access Token
 
 1. **Generate the Token**:
    - Go to your GitHub account settings.
@@ -267,7 +274,7 @@ fountainAI/
 GITHUB_TOKEN=your_generated_token
 ```
 
-### Step 3: Create SSH Keys for VPS Access
+#### Step 3: Create SSH Keys for VPS Access
 
 1. **Open your terminal**.
 2. **Generate an SSH Key Pair**:
@@ -286,7 +293,7 @@ GITHUB_TOKEN=your_generated_token
 VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
 ```
 
-### Step 4: Add SSH Keys to Your VPS and GitHub
+#### Step 4: Add SSH Keys to Your VPS and GitHub
 
 ##### Part A: Add the Public Key to Your VPS
 
@@ -332,7 +339,7 @@ VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
      - **Value**: Paste the private key you copied earlier.
    - Click **Add secret** to save.
 
-### Step 5: Generate a Runner Registration Token
+#### Step 5: Generate a Runner Registration Token
 
 1. **Generate the Runner Token**:
    - Go to your GitHub repository.
@@ -389,7 +396,7 @@ RUNNER_TOKEN=your_generated_runner_token
    sudo systemctl status github-runner
    ```
 
-### Step 6: Manually Add Secrets to GitHub
+#### Step 6: Manually Add Secrets to GitHub
 
 For security reasons, sensitive information such as tokens, keys, and passwords should not be stored directly in the source code. Instead, GitHub Actions allows you to store these secrets securely. You need to replicate the contents of your `config.env` file as secrets in your GitHub repository.
 
@@ -410,14 +417,300 @@ For security reasons, sensitive information such as tokens, keys, and passwords 
 
 This ensures that your GitHub Actions workflows can access these sensitive values securely.
 
-### Step 7: Create GitHub Actions Workflow Templates
+#### Step 7: Create Linting Environment
 
-Create separate workflows for staging and production. Start with `ci-cd-staging.yml`:
+Create a linting environment to ensure your YAML files and other configuration files are properly formatted.
 
-**.github/workflows/ci-cd-staging.yml**
+1. **Create a Dockerfile for Linting**:
+   - In your project directory, create a folder named `linting`.
+   - Inside the `linting` folder, create a file named `Dockerfile`.
 
+**linting/Dockerfile**:
+```Dockerfile
+FROM python:3.9-slim
+
+RUN pip install yamllint
+
+WORKDIR /linting
+
+ENTRYPOINT ["yamllint", "."]
+```
+
+2. **Build and Push the Linting Docker Image**:
+   - Create a script named `build_and_push_linting_image.sh` in the root directory of your project.
+
+**build_and_push_linting_image.sh**:
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Navigate to the linting directory
+cd linting
+
+# Build the Docker image
+docker build -t ghcr.io/$REPO_OWNER/linting .
+
+# Log in to GitHub Container Registry
+echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
+
+# Push the Docker image to GitHub Container Registry
+docker push ghcr.io/$REPO_OWNER/linting
+
+# Navigate back to the root directory
+cd ..
+```
+
+3. **Make the Script Executable**:
+   ```sh
+   chmod +x build_and_push_linting_image.sh
+   ```
+
+4. **Run the Script**:
+   ```sh
+   ./build_and_push_linting_image.sh
+   ```
+
+### Part 2: Creating and Handling the Vapor App
+
+#### Step 8: Create Modular GitHub Actions Workflow Templates
+
+1. **Create Linting Workflow**:
+   - Create a linting workflow to validate your YAML files and configuration files.
+
+**.github/workflows/linting.yml**:
 ```yaml
-name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Staging)
+name: Linting
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  lint:
+    runs-on: self-hosted
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Clone Repository
+        uses: actions/checkout@v2
+
+      - name: Run Linters
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/linting
+          docker run --rm -v $(pwd):/linting ghcr.io/${{ secrets.REPO_OWNER }}/linting
+EOF
+```
+
+2. **Create Setup Workflow**:
+   - Create a setup workflow to prepare the VPS for deployment.
+
+**.github/workflows/setup.yml**:
+```yaml
+name: Setup VPS
+
+on: [workflow_call]
+
+jobs:
+  setup-vps:
+    runs-on: self-hosted
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Install Docker and Dependencies
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          sudo apt update
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt update
+          sudo apt install -y docker-ce docker-ce-cli containerd.io
+          sudo systemctl enable docker
+          sudo systemctl start docker
+          sudo apt install -y nginx certbot python3-certbot-nginx
+EOF
+```
+
+3. **Create Build Workflow**:
+   - Create a build workflow to build the Docker image for the Vapor app.
+
+**.github/workflows/build.yml**:
+```yaml
+name: Build Docker Image
+
+on: [workflow_call]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+```
+
+4. **Create Test Workflow**:
+   - Create a test workflow to run unit and integration tests.
+
+**.github/workflows/test.yml**:
+```yaml
+name: Test
+
+on: [workflow_call]
+
+jobs:
+  test:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Run Unit Tests
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker run $IMAGE_NAME swift test --filter UnitTests
+
+      - name: Run Integration Tests
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker run $IMAGE_NAME swift test --filter IntegrationTests
+```
+
+5. **Create Deployment Workflows**:
+   - Create deployment workflows for both staging and production environments.
+
+**.github/workflows/deploy-staging.yml**:
+```yaml
+name: Deploy to Staging
+
+on: [workflow_call]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Deploy to VPS (Staging)
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          cd ${{ secrets.DEPLOY_DIR }}
+          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+          docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
+          docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+EOF
+
+      - name: Verify Nginx and SSL Configuration (Staging)
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          if ! systemctl is-active --quiet nginx; then
+            echo "Nginx is not running"
+            exit 1
+          fi
+
+          if ! openssl s_client -connect ${{ secrets
+
+.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+            echo "SSL certificate is not valid"
+            exit 1
+          fi
+
+          if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
+            echo "Domain is not properly configured"
+            exit 1
+          fi
+EOF
+```
+
+**.github/workflows/deploy-production.yml**:
+```yaml
+name: Deploy to Production
+
+on: [workflow_call]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Deploy to VPS (Production)
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          cd ${{ secrets.DEPLOY_DIR }}
+          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+          docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
+          docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+EOF
+
+      - name: Verify Nginx and SSL Configuration (Production)
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          if ! systemctl is-active --quiet nginx; then
+            echo "Nginx is not running"
+            exit 1
+          fi
+
+          if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+            echo "SSL certificate is not valid"
+            exit 1
+          fi
+
+          if ! curl -k https://${{ secrets.DOMAIN }} | grep -q "Expected content or response"; then
+            echo "Domain is not properly configured"
+            exit 1
+          fi
+EOF
+```
+
+6. **Create Main Workflows**:
+   - Create main workflows to call the modular workflows for staging and production.
+
+**.github/workflows/main-staging.yml**:
+```yaml
+name: Main Workflow for Staging
 
 on:
   push:
@@ -425,172 +718,32 @@ on:
       - main
     paths:
       - '**'
-  workflow_dispatch: # Add this line to allow manual dispatch
+  workflow_dispatch:
 
 jobs:
-  setup-vps:
-    runs-on: self-hosted
+  linting:
+    uses: ./.github/workflows/linting.yml
 
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Install Docker and Dependencies
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo apt update
-        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        # This adds Docker's GPG key and the Docker APT repository if they aren't already added
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt update
-        sudo apt install -y docker-ce docker-ce-cli containerd.io
-        sudo systemctl enable docker
-        sudo systemctl start docker
-        sudo apt install -y nginx certbot python3-certbot-nginx
-EOF
-
-    - name: Set up Nginx and SSL for Staging
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo tee /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} > /dev/null <<EOL
-server {
-    listen 80;
-    listen 443 ssl;
-    server_name ${{ secrets.STAGING_DOMAIN }};
-    ssl_certificate /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${{ secrets.STAGING_DOMAIN }}/privkey.pem;
-    location / {
-        proxy_pass http://localhost:8081;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-        sudo ln -s /etc/nginx/sites-available/${{ secrets.STAGING_DOMAIN }} /etc/nginx/sites-enabled/
-        sudo systemctl reload nginx
-        sudo certbot --nginx -d ${{ secrets.STAGING_DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-        sudo systemctl reload nginx
-EOF
-
-    - name: Set up PostgreSQL, Redis, and RedisAI
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres || true
-        sudo docker rm postgres || true
-        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-        
-        sudo docker stop redis || true
-        sudo docker rm redis || true
-        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-        
-        sudo docker stop redisai || true
-        sudo docker rm redisai || true
-        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-        
-        sleep 10
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
-                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
-            END IF;
-        END \$\$;"
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
-EOF
+  setup:
+    needs: linting
+    uses: ./.github/workflows/setup.yml
 
   build:
-    needs: setup-vps
-    runs-on: self-hosted
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Build and Push Docker Image for Staging
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker build -t $IMAGE_NAME .
-        docker push $IMAGE_NAME
+    needs: setup
+    uses: ./.github/workflows/build.yml
 
   test:
     needs: build
-    runs-on: self-hosted
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Run Unit Tests
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter UnitTests
-
-    - name: Run Integration Tests
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker run $IMAGE_NAME swift test --filter IntegrationTests
+    uses: ./.github/workflows/test.yml
 
   deploy:
     needs: test
-    runs-on: self-hosted
-
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Deploy to VPS (Staging)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
-        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging
-EOF
-
-    - name: Verify Nginx and SSL Configuration (Staging)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        if ! systemctl is-active --quiet nginx; then
-          echo "Nginx is not running"
-          exit 1
-        fi
-
-        if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
-          echo "SSL certificate is not valid"
-          exit 1
-        fi
-
-        if ! curl -k https://${{ secrets.STAGING_DOMAIN }} | grep -q "Expected content or response"; then
-          echo "Domain is not properly configured"
-          exit 1
-        fi
-EOF
+    uses: ./.github/workflows/deploy-staging.yml
 ```
 
-Then, create the production workflow:
-
-**.github/workflows/ci-cd-production.yml**
-
+**.github/workflows/main-production.yml**:
 ```yaml
-name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Production)
+name: Main Workflow for Production
 
 on:
   push:
@@ -598,156 +751,34 @@ on:
       - production
     paths:
       - '**'
-  workflow_dispatch: # Add this
-
- line to allow manual dispatch
+  workflow_dispatch:
 
 jobs:
-  setup-vps:
-    runs-on: self-hosted
+  linting:
+    uses: ./.github/workflows/linting.yml
 
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Install Docker and Dependencies
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo apt update
-        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        # This adds Docker's GPG key and the Docker APT repository if they aren't already added
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt update
-        sudo apt install -y docker-ce docker-ce-cli containerd.io
-        sudo systemctl enable docker
-        sudo systemctl start docker
-        sudo apt install -y nginx certbot python3-certbot-nginx
-EOF
-
-    - name: Set up Nginx and SSL for Production
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo tee /etc/nginx/sites-available/${{ secrets.DOMAIN }} > /dev/null <<EOL
-server {
-    listen 80;
-    listen 443 ssl;
-    server_name ${{ secrets.DOMAIN }};
-    ssl_certificate /etc/letsencrypt/live/${{ secrets.DOMAIN }}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${{ secrets.DOMAIN }}/privkey.pem;
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-        sudo ln -s /etc/nginx/sites-available/${{ secrets.DOMAIN }} /etc/nginx/sites-enabled/
-        sudo systemctl reload nginx
-        sudo certbot --nginx -d ${{ secrets.DOMAIN }} --non-interactive --agree-tos -m ${{ secrets.EMAIL }}
-        sudo systemctl reload nginx
-EOF
-
-    - name: Set up PostgreSQL, Redis, and RedisAI
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        sudo docker stop postgres || true
-        sudo docker rm postgres || true
-        sudo docker run --name postgres -e POSTGRES_DB=${{ secrets.DB_NAME }} -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -p 5432:5432 -d postgres
-        
-        sudo docker stop redis || true
-        sudo docker rm redis || true
-        sudo docker run --name redis -p ${{ secrets.REDIS_PORT }}:6379 -d redis
-        
-        sudo docker stop redisai || true
-        sudo docker rm redisai || true
-        sudo docker run --name redisai -p ${{ secrets.REDISAI_PORT }}:6378 -d redislabs/redisai
-        
-        sleep 10
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${{ secrets.DB_USER }}') THEN
-                CREATE ROLE ${{ secrets.DB_USER }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';
-            END IF;
-        END \$\$;"
-        
-        PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U postgres -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
-EOF
+  setup:
+    needs: linting
+    uses: ./.github/workflows/setup.yml
 
   build:
-    needs: setup-vps
-    runs-on: self-hosted
+    needs: setup
+    uses: ./.github/workflows/build.yml
 
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Build and Push Docker Image for Production
-      run: |
-        IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-        docker build -t $IMAGE_NAME .
-        docker push $IMAGE_NAME
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
 
   deploy:
-    needs: build
-    runs-on: self-hosted
-
-    steps:
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-    - name: Deploy to VPS (Production)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-        docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
-        docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
-        docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-EOF
-
-    - name: Verify Nginx and SSL Configuration (Production)
-      run: |
-        ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-        if ! systemctl is-active --quiet nginx; then
-          echo "Nginx is not running"
-          exit 1
-        fi
-
-        if ! openssl s_client -connect ${{ secrets.DOMAIN }}:443 -servername ${{ secrets.DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
-          echo "SSL certificate is not valid"
-          exit 1
-        fi
-
-        if ! curl -k https://${{ secrets.DOMAIN }} | grep -q "Expected content or response"; then
-          echo "Domain is not properly configured"
-          exit 1
-        fi
-EOF
-```
-Lint the yaml files with:
-
-```
-yamllint .github/workflows/ci-cd-staging.yml
-yamllint .github/workflows/ci-cd-production.yml
+    needs: test
+    uses: ./.github/workflows/deploy-production.yml
 ```
 
-
-### Step 8: Create Vapor Application Manually
+#### Step 9: Create Vapor Application Manually
 
 Create a script named `create_vapor_app.sh` in the root directory of your project. This script will create the Vapor application interactively using the Vapor toolbox.
 
+**create_vapor_app.sh**:
 ```bash
 #!/bin/bash
 
@@ -772,25 +803,29 @@ cd ..
 ```
 
 Make the script executable:
-
 ```sh
 chmod +x create_vapor_app.sh
 ```
 
 Run the script:
-
 ```sh
 ./create_vapor_app.sh
 ```
 
-### Project Directory Tree at Step 8
+#### Project Directory Tree at Step 9
 
 ```
 fountainAI/
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd-production.yml
-│       └── ci-cd-staging.yml
+│       ├── main-production.yml
+│       ├── main-staging.yml
+│       ├── linting.yml
+│       ├── setup.yml
+│       ├── build.yml
+│       ├── test.yml
+│       ├── deploy-staging.yml
+│       ├── deploy-production.yml
 ├── .git/
 ├── .gitignore
 ├── config.env
@@ -812,10 +847,13 @@ fountainAI/
     └── Dockerfile
 ```
 
-### Step 9: Build and Push Docker Image to GitHub Container Registry
+### Part 3: Deployment and Monitoring
+
+#### Step 10: Build and Push Docker Image to GitHub Container Registry
 
 Create a script named `build_and_push_docker_image.sh` in the root directory of your project.
 
+**build_and_push_docker_image.sh**:
 ```bash
 #!/bin/bash
 
@@ -839,19 +877,29 @@ cd ..
 ```
 
 Make the script executable:
-
 ```sh
 chmod +x build_and_push_docker_image.sh
 ```
 
-### Project Directory Tree at Step 9
+Run the script:
+```sh
+./build_and_push_docker_image.sh
+```
+
+#### Project Directory Tree at Step 10
 
 ```
 fountainAI/
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd-production.yml
-│       └── ci-cd-staging.yml
+│       ├── main-production.yml
+│       ├── main-staging.yml
+│       ├── linting.yml
+│       ├── setup.yml
+│       ├── build.yml
+│       ├── test.yml
+│       ├── deploy-staging.yml
+│       ├── deploy-production.yml
 ├── .git/
 ├── .gitignore
 ├── build_and_push_docker_image.sh
@@ -874,11 +922,9 @@ fountainAI/
     └── Dockerfile
 ```
 
-### Step 10: Configure UFW on VPS
+#### Step 11: Configure UFW on VPS
 
 To ensure that your VPS is secure and properly configured, it's essential to manage the firewall settings using UFW (Uncomplicated Firewall). This step will guide you on how to configure UFW to allow necessary ports for your services, including the special port for the NYDUS service, which connects your VPS instance to the host system's service dashboard.
-
-#### NYDUS Port Configuration
 
 **NYDUS_PORT**: The NYDUS service requires access through a specific port, which in this case is **2224**. This port must remain accessible to ensure proper connectivity between the VPS instance and the NYDUS service dashboard.
 
@@ -902,6 +948,8 @@ To ensure that your VPS is secure and properly configured, it's essential to man
      sudo ufw allow 22/tcp   # SSH
      sudo ufw allow 80/tcp   # HTTP
      sudo ufw allow 443/tcp  # HTTPS
+
+
      sudo ufw allow 5432/tcp # PostgreSQL
      sudo ufw allow 6379/tcp # Redis
      sudo ufw allow 6378/tcp # RedisAI
@@ -921,7 +969,7 @@ To ensure that your VPS is secure and properly configured, it's essential to man
 ### Deploy to Staging
 
 1. **Push to the `main` Branch**:
-   - Any push to the `main` branch will trigger the staging workflow (`ci-cd-staging.yml`).
+   - Any push to the `main` branch will trigger the staging workflow (`main-staging.yml`).
    - To deploy to staging, commit your changes and push them to the `main` branch:
      ```sh
      git add .
@@ -963,12 +1011,11 @@ To ensure that your VPS is secure and properly configured, it's essential to man
 - **Manual Trigger** (Optional):
   - You can configure your GitHub Actions workflows to allow manual triggering from the GitHub interface. Add the `workflow_dispatch` event to your workflows.
 
-Example:
+**Example**:
 
-#### Staging Workflow (`.github/workflows/ci-cd-staging.yml`)
-
+**Staging Workflow (`.github/workflows/main-staging.yml`)**:
 ```yaml
-name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Staging)
+name: Main Workflow for Staging
 
 on:
   push:
@@ -976,13 +1023,32 @@ on:
       - main
     paths:
       - '**'
-  workflow_dispatch: # Add this line to allow manual dispatch
+  workflow_dispatch:
+
+jobs:
+  linting:
+    uses: ./.github/workflows/linting.yml
+
+  setup:
+    needs: linting
+    uses: ./.github/workflows/setup.yml
+
+  build:
+    needs: setup
+    uses: ./.github/workflows/build.yml
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    uses: ./.github/workflows/deploy-staging.yml
 ```
 
-#### Production Workflow (`.github/workflows/ci-cd-production.yml`)
-
+**Production Workflow (`.github/workflows/main-production.yml`)**:
 ```yaml
-name: CI/CD Pipeline for ${{ secrets.APP_NAME }} (Production)
+name: Main Workflow for Production
 
 on:
   push:
@@ -990,7 +1056,27 @@ on:
       - production
     paths:
       - '**'
-  workflow_dispatch: # Add this line to allow manual dispatch
+  workflow_dispatch:
+
+jobs:
+  linting:
+    uses: ./.github/workflows/linting.yml
+
+  setup:
+    needs: linting
+    uses: ./.github/workflows/setup.yml
+
+  build:
+    needs: setup
+    uses: ./.github/workflows/build.yml
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    uses: ./.github/workflows/deploy-production.yml
 ```
 
 With these configurations, you can manually trigger deployments from the Actions tab in your GitHub repository.
@@ -1001,7 +1087,7 @@ With these configurations, you can manually trigger deployments from the Actions
 
 Implementing Test-Driven Development (TDD) alongside Continuous Integration/Continuous Deployment (CI/CD) ensures that each feature of the OpenAPI specification is thoroughly tested and automatically deployed. The steps include:
 
-1. **Write Tests First**: 
+1. **Write Tests First**:
    - For each API endpoint defined in the OpenAPI, write unit tests and integration tests before implementing the functionality.
 
 2. **Develop the Feature**:
@@ -1023,7 +1109,7 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 
 **Unit Tests** are designed to test individual units of code in isolation. They help ensure that each function, method, or class behaves as expected. Unit tests are typically fast and should cover edge cases, invalid inputs, and typical use cases.
 
-#### Example:
+**Example**:
 For a function that adds two numbers, a unit test might look like this:
 
 ```swift
@@ -1038,7 +1124,7 @@ func testAddition() {
 
 **Integration Tests** are designed to test the interaction between different components or systems. They help ensure that various parts of the application work together as expected. Integration tests can involve testing multiple functions, database interactions, and API calls.
 
-#### Example:
+**Example**:
 For an API endpoint that retrieves user data from a database, an integration test might look like this:
 
 ```swift
