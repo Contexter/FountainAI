@@ -42,10 +42,11 @@ Following this guide sets up a robust environment for developing and deploying t
 
 - [Introduction](#introduction)
 - [The FountainAI Project](#the-fountainai-project)
-- [The Fountain Network Graph](#the-fountain-network-graph)
-- [OpenAPI Specification](#openapi-specification)
-- [Implementation](#implementation)
+  - [The Fountain Network Graph](#the-fountain-network-graph)
+  - [OpenAPI Specification](#openapi-specification)
+  - [Implementation](#implementation)
 - [Prerequisites](#prerequisites)
+  - [UFW Configuration Steps](#ufw-configuration-steps)
 - [Step-by-Step Setup Guide](#step-by-step-setup-guide)
   - [Part 1: Initial Setup](#part-1-initial-setup)
     - [Step 1: Create GitHub Repository and Configuration File](#step-1-create-github-repository-and-configuration-file)
@@ -69,7 +70,7 @@ Following this guide sets up a robust environment for developing and deploying t
   - [Unit Tests](#unit-tests)
   - [Integration Tests](#integration-tests)
   - [Accessing Compiler Output in GitHub Actions](#accessing-compiler-output-in-github-actions)
-  - [Conclusion](#conclusion)
+- [Conclusion](#conclusion)
 
 ## The FountainAI Project
 
@@ -78,17 +79,6 @@ In this guide, we will focus on implementing a specific project, FountainAI. Fou
 The following sections provide detailed steps on how to conceptualize the FountainAI network graph, specify the OpenAPI, and implement the application using Vapor, a popular server-side Swift framework.
 
 ## The Fountain Network Graph
-
-### Vision and Goals
-
-**The Vision**: To conceptualize and visualize the functioning of FountainAI, highlighting how different elements interact within the AI to analyze and process scripts. This network graph serves as an initial high-level idea of how FountainAI operates, providing a foundation for further detailed specifications and implementations.
-
-**Goals**:
-1. **Visualize Functionality**: Show the core idea and functioning of FountainAI, with "Paraphrase" at the center and other nodes representing key elements like "Character," "Action," "Spoken Word," and "Transition."
-2. **Establish Relationships**: Illustrate the relationships and hierarchies between different script elements and their role in the AI's analysis.
-3. **Conceptual Foundation**: Provide a visual and conceptual foundation for understanding and developing the AI.
-
-### Explanation
 
 ---
 
@@ -100,34 +90,9 @@ The Fountain Network Graph illustrates the conceptual model of FountainAI, with 
 
 ## OpenAPI Specification
 
-### Vision and Goals
-
-**The Vision**: To transition from the conceptual model of FountainAI to a detailed and standardized API specification. This OpenAPI specification will define the endpoints, request/response formats, and data models required for implementing FountainAI, ensuring a consistent and reliable interface for communication.
-
-**Goals**:
-1. **Standardization**: Use OpenAPI to create a standardized format for API definitions, ensuring consistency and clarity.
-2. **Detailed Specification**: Provide a comprehensive and detailed specification for all API endpoints and interactions within FountainAI.
-3. **Foundation for Implementation**: Serve as the blueprint for implementing FountainAI, guiding developers through the necessary endpoints and data models.
-
-### Explanation
-
-The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level
-
- conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
+The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
 
 ## Implementation
-
-### Vision and Goals
-
-**The Vision**: To bring the conceptual model and API specification of FountainAI into a functional and scalable application using Vapor. This phase involves translating the detailed OpenAPI specification into actual code, ensuring that the implementation is efficient, maintainable, and adheres to best practices.
-
-**Goals**:
-1. **Adherence to Specification**: Ensure the implementation strictly follows the OpenAPI specification, maintaining consistency and reliability.
-2. **Scalability**: Design the application to handle growth and increased load efficiently.
-3. **Maintainability**: Write clean, modular code that is easy to maintain and extend.
-4. **Efficiency**: Optimize the application for performance and resource usage.
-
-### Explanation
 
 The implementation phase involves creating the actual codebase for FountainAI using Vapor. By adhering to the OpenAPI specification, we ensure that the implementation is consistent with the defined API standards. The focus is on writing scalable, maintainable, and efficient code, leveraging Vapor's features and best practices. This phase translates the conceptual and API models into a working application, ready for deployment and real-world use.
 
@@ -141,7 +106,9 @@ Before starting the setup, ensure you have the following:
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
 5. **Docker**: Installed on your local machine for containerization.
 
-   **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
+   **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies,
+
+ libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
 
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 7. **YAML Linter**: Installed on your local machine to ensure error-free YAML configuration files.
@@ -330,9 +297,7 @@ GITHUB_TOKEN=your_generated_token
    - Run the following command, replacing `your_email@example.com` with your email:
      ```sh
      ssh-keygen -t ed25519 -C "your_email@example.com"
-    
-
- ```
+     ```
    - Follow the prompts to save the key pair in the default location (`~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`).
      - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
      - You can choose to set a passphrase or leave it empty by pressing Enter.
@@ -670,7 +635,9 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=ghcr.io/${{ secrets
+
+.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
           docker run $IMAGE_NAME swift test --filter UnitTests
 
       - name: Run Integration Tests
