@@ -20,11 +20,11 @@ A script is created to interactively set up a new Vapor application using the Va
 
 The third part of the guide covers building and pushing the Docker image of the Vapor application to the GitHub Container Registry. A script is created to build and push the Docker image, ensuring it is properly built and stored for deployment.
 
-Firewall settings on the VPS are managed using UFW to allow necessary ports for the application, database, and other services, including the NYDUS service port. This enhances security and ensures proper connectivity between the VPS instance and the host system's service dashboard.
+Firewall settings on the VPS are managed using an automated UFW management workflow. This workflow allows necessary ports for the application, database, and other services, including the NYDUS service port. This enhances security and ensures proper connectivity between the VPS instance and the host system's service dashboard.
 
 ### How to Deploy
 
-Deployment to staging is triggered by pushing to the `main` branch, with the GitHub Actions workflow automatically building, pushing the Docker image, running tests, and deploying the application to the staging environment. Deployment to production involves creating or merging changes into the `production` branch to trigger the production deployment, with optional configuration for manual workflow dispatch from the GitHub Actions interface.
+Deployment to staging is triggered by pushing to the `main` branch, with the GitHub Actions workflow automatically building, pushing the Docker image, running tests, deploying the application to the staging environment, and configuring the UFW settings. Deployment to production involves creating or merging changes into the `production` branch to trigger the production deployment, with optional configuration for manual workflow dispatch from the GitHub Actions interface.
 
 ### Monitoring and Manual Trigger
 
@@ -46,7 +46,6 @@ Following this guide sets up a robust environment for developing and deploying t
   - [OpenAPI Specification](#openapi-specification)
   - [Implementation](#implementation)
 - [Prerequisites](#prerequisites)
-  - [UFW Configuration Steps](#ufw-configuration-steps)
 - [Step-by-Step Setup Guide](#step-by-step-setup-guide)
   - [Part 1: Initial Setup](#part-1-initial-setup)
     - [Step 1: Create GitHub Repository and Configuration File](#step-1-create-github-repository-and-configuration-file)
@@ -90,7 +89,9 @@ The Fountain Network Graph illustrates the conceptual model of FountainAI, with 
 
 ## OpenAPI Specification
 
-The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
+The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https
+
+://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
 
 ## Implementation
 
@@ -106,9 +107,7 @@ Before starting the setup, ensure you have the following:
 4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
 5. **Docker**: Installed on your local machine for containerization.
 
-   **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies,
-
- libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
+   **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
 
 6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
 7. **YAML Linter**: Installed on your local machine to ensure error-free YAML configuration files.
@@ -117,42 +116,6 @@ Install yamllint via Homebrew:
 ```sh
 brew install yamllint
 ```
-
-8. **UFW (Uncomplicated Firewall)**: Ensure that your VPS is secure and properly configured by managing the firewall settings using UFW.
-
-### UFW Configuration Steps
-
-1. **Install UFW**:
-   - Ensure UFW is installed on your VPS. If it's not installed, you can install it using the following command:
-     ```sh
-     sudo apt install ufw
-     ```
-
-2. **Enable UFW**:
-   - Enable UFW to start managing your firewall settings:
-     ```sh
-     sudo ufw enable
-     ```
-
-3. **Allow Necessary Ports**:
-   - Configure UFW to allow traffic on the necessary ports for your application, database, and other services:
-     ```sh
-     sudo ufw allow 22/tcp   # SSH
-     sudo ufw allow 80/tcp   # HTTP
-     sudo ufw allow 443/tcp  # HTTPS
-     sudo ufw allow 5432/tcp # PostgreSQL
-     sudo ufw allow 6379/tcp # Redis
-     sudo ufw allow 6378/tcp # RedisAI
-     sudo ufw allow 8080/tcp # Application (Production)
-     sudo ufw allow 8081/tcp # Application (Staging)
-     sudo ufw allow 2224/tcp # NYDUS Service
-     ```
-
-4. **Check UFW Status**:
-   - Verify the UFW status and ensure the rules are correctly applied:
-     ```sh
-     sudo ufw status
-     ```
 
 ## Step-by-Step Setup Guide
 
@@ -569,9 +532,7 @@ jobs:
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo apt update
-          sudo apt install -y apt-transport-https ca-certificates curl software-properties
-
--common
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
           sudo apt update
@@ -582,7 +543,45 @@ jobs:
 EOF
 ```
 
-3. **Create Build Workflow**:
+3. **Create UFW Configuration Workflow**:
+   - Create a UFW configuration workflow to automate the firewall settings on the VPS.
+
+**.github/workflows/ufw-config.yml**:
+```yaml
+name: UFW Configuration
+
+on: [workflow_call]
+
+jobs:
+  configure-ufw:
+    runs-on: self-hosted
+
+    steps:
+      # Set up SSH agent to allow connecting to the VPS
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      # Configure UFW on the VPS
+      - name: Configure UFW
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          sudo ufw allow 22/tcp   # Ensure SSH remains allowed
+          sudo ufw allow 80/tcp   # Allow HTTP
+          sudo ufw allow 443/tcp  # Allow HTTPS
+          sudo ufw allow 5432/tcp # Allow PostgreSQL
+          sudo ufw allow 6379/tcp # Allow Redis
+          sudo ufw allow 6378/tcp # Allow RedisAI
+          sudo ufw allow 8080/tcp # Allow Application (Production)
+          sudo ufw allow 8081/tcp # Allow Application (Staging)
+          sudo ufw allow 2224/tcp # Allow NYDUS Service
+          sudo ufw default deny incoming  # Deny all other incoming connections
+          sudo ufw enable
+EOF
+```
+
+4. **Create Build Workflow**:
    - Create a build workflow to build the Docker image for the Vapor app.
 
 **.github/workflows/build.yml**:
@@ -601,7 +600,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Log in to GitHub Container Registry
+      - name:
+
+ Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: Build and Push Docker Image
@@ -611,7 +612,7 @@ jobs:
           docker push $IMAGE_NAME
 ```
 
-4. **Create Test Workflow**:
+5. **Create Test Workflow**:
    - Create a test workflow to run unit and integration tests.
 
 **.github/workflows/test.yml**:
@@ -635,9 +636,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          IMAGE_NAME=ghcr.io/${{ secrets
-
-.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
           docker run $IMAGE_NAME swift test --filter UnitTests
 
       - name: Run Integration Tests
@@ -646,7 +645,7 @@ jobs:
           docker run $IMAGE_NAME swift test --filter IntegrationTests
 ```
 
-5. **Create Deployment Workflows**:
+6. **Create Deployment Workflows**:
    - Create deployment workflows for both staging and production environments.
 
 **.github/workflows/deploy-staging.yml**:
@@ -683,9 +682,7 @@ EOF
             exit 1
           fi
 
-          if ! openssl s_client -connect ${{ secrets
-
-.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
+          if ! openssl s_client -connect ${{ secrets.STAGING_DOMAIN }}:443 -servername ${{ secrets.STAGING_DOMAIN }} </dev/null 2>/dev/null | openssl x509 -noout -dates; then
             echo "SSL certificate is not valid"
             exit 1
           fi
@@ -743,7 +740,7 @@ EOF
 EOF
 ```
 
-6. **Create Main Workflows**:
+7. **Create Main Workflows**:
    - Create main workflows to call the modular workflows for staging and production.
 
 **.github/workflows/main-staging.yml**:
@@ -766,8 +763,12 @@ jobs:
     needs: linting
     uses: ./.github/workflows/setup.yml
 
-  build:
+  ufw-config:
     needs: setup
+    uses: ./.github/workflows/ufw-config.yml
+
+  build:
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
@@ -799,8 +800,12 @@ jobs:
     needs: linting
     uses: ./.github/workflows/setup.yml
 
-  build:
+  ufw-config:
     needs: setup
+    uses: ./.github/workflows/ufw-config.yml
+
+  build:
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
@@ -873,7 +878,9 @@ docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
 echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
 
 # Push the Docker image to GitHub Container Registry
-docker push ghcr.io/$REPO_OWNER/$APP_NAME
+docker push ghcr.io/$
+
+REPO_OWNER/$APP_NAME
 
 # Navigate back to the root directory
 cd ..
@@ -912,7 +919,9 @@ Run the script:
 
 1. **Create or Merge into a `production` Branch**:
    - Typically, you will create a separate branch named `production` for deploying to the production environment.
-   - Merge changes from `main` (or another branch) into the `production` branch to trigger the production deployment.
+   - Merge changes from `main` (or another branch)
+
+ into the `production` branch to trigger the production deployment.
 
    To create a `production` branch and push it:
    ```sh
@@ -960,8 +969,12 @@ jobs:
     needs: linting
     uses: ./.github/workflows/setup.yml
 
-  build:
+  ufw-config:
     needs: setup
+    uses: ./.github/workflows/ufw-config.yml
+
+  build:
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
@@ -993,8 +1006,12 @@ jobs:
     needs: linting
     uses: ./.github/workflows/setup.yml
 
-  build:
+  ufw-config:
     needs: setup
+    uses: ./.github/workflows/ufw-config.yml
+
+  build:
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
