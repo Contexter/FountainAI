@@ -1,4 +1,4 @@
-## Summary of the Guide
+## FountainAI's Vapor
 
 This comprehensive guide details a step-by-step approach to creating, handling, and deploying a Vapor application using modern DevOps practices. The process is divided into three main parts for clarity and focus: Initial Setup, Creating and Handling the Vapor App, and Deployment and Monitoring. The guide ensures a robust, efficient, and scalable environment leveraging Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions.
 
@@ -37,6 +37,7 @@ The guide emphasizes implementing Test-Driven Development (TDD) alongside Contin
 ### Conclusion
 
 Following this guide sets up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion leads to a reliable and maintainable codebase, while managing VPS UFW settings enhances security and reliability. This comprehensive approach ensures an efficient, scalable, and secure deployment process for your Vapor application.
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -59,7 +60,6 @@ Following this guide sets up a robust environment for developing and deploying t
     - [Step 9: Create Vapor Application Manually](#step-9-create-vapor-application-manually)
     - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
   - [Part 3: Deployment and Monitoring](#part-3-deployment-and-monitoring)
-    - [Step 11: Configure UFW on VPS](#step-11-configure-ufw-on-vps)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
   - [Deploy to Production](#deploy-to-production)
@@ -70,21 +70,6 @@ Following this guide sets up a robust environment for developing and deploying t
   - [Integration Tests](#integration-tests)
   - [Accessing Compiler Output in GitHub Actions](#accessing-compiler-output-in-github-actions)
   - [Conclusion](#conclusion)
-
-## Introduction
-
-This guide provides a comprehensive approach to creating and deploying a Vapor application using modern DevOps practices. You'll start by manually setting up a basic Vapor application and then configure a scalable environment leveraging Docker for services like Nginx, PostgreSQL, Redis, and RedisAI. Through detailed steps, you will establish automated testing and deployment using GitHub Actions, ensuring a streamlined workflow from development to production with CI/CD (Continuous Integration/Continuous Deployment). This setup is designed to enhance efficiency, reliability, and scalability for your application.
-
-### Vision and Goals
-
-**The Vision**: Establish an automated, efficient, and reliable pipeline for developing and deploying Vapor applications.
-
-**Goals**:
-1. **Automate Setup**: Simplify the initial setup with automated scripts and workflows.
-2. **Leverage Containerization**: Create isolated, consistent environments for development, staging, and production using Docker.
-3. **Implement CI/CD**: Integrate GitHub Actions for automated building, testing, and deployment.
-4. **Enhance Security and Reliability**: Securely manage secrets and configurations to ensure reliable deployment processes.
-5. **Ensure Scalability**: Design the setup to scale easily as the application grows.
 
 ## The FountainAI Project
 
@@ -126,7 +111,9 @@ The Fountain Network Graph illustrates the conceptual model of FountainAI, with 
 
 ### Explanation
 
-The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
+The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level
+
+ conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
 
 ## Implementation
 
@@ -164,11 +151,45 @@ Install yamllint via Homebrew:
 brew install yamllint
 ```
 
+8. **UFW (Uncomplicated Firewall)**: Ensure that your VPS is secure and properly configured by managing the firewall settings using UFW.
+
+### UFW Configuration Steps
+
+1. **Install UFW**:
+   - Ensure UFW is installed on your VPS. If it's not installed, you can install it using the following command:
+     ```sh
+     sudo apt install ufw
+     ```
+
+2. **Enable UFW**:
+   - Enable UFW to start managing your firewall settings:
+     ```sh
+     sudo ufw enable
+     ```
+
+3. **Allow Necessary Ports**:
+   - Configure UFW to allow traffic on the necessary ports for your application, database, and other services:
+     ```sh
+     sudo ufw allow 22/tcp   # SSH
+     sudo ufw allow 80/tcp   # HTTP
+     sudo ufw allow 443/tcp  # HTTPS
+     sudo ufw allow 5432/tcp # PostgreSQL
+     sudo ufw allow 6379/tcp # Redis
+     sudo ufw allow 6378/tcp # RedisAI
+     sudo ufw allow 8080/tcp # Application (Production)
+     sudo ufw allow 8081/tcp # Application (Staging)
+     sudo ufw allow 2224/tcp # NYDUS Service
+     ```
+
+4. **Check UFW Status**:
+   - Verify the UFW status and ensure the rules are correctly applied:
+     ```sh
+     sudo ufw status
+     ```
+
 ## Step-by-Step Setup Guide
 
-### Part 1:
-
- Initial Setup
+### Part 1: Initial Setup
 
 #### Step 1: Create GitHub Repository and Configuration File
 
@@ -259,16 +280,6 @@ NYDUS_PORT=2224
      git push origin main
      ```
 
-#### Project Directory Tree at Step 1
-
-```
-fountainAI/
-├── .git/
-├── .gitignore
-├── config.env
-└── README.md
-```
-
 #### Step 2: Generate a GitHub Personal Access Token
 
 1. **Generate the Token**:
@@ -319,7 +330,9 @@ GITHUB_TOKEN=your_generated_token
    - Run the following command, replacing `your_email@example.com` with your email:
      ```sh
      ssh-keygen -t ed25519 -C "your_email@example.com"
-     ```
+    
+
+ ```
    - Follow the prompts to save the key pair in the default location (`~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`).
      - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
      - You can choose to set a passphrase or leave it empty by pressing Enter.
@@ -474,7 +487,25 @@ WORKDIR /linting
 ENTRYPOINT ["yamllint", "."]
 ```
 
-2. **Build and Push the Linting Docker Image**:
+2. **Create yamllint Configuration File**:
+   - In the `linting` folder, create a `.yamllint` file to specify the linting rules.
+
+**linting/.yamllint**:
+```yaml
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  indentation:
+    indent-sequences: false
+  truthy:
+    allowed-values: ['true', 'false']
+    level: error
+```
+
+3. **Build and Push the Linting Docker Image**:
    - Create a script named `build_and_push_linting_image.sh` in the root directory of your project.
 
 **build_and_push_linting_image.sh**:
@@ -500,12 +531,12 @@ docker push ghcr.io/$REPO_OWNER/linting
 cd ..
 ```
 
-3. **Make the Script Executable**:
+4. **Make the Script Executable**:
    ```sh
    chmod +x build_and_push_linting_image.sh
    ```
 
-4. **Run the Script**:
+5. **Run the Script**:
    ```sh
    ./build_and_push_linting_image.sh
    ```
@@ -573,7 +604,9 @@ jobs:
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo apt update
-          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties
+
+-common
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
           sudo apt update
@@ -846,46 +879,11 @@ chmod +x create_vapor_app.sh
 ```
 
 Run the script:
+
+
 ```sh
 ./create_vapor_app.sh
 ```
-
-#### Project Directory Tree at Step 9
-
-```
-fountainAI/
-├── .github/
-│   └── workflows/
-│       ├── main-production.yml
-│       ├── main-staging.yml
-│       ├── linting.yml
-│       ├── setup.yml
-│       ├── build.yml
-│       ├── test.yml
-│       ├── deploy-staging.yml
-│       ├── deploy-production.yml
-├── .git/
-├── .gitignore
-├── config.env
-├── create_vapor_app.sh
-└── README.md
-└── fountainAI/
-    ├── Package.swift
-    ├── README.md
-    ├── Sources/
-    │   └── App/
-    │       ├── configure.swift
-    │       └── ...
-    ├── Tests/
-    │   ├── ...
-    ├── Public/
-    │   ├── ...
-    ├── Resources/
-    │   ├── ...
-    └── Dockerfile
-```
-
-### Part 3: Deployment and Monitoring
 
 #### Step 10: Build and Push Docker Image to GitHub Container Registry
 
@@ -924,83 +922,7 @@ Run the script:
 ./build_and_push_docker_image.sh
 ```
 
-#### Project Directory Tree at Step 10
-
-```
-fountainAI/
-├── .github/
-│   └── workflows/
-│       ├── main-production.yml
-│       ├── main-staging.yml
-│       ├── linting.yml
-│       ├── setup.yml
-│       ├── build.yml
-│       ├── test.yml
-│       ├── deploy-staging.yml
-│       ├── deploy-production.yml
-├── .git/
-├── .gitignore
-├── build_and_push_docker_image.sh
-├── config.env
-├── create_vapor_app.sh
-└── README.md
-└── fountainAI/
-    ├── Package.swift
-    ├── README.md
-    ├── Sources/
-    │   └── App/
-    │       ├── configure.swift
-    │       └── ...
-    ├── Tests/
-    │   ├── ...
-    ├── Public/
-    │   ├── ...
-    ├── Resources/
-    │   ├── ...
-    └── Dockerfile
-```
-
-#### Step 11: Configure UFW on VPS
-
-To ensure that your VPS is secure and properly configured, it's essential to manage the firewall settings using UFW (Uncomplicated Firewall). This step will guide you on how to configure UFW to allow necessary ports for your services, including the special port for the NYDUS service, which connects your VPS instance to the host system's service dashboard.
-
-**NYDUS_PORT**: The NYDUS service requires access through a specific port, which in this case is **2224**. This port must remain accessible to ensure proper connectivity between the VPS instance and the NYDUS service dashboard.
-
-#### UFW Configuration Steps
-
-1. **Install UFW**:
-   - Ensure UFW is installed on your VPS. If it's not installed, you can install it using the following command:
-     ```sh
-     sudo apt install ufw
-     ```
-
-2. **Enable UFW**:
-   - Enable UFW to start managing your firewall settings:
-     ```sh
-     sudo ufw enable
-     ```
-
-3. **Allow Necessary Ports**:
-   - Configure UFW to allow traffic on the necessary ports for your application, database, and other services:
-     ```sh
-     sudo ufw allow 22/tcp   # SSH
-     sudo ufw allow 80/tcp   # HTTP
-     sudo ufw allow 443/tcp  # HTTPS
-
-
-     sudo ufw allow 5432/tcp # PostgreSQL
-     sudo ufw allow 6379/tcp # Redis
-     sudo ufw allow 6378/tcp # RedisAI
-     sudo ufw allow 8080/tcp # Application (Production)
-     sudo ufw allow 8081/tcp # Application (Staging)
-     sudo ufw allow 2224/tcp # NYDUS Service
-     ```
-
-4. **Check UFW Status**:
-   - Verify the UFW status and ensure the rules are correctly applied:
-     ```sh
-     sudo ufw status
-     ```
+### Part 3: Deployment and Monitoring
 
 ## How to Deploy
 
