@@ -89,9 +89,7 @@ The Fountain Network Graph illustrates the conceptual model of FountainAI, with 
 
 ## OpenAPI Specification
 
-The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https
-
-://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
+The OpenAPI specification serves as the detailed blueprint for FountainAI, transitioning from the high-level conceptual model to a precise API definition. It outlines all the endpoints, request/response formats, and data models, ensuring that developers have a clear and consistent reference for implementing the AI. This standardization helps automate the generation of API documentation, client libraries, and server stubs, streamlining the development process and ensuring alignment with the conceptual model. The OpenAPI specification for this project can be found [here](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml).
 
 ## Implementation
 
@@ -919,9 +917,7 @@ Run the script:
 
 1. **Create or Merge into a `production` Branch**:
    - Typically, you will create a separate branch named `production` for deploying to the production environment.
-   - Merge changes from `main` (or another branch)
-
- into the `production` branch to trigger the production deployment.
+   - Merge changes from `main` (or another branch) into the `production` branch to trigger the production deployment.
 
    To create a `production` branch and push it:
    ```sh
