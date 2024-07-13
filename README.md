@@ -1179,3 +1179,81 @@ G_TOKEN=your_generated_token
 Handle this token with care as it has extensive permissions and can make critical changes to your GitHub account and repositories. Do not share this token or expose it in public repositories.
 
 
+## Addendum 2: Script for Building and Pushing Linting Docker Image
+
+This addendum provides the detailed steps and script for building and pushing the linting Docker image to the GitHub Container Registry.
+
+### Script: `build_and_push_linting_image.sh`
+
+```bash
+#!/bin/bash
+
+# Load configuration from config.env
+source config.env
+
+# Verify the variable is set within the script
+if [ -z "$G_TOKEN" ]; then
+  echo "Error: G_TOKEN is not set."
+  exit 1
+fi
+
+# Convert repository owner and name to lowercase
+REPO_OWNER_LOWER=$(echo "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
+REPO_NAME_LOWER=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
+
+# Navigate to the linting directory
+if [ -d "linting" ]; then
+  cd linting
+else
+  echo "Error: linting directory does not exist."
+  exit 1
+fi
+
+# Check if Dockerfile exists
+if [ -f "Dockerfile" ]; then
+  echo "Dockerfile found. Proceeding with the build."
+else
+  echo "Error: Dockerfile not found in the linting directory."
+  exit 1
+fi
+
+# Build the Docker image
+docker build -t ghcr.io/$REPO_OWNER_LOWER/linting .
+
+# Log in to GitHub Container Registry non-interactively
+if echo "$G_TOKEN" | docker login ghcr.io -u "$REPO_OWNER_LOWER" --password-stdin; then
+  echo "Successfully logged in to GitHub Container Registry."
+else
+  echo "Error: Failed to log in to GitHub Container Registry."
+  exit 1
+fi
+
+# Push the Docker image to GitHub Container Registry
+if docker push ghcr.io/$REPO_OWNER_LOWER/linting; then
+  echo "Successfully pushed the Docker image to GitHub Container Registry."
+else
+  echo "Error: Failed to push the Docker image to GitHub Container Registry."
+  exit 1
+fi
+
+# Navigate back to the root directory
+cd ..
+```
+
+### Description
+
+This script performs the following actions:
+
+1. **Load Configuration**: It loads the configuration variables from the `config.env` file.
+2. **Verify Token**: It checks if the `G_TOKEN` variable is set. If not, it exits with an error message.
+3. **Lowercase Conversion**: Converts the `REPO_OWNER` and `REPO_NAME` to lowercase to comply with Docker naming conventions.
+4. **Navigate to Linting Directory**: Checks if the `linting` directory exists and navigates into it. If the directory does not exist, it exits with an error message.
+5. **Dockerfile Check**: Verifies if the `Dockerfile` exists in the `linting` directory. If not, it exits with an error message.
+6. **Build Docker Image**: Builds the Docker image with the tag `ghcr.io/$REPO_OWNER_LOWER/linting`.
+7. **Login to GitHub Container Registry**: Logs in to the GitHub Container Registry non-interactively using the provided token.
+8. **Push Docker Image**: Pushes the built Docker image to the GitHub Container Registry.
+9. **Navigate Back**: Returns to the root directory after the operations are completed.
+
+This script ensures that the linting Docker image is properly built and pushed to the GitHub Container Registry with error handling and verification steps to ensure successful execution.
+
+
