@@ -7,6 +7,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Print environment variables
+        run: printenv
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
