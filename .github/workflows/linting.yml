@@ -37,6 +37,9 @@ jobs:
       - name: Debug - List Docker images
         run: docker images
 
+      - name: Debug - Display Docker image details
+        run: docker inspect ghcr.io/${{ github.repository_owner }}/linting
+
       - name: Run linters and capture output
         id: run_lint
         run: |
