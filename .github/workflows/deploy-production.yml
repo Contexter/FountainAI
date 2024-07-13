@@ -7,11 +7,13 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # Set up SSH agent to allow connecting to the VPS
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
+      # Deploy application to Production on the VPS
       - name: Deploy to VPS (Production)
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
@@ -20,8 +22,9 @@ jobs:
           docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
           docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
           docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8080:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-EOF
+          EOF
 
+      # Verify Nginx and SSL Configuration on the Production environment
       - name: Verify Nginx and SSL Configuration (Production)
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
@@ -39,4 +42,4 @@ EOF
             echo "Domain is not properly configured"
             exit 1
           fi
-EOF
+          EOF
