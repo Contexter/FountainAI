@@ -39,4 +39,4 @@ jobs:
 
       - name: Run linters and capture output
         run: |
-          find .github/workflows -name '*.yml' -or -name '*.yaml' | xargs yamllint -c /github/workspace/.yamllint
+          find .github/workflows -name '*.yml' -or -name '*.yaml' | xargs yamllint -c /.yamllint
