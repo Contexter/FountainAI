@@ -6,7 +6,11 @@ on:
       - main
 
 jobs:
+  verify-secrets:
+    uses: ./.github/workflows/verify-secrets.yml
+
   setup:
+    needs: verify-secrets
     uses: ./.github/workflows/setup.yml
     with:
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -23,7 +27,7 @@ jobs:
 
   deploy:
     needs: test
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/deploy-production.yml
     with:
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
