@@ -8,5 +8,6 @@ Packages
 /openAPI/serverSetup.yaml
 dev_ShellScripting/
 dev_Documentation/
+Deprecated/
 config.env
 
