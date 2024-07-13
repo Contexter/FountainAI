@@ -41,9 +41,6 @@ jobs:
         run: docker inspect ghcr.io/${{ github.repository_owner }}/linting
 
       - name: Run linters and capture output
-        id: run_lint
         run: |
           docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting | tee linter_output.txt
-          
-      - name: Debug - Display full linter output
-        run: cat linter_output.txt
+          cat linter_output.txt
