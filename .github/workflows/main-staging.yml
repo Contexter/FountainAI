@@ -3,18 +3,18 @@ name: Main Workflow for Staging
 on:
   push:
     branches:
-      - main
+      - staging
 
 jobs:
   setup:
     uses: ./.github/workflows/setup.yml
-
-  ufw-config:
-    needs: setup
-    uses: ./.github/workflows/ufw-config.yml
+    with:
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+      VPS_IP: ${{ secrets.VPS_IP }}
 
   build:
-    needs: ufw-config
+    needs: setup
     uses: ./.github/workflows/build.yml
 
   test:
@@ -23,4 +23,8 @@ jobs:
 
   deploy:
     needs: test
-    uses: ./.github/workflows/deploy-staging.yml
+    uses: ./.github/workflows/deploy.yml
+    with:
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+      VPS_IP: ${{ secrets.VPS_IP }}
