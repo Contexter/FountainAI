@@ -10,50 +10,20 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run Setup Workflow
-        uses: ./.github/workflows/setup.yml
+    uses: ./.github/workflows/setup.yml
 
   ufw-config:
-    runs-on: ubuntu-latest
     needs: setup
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run UFW Configuration Workflow
-        uses: ./.github/workflows/ufw-config.yml
+    uses: ./.github/workflows/ufw-config.yml
 
   build:
-    runs-on: ubuntu-latest
     needs: ufw-config
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run Build Workflow
-        uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build.yml
 
   test:
-    runs-on: ubuntu-latest
     needs: build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run Test Workflow
-        uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test.yml
 
   deploy:
-    runs-on: ubuntu-latest
     needs: test
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run Deploy Workflow
-        uses: ./.github/workflows/deploy-staging.yml
+    uses: ./.github/workflows/deploy-staging.yml
