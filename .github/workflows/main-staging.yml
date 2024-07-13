@@ -8,25 +8,20 @@ on:
 jobs:
   verify-secrets:
     uses: ./.github/workflows/verify-secrets.yml
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-      VPS_IP: ${{ secrets.VPS_IP }}
-      DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
-      REPO_OWNER: ${{ secrets.REPO_OWNER }}
-      APP_NAME: ${{ secrets.APP_NAME }}
-      DOMAIN: ${{ secrets.DOMAIN }}
-      STAGING_DOMAIN: ${{ secrets.STAGING_DOMAIN }}
-      G_TOKEN: ${{ secrets.G_TOKEN }}
 
   setup:
     needs: verify-secrets
-    uses: ./.github/workflows/setup.yml
-    with:
-      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-      VPS_IP: ${{ secrets.VPS_IP }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup VPS
+        uses: ./.github/workflows/setup.yml
+        with:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+          VPS_IP: ${{ secrets.VPS_IP }}
 
   build:
     needs: setup
@@ -38,8 +33,14 @@ jobs:
 
   deploy:
     needs: test
-    uses: ./.github/workflows/deploy-staging.yml
-    with:
-      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-      VPS_IP: ${{ secrets.VPS_IP }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Deploy to Staging
+        uses: ./.github/workflows/deploy-staging.yml
+        with:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+          VPS_IP: ${{ secrets.VPS_IP }}
