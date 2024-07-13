@@ -16,31 +16,20 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Debug - Show current directory
-        run: pwd
-
-      - name: Debug - List current directory contents
-        run: ls -la
-
-      - name: Debug - Show environment variables
-        run: printenv
-
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
 
+      - name: Pull linting Docker image
+        run: docker pull ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
+
       - name: Debug - Verify Docker login
         run: docker info
-
-      - name: Pull linting Docker image
-        run: docker pull ghcr.io/${{ github.repository_owner }}/linting
 
       - name: Debug - List Docker images
         run: docker images
 
       - name: Debug - Display Docker image details
-        run: docker inspect ghcr.io/${{ github.repository_owner }}/linting
+        run: docker inspect ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
 
       - name: Run linters and capture output
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting | tee linter_output.txt
-          cat linter_output.txt
+        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
