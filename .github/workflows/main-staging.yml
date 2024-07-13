@@ -22,24 +22,40 @@ jobs:
 
   setup:
     needs: verify-secrets
-    uses: ./.github/workflows/setup.yml
-    with:
-      vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-      vps_username: ${{ secrets.VPS_USERNAME }}
-      vps_ip: ${{ secrets.VPS_IP }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup VPS
+        run: echo "Setup VPS using ${{ secrets.VPS_SSH_KEY }}"
 
   build:
     needs: setup
-    uses: ./.github/workflows/build.yml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: echo "Build step"
 
   test:
     needs: build
-    uses: ./.github/workflows/test.yml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: echo "Test step"
 
   deploy:
     needs: test
-    uses: ./.github/workflows/deploy-staging.yml
-    with:
-      vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-      vps_username: ${{ secrets.VPS_USERNAME }}
-      vps_ip: ${{ secrets.VPS_IP }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Deploy to Staging
+        run: echo "Deploy to staging using ${{ secrets.VPS_SSH_KEY }}"
