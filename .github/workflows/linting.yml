@@ -16,11 +16,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Convert variables to lowercase
+        id: vars
+        run: |
+          echo "REPO_OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "REPO_NAME_LOWER=$(echo ${{ github.event.repository.name }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
 
       - name: Pull linting Docker image
-        run: docker pull ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
+        run: docker pull ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting
 
       - name: Debug - Verify Docker login
         run: docker info
@@ -29,7 +35,7 @@ jobs:
         run: docker images
 
       - name: Debug - Display Docker image details
-        run: docker inspect ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
+        run: docker inspect ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting
 
       - name: Run linters and capture output
-        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner | toLowerCase }}/linting
+        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting
