@@ -22,5 +22,8 @@ jobs:
       - name: Pull linting Docker image
         run: docker pull ghcr.io/${{ github.repository_owner }}/linting
 
+      - name: List files in linting directory
+        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting ls /linting
+
       - name: Run linters
         run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting
