@@ -1,0 +1,33 @@
+name: Main Workflow for Staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  linting:
+    uses: ./.github/workflows/linting.yml
+
+  setup:
+    needs: linting
+    uses: ./.github/workflows/setup.yml
+
+  ufw-config:
+    needs: setup
+    uses: ./.github/workflows/ufw-config.yml
+
+  build:
+    needs: ufw-config
+    uses: ./.github/workflows/build.yml
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    uses: ./.github/workflows/deploy-staging.yml
