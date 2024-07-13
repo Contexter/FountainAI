@@ -8,11 +8,11 @@ The first part of the guide begins with creating a new GitHub repository named `
 
 SSH keys for VPS access are created to establish secure communication between your local machine and the VPS, with the private key stored in the `config.env` file. The public key is added to your VPS, and the private key is stored as a GitHub secret. A runner registration token is generated to set up a self-hosted runner on GitHub Actions, and the runner is configured as a systemd service to ensure it runs consistently.
 
-Sensitive information such as tokens, keys, and passwords are securely stored in GitHub Secrets. A linting environment is then set up using Docker and yamllint to ensure proper formatting of YAML and other configuration files. The linting process is automated via GitHub Actions using a linting Docker image.
+Sensitive information such as tokens, keys, and passwords are securely stored in GitHub Secrets.
 
 ### Part 2: Creating and Handling the Vapor App
 
-In the second part, the guide details the creation of modular GitHub Actions workflow templates. Separate modular workflows for linting, setup, build, test, and deployment are created and integrated into main workflows for staging and production to ensure a streamlined CI/CD process.
+In the second part, the guide details the creation of modular GitHub Actions workflow templates. Separate modular workflows for setup, build, test, and deployment are created and integrated into main workflows for staging and production to ensure a streamlined CI/CD process.
 
 A script is created to interactively set up a new Vapor application using the Vapor toolbox. This ensures the Vapor application structure is properly created and organized, preparing the project for further development and deployment.
 
@@ -54,11 +54,10 @@ Following this guide sets up a robust environment for developing and deploying t
     - [Step 4: Add SSH Keys to Your VPS and GitHub](#step-4-add-ssh-keys-to-your-vps-and-github)
     - [Step 5: Generate a Runner Registration Token](#step-5-generate-a-runner-registration-token)
     - [Step 6: Manually Add Secrets to GitHub](#step-6-manually-add-secrets-to-github)
-    - [Step 7: Create Linting Environment](#step-7-create-linting-environment)
   - [Part 2: Creating and Handling the Vapor App](#part-2-creating-and-handling-the-vapor-app)
-    - [Step 8: Create Modular GitHub Actions Workflow Templates](#step-8-create-modular-github-actions-workflow-templates)
-    - [Step 9: Create Vapor Application Manually](#step-9-create-vapor-application-manually)
-    - [Step 10: Build and Push Docker Image to GitHub Container Registry](#step-10-build-and-push-docker-image-to-github-container-registry)
+    - [Step 7: Create Modular GitHub Actions Workflow Templates](#step-7-create-modular-github-actions-workflow-templates)
+    - [Step 8: Create Vapor Application Manually](#step-8-create-vapor-application-manually)
+    - [Step 9: Build and Push Docker Image to GitHub Container Registry](#step-9-build-and-push-docker-image-to-github-container-registry)
   - [Part 3: Deployment and Monitoring](#part-3-deployment-and-monitoring)
 - [How to Deploy](#how-to-deploy)
   - [Deploy to Staging](#deploy-to-staging)
@@ -100,20 +99,10 @@ The implementation phase involves creating the actual codebase for FountainAI us
 Before starting the setup, ensure you have the following:
 
 1. **GitHub Account**: You need a GitHub account to host your repositories and manage secrets.
-2. **GitHub Personal Access Token**: Required for accessing the GitHub API.
-3. **VPS (Virtual Private Server)**: To deploy your applications.
-4. **SSH Key Pair**: For secure communication between your local machine and the VPS.
-5. **Docker**: Installed on your local machine for containerization.
+2. **VPS (Virtual Private Server)**: To deploy your applications.
+3. **Docker**: Installed on your local machine for containerization.
 
    **Containerization** is a lightweight form of virtualization that allows you to run applications in isolated environments called containers. Containers include the application code along with all its dependencies, libraries, and configuration files, enabling the application to run consistently across different computing environments. In this setup, Docker is used to build the Vapor application locally, package it into a container, and push the container image to the GitHub Container Registry for deployment on the VPS.
-
-6. **curl and jq**: Installed on your local machine for making API calls and processing JSON.
-7. **YAML Linter**: Installed on your local machine to ensure error-free YAML configuration files.
-
-Install yamllint via Homebrew:
-```sh
-brew install yamllint
-```
 
 ## Step-by-Step Setup Guide
 
@@ -147,7 +136,7 @@ REPO_OWNER=Contexter
 REPO_NAME=fountainAI
 
 # GitHub personal access token (generated in Step 2)
-GITHUB_TOKEN=ghp_yourgithubtoken1234567890  # Placeholder, will update in Step 2
+G_TOKEN=your_generated_token
 
 # Private SSH key for accessing the VPS (will be generated in Step 3)
 VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
@@ -210,45 +199,60 @@ NYDUS_PORT=2224
 
 #### Step 2: Generate a GitHub Personal Access Token
 
-1. **Generate the Token**:
-   - Go to your GitHub account settings.
-   - Navigate to **Developer settings** -> **Personal access tokens** -> **Fine-grained tokens**.
-   - Click on **Generate new token**.
-   - Fill in the token description (e.g., "FountainAI Project Token").
-   - Set the expiration date as needed.
-   - Under **Repository access**, select **All repositories** (or **Only select repositories** if you want to limit access to specific repositories).
-   - In the **Permissions** section, select the following permissions:
-     - **Repository permissions**:
-       - Actions: Read and write
-       - Administration: Read and write
-       - Codespaces: Read and write
-       - Contents: Read and write
-       - Deployments: Read and write
-       - Environments: Read and write
-       - Issues: Read and write
-       - Metadata: Read and write
-       - Packages: Read and write
-       - Pages: Read and write
-       - Pull requests: Read and write
-       - Secrets: Read and write
-       - Variables: Read and write
-       - Webhooks: Read and write
-     - **Account permissions**:
-       - Codespaces user secrets: Read and write
-       - Gists: Read and write
-       - Git SSH keys: Read and write
-       - Email addresses: Read and write
-       - Followers: Read
-       - GPG keys: Read and write
-       - Private repository invitations: Read and write
-       - Profile: Read and write
-       - SSH signing keys: Read and write
-       - Starring: Read and write
-       - Watching: Read and write
-   - Click **Generate token** and copy the generated token. **Immediately add this token to the `config.env` file** under the `GITHUB_TOKEN` variable to keep track of it.
+1. **Navigate to GitHub Settings**:
+   - Go to [GitHub](https://github.com/) and log in to your account.
+   - Click on your profile picture in the top right corner and select `Settings`.
+
+2. **Access Developer Settings**:
+   - In the left sidebar, click on `Developer settings`.
+
+3. **Generate a Personal Access Token**:
+   - Click on `Personal access tokens`.
+   - Click on `Tokens (classic)`.
+   - Click on `Generate new token`.
+
+4. **Configure the Token**:
+   - Give your token a descriptive name, such as `FountainAI Project Token`.
+   - Set the expiration date as needed (e.g., 90 days).
+   - Select the scopes/permissions for the token. For a super powerful access token, select the following scopes (...essentially set read and write persissions whereever possible):
+
+     #### Repository Permissions
+     - `repo` (Full control of private repositories)
+     - `workflow` (Update GitHub Action workflows)
+     - `write:packages` (Upload packages to GitHub Package Registry)
+     - `read:packages` (Download packages from GitHub Package Registry)
+     - `admin:repo_hook` (Full control of repository hooks)
+     - `admin:org` (Read and write org and team membership, read and write org projects)
+
+     #### Account Permissions
+     - `read:user` (Read all user profile data)
+     - `user:email` (Read user email addresses)
+     - `write:discussion` (Manage discussions)
+     - `admin:org_hook` (Full control of organization webhooks)
+
+     #### GPG Key Permissions
+     - `admin:gpg_key` (Full control of user GPG keys)
+
+     #### SSH Key Permissions
+     - `admin:ssh_key` (Full control of user public SSH keys)
+
+     #### Personal Access Token Permissions
+     - `admin:public_key` (Full control of user public keys)
+     - `admin:org` (Full control of orgs and teams)
+
+     #### Other Permissions
+     - `delete_repo` (Delete repositories)
+     - `admin:enterprise` (Manage enterprise accounts)
+     - `admin:org_project` (Manage org projects)
+     - `admin:repo` (Manage repositories)
+     - `admin:repo_hook` (Manage repository webhooks)
+
+5. **Generate and Copy the Token**:
+   - Click on `Generate token`.
+   - Copy the generated token and store it **immedately & securely** in your `config.env` file.
 
 ```env
-GITHUB_TOKEN=your_generated_token
+G_TOKEN=your_generated_token
 ```
 
 #### Step 3: Create SSH Keys for VPS Access
@@ -394,120 +398,11 @@ For security reasons, sensitive information such as tokens, keys, and passwords 
 
 This ensures that your GitHub Actions workflows can access these sensitive values securely.
 
-#### Step 7: Create Linting Environment
-
-Create a linting environment to ensure your YAML files and other configuration files are properly formatted.
-
-1. **Create a Dockerfile for Linting**:
-   - In your project directory, create a folder named `linting`.
-   - Inside the `linting` folder, create a file named `Dockerfile`.
-
-**linting/Dockerfile**:
-```Dockerfile
-FROM python:3.9-slim
-
-RUN pip install yamllint
-
-WORKDIR /linting
-
-ENTRYPOINT ["yamllint", "."]
-```
-
-2. **Create yamllint Configuration File**:
-   - In the `linting` folder, create a `.yamllint` file to specify the linting rules.
-
-**linting/.yamllint**:
-```yaml
-extends: default
-
-rules:
-  line-length:
-    max: 120
-    level: warning
-  indentation:
-    indent-sequences: false
-  truthy:
-    allowed-values: ['true', 'false']
-    level: error
-```
-
-3. **Build and Push the Linting Docker Image**:
-   - Create a script named `build_and_push_linting_image.sh` in the root directory of your project.
-
-**build_and_push_linting_image.sh**:
-```bash
-#!/bin/bash
-
-# Load configuration from config.env
-source config.env
-
-# Navigate to the linting directory
-cd linting
-
-# Build the Docker image
-docker build -t ghcr.io/$REPO_OWNER/linting .
-
-# Log in to GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
-
-# Push the Docker image to GitHub Container Registry
-docker push ghcr.io/$REPO_OWNER/linting
-
-# Navigate back to the root directory
-cd ..
-```
-
-4. **Make the Script Executable**:
-   ```sh
-   chmod +x build_and_push_linting_image.sh
-   ```
-
-5. **Run the Script**:
-   ```sh
-   ./build_and_push_linting_image.sh
-   ```
-
 ### Part 2: Creating and Handling the Vapor App
 
-#### Step 8: Create Modular GitHub Actions Workflow Templates
+#### Step 7: Create Modular GitHub Actions Workflow Templates
 
-1. **Create Linting Workflow**:
-   - Create a linting workflow to validate your YAML files and configuration files.
-
-**.github/workflows/linting.yml**:
-```yaml
-name: Linting
-
-on:
-  push:
-    branches:
-      - '**'
-  pull_request:
-    branches:
-      - '**'
-
-jobs:
-  lint:
-    runs-on: self-hosted
-
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-      - name: Clone Repository
-        uses: actions/checkout@v2
-
-      - name: Run Linters
-        run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
-          docker pull ghcr.io/${{ secrets.REPO_OWNER }}/linting
-          docker run --rm -v $(pwd):/linting ghcr.io/${{ secrets.REPO_OWNER }}/linting
-EOF
-```
-
-2. **Create Setup Workflow**:
+1. **Create Setup Workflow**:
    - Create a setup workflow to prepare the VPS for deployment.
 
 **.github/workflows/setup.yml**:
@@ -541,7 +436,7 @@ jobs:
 EOF
 ```
 
-3. **Create UFW Configuration Workflow**:
+2. **Create UFW Configuration Workflow**:
    - Create a UFW configuration workflow to automate the firewall settings on the VPS.
 
 **.github/workflows/ufw-config.yml**:
@@ -579,7 +474,7 @@ jobs:
 EOF
 ```
 
-4. **Create Build Workflow**:
+3. **Create Build Workflow**:
    - Create a build workflow to build the Docker image for the Vapor app.
 
 **.github/workflows/build.yml**:
@@ -598,10 +493,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name:
-
- Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: Build and Push Docker Image
         run: |
@@ -610,7 +503,7 @@ jobs:
           docker push $IMAGE_NAME
 ```
 
-5. **Create Test Workflow**:
+4. **Create Test Workflow**:
    - Create a test workflow to run unit and integration tests.
 
 **.github/workflows/test.yml**:
@@ -630,7 +523,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: Run Unit Tests
         run: |
@@ -643,7 +536,7 @@ jobs:
           docker run $IMAGE_NAME swift test --filter IntegrationTests
 ```
 
-6. **Create Deployment Workflows**:
+5. **Create Deployment Workflows**:
    - Create deployment workflows for both staging and production environments.
 
 **.github/workflows/deploy-staging.yml**:
@@ -710,7 +603,9 @@ jobs:
 
       - name: Deploy to VPS (Production)
         run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          ssh ${{ secrets.VPS_USERNAME }}@
+
+${{ secrets.VPS_IP }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}
           docker pull ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
           docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]') || true
@@ -738,7 +633,7 @@ EOF
 EOF
 ```
 
-7. **Create Main Workflows**:
+6. **Create Main Workflows**:
    - Create main workflows to call the modular workflows for staging and production.
 
 **.github/workflows/main-staging.yml**:
@@ -754,11 +649,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: linting
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -791,11 +682,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: linting
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -815,7 +702,7 @@ jobs:
     uses: ./.github/workflows/deploy-production.yml
 ```
 
-#### Step 9: Create Vapor Application Manually
+### Step 8: Create Vapor Application Manually
 
 Create a script named `create_vapor_app.sh` in the root directory of your project. This script will create the Vapor application interactively using the Vapor toolbox.
 
@@ -850,12 +737,11 @@ chmod +x create_vapor_app.sh
 
 Run the script:
 
-
 ```sh
 ./create_vapor_app.sh
 ```
 
-#### Step 10: Build and Push Docker Image to GitHub Container Registry
+### Step 9: Build and Push Docker Image to GitHub Container Registry
 
 Create a script named `build_and_push_docker_image.sh` in the root directory of your project.
 
@@ -873,12 +759,10 @@ cd "$APP_NAME"
 docker build -t ghcr.io/$REPO_OWNER/$APP_NAME .
 
 # Log in to GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
+echo $G_TOKEN | docker login ghcr.io -u $REPO_OWNER --password-stdin
 
 # Push the Docker image to GitHub Container Registry
-docker push ghcr.io/$
-
-REPO_OWNER/$APP_NAME
+docker push ghcr.io/$REPO_OWNER/$APP_NAME
 
 # Navigate back to the root directory
 cd ..
@@ -958,11 +842,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: linting
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -995,11 +875,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: linting
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -1047,7 +923,9 @@ Implementing Test-Driven Development (TDD) alongside Continuous Integration/Cont
 
 ### Unit Tests
 
-**Unit Tests** are designed to test individual units of code in isolation. They help ensure that each function, method, or class behaves as expected. Unit tests are typically fast and should cover edge cases, invalid inputs, and typical use cases.
+**Unit Tests** are designed to test individual units of code in isolation. They help ensure that each function, method, or class behaves as expected. Unit tests
+
+ are typically fast and should cover edge cases, invalid inputs, and typical use cases.
 
 **Example**:
 For a function that adds two numbers, a unit test might look like this:
@@ -1108,155 +986,3 @@ The output of the compiler and other build steps can be accessed through the Git
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
-
-
-## Addendum 1: Generating a Super Powerful GitHub Personal Access Token
-
-### Steps to Generate the Token
-
-1. **Navigate to GitHub Settings**:
-   - Go to [GitHub](https://github.com/) and log in to your account.
-   - Click on your profile picture in the top right corner and select `Settings`.
-
-2. **Access Developer Settings**:
-   - In the left sidebar, click on `Developer settings`.
-
-3. **Generate a Personal Access Token**:
-   - Click on `Personal access tokens`.
-   - Click on `Tokens (classic)`.
-   - Click on `Generate new token`.
-
-4. **Configure the Token**:
-   - Give your token a descriptive name, such as `FountainAI Project Token`.
-   - Set the expiration date as needed (e.g., 90 days).
-   - Select the scopes/permissions for the token. For a super powerful access token, select the following scopes:
-
-     #### Repository Permissions
-     - `repo` (Full control of private repositories)
-     - `workflow` (Update GitHub Action workflows)
-     - `write:packages` (Upload packages to GitHub Package Registry)
-     - `read:packages` (Download packages from GitHub Package Registry)
-     - `admin:repo_hook` (Full control of repository hooks)
-     - `admin:org` (Read and write org and team membership, read and write org projects)
-
-     #### Account Permissions
-     - `read:user` (Read all user profile data)
-     - `user:email` (Read user email addresses)
-     - `write:discussion` (Manage discussions)
-     - `admin:org_hook` (Full control of organization webhooks)
-
-     #### GPG Key Permissions
-     - `admin:gpg_key` (Full control of user GPG keys)
-
-     #### SSH Key Permissions
-     - `admin:ssh_key` (Full control of user public SSH keys)
-
-     #### Personal Access Token Permissions
-     - `admin:public_key` (Full control of user public keys)
-     - `admin:org` (Full control of orgs and teams)
-
-     #### Other Permissions
-     - `delete_repo` (Delete repositories)
-     - `admin:enterprise` (Manage enterprise accounts)
-     - `admin:org_project` (Manage org projects)
-     - `admin:repo` (Manage repositories)
-     - `admin:repo_hook` (Manage repository webhooks)
-
-5. **Generate and Copy the Token**:
-   - Click on `Generate token`.
-   - Copy the generated token and store it securely. This token will be used in your `config.env` file.
-
-### Storing the Token in `config.env`
-
-Add the generated token to your `config.env` file as follows:
-
-```env
-G_TOKEN=your_generated_token
-```
-
-### Important Note
-
-Handle this token with care as it has extensive permissions and can make critical changes to your GitHub account and repositories. Do not share this token or expose it in public repositories.
-
-
-## Addendum 2: Script for Building and Pushing Linting Docker Image
-
-This addendum provides the detailed steps and script for building and pushing the linting Docker image to the GitHub Container Registry.
-
-### Script: `build_and_push_linting_image.sh`
-
-```bash
-#!/bin/bash
-
-# Load configuration from config.env
-source config.env
-
-# Verify the variable is set within the script
-if [ -z "$G_TOKEN" ]; then
-  echo "Error: G_TOKEN is not set."
-  exit 1
-fi
-
-# Convert repository owner and name to lowercase
-REPO_OWNER_LOWER=$(echo "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
-REPO_NAME_LOWER=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
-
-# Navigate to the linting directory
-if [ -d "linting" ]; then
-  cd linting
-else
-  echo "Error: linting directory does not exist."
-  exit 1
-fi
-
-# Check if Dockerfile exists
-if [ -f "Dockerfile" ]; then
-  echo "Dockerfile found. Proceeding with the build."
-else
-  echo "Error: Dockerfile not found in the linting directory."
-  exit 1
-fi
-
-# Build the Docker image
-docker build -t ghcr.io/$REPO_OWNER_LOWER/linting .
-
-# Log in to GitHub Container Registry non-interactively
-if echo "$G_TOKEN" | docker login ghcr.io -u "$REPO_OWNER_LOWER" --password-stdin; then
-  echo "Successfully logged in to GitHub Container Registry."
-else
-  echo "Error: Failed to log in to GitHub Container Registry."
-  exit 1
-fi
-
-# Push the Docker image to GitHub Container Registry
-if docker push ghcr.io/$REPO_OWNER_LOWER/linting; then
-  echo "Successfully pushed the Docker image to GitHub Container Registry."
-else
-  echo "Error: Failed to push the Docker image to GitHub Container Registry."
-  exit 1
-fi
-
-# Navigate back to the root directory
-cd ..
-```
-
-### Description
-
-This script performs the following actions:
-
-1. **Load Configuration**: It loads the configuration variables from the `config.env` file.
-2. **Verify Token**: It checks if the `G_TOKEN` variable is set. If not, it exits with an error message.
-3. **Lowercase Conversion**: Converts the `REPO_OWNER` and `REPO_NAME` to lowercase to comply with Docker naming conventions.
-4. **Navigate to Linting Directory**: Checks if the `linting` directory exists and navigates into it. If the directory does not exist, it exits with an error message.
-5. **Dockerfile Check**: Verifies if the `Dockerfile` exists in the `linting` directory. If not, it exits with an error message.
-6. **Build Docker Image**: Builds the Docker image with the tag `ghcr.io/$REPO_OWNER_LOWER/linting`.
-7. **Login to GitHub Container Registry**: Logs in to the GitHub Container Registry non-interactively using the provided token.
-8. **Push Docker Image**: Pushes the built Docker image to the GitHub Container Registry.
-9. **Navigate Back**: Returns to the root directory after the operations are completed.
-
-This script ensures that the linting Docker image is properly built and pushed to the GitHub Container Registry with error handling and verification steps to ensure successful execution.
-
-trigger a github action workflow
-again trigger
-another trigger
-
