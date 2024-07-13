@@ -38,4 +38,13 @@ jobs:
         run: docker inspect ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting
 
       - name: Run linters and capture output
-        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting yamllint -c /linting/.yamllint /linting/.github/workflows
+        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting yamllint -c /linting/.yamllint \
+          /linting/.github/workflows/build.yml \
+          /linting/.github/workflows/deploy-production.yml \
+          /linting/.github/workflows/deploy-staging.yml \
+          /linting/.github/workflows/linting.yml \
+          /linting/.github/workflows/main-production.yml \
+          /linting/.github/workflows/main-staging.yml \
+          /linting/.github/workflows/setup.yml \
+          /linting/.github/workflows/test.yml \
+          /linting/.github/workflows/ufw-config.yml
