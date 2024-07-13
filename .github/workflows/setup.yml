@@ -7,9 +7,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # Debugging step to print environment variables
-      - name: Print environment variables
-        run: env
+      # Debugging step to check if secret is accessible
+      - name: Check SSH key length
+        run: echo "SSH key length: ${#secrets.VPS_SSH_KEY}"
 
       # Set up SSH agent to allow connecting to the VPS
       - name: Set up SSH
