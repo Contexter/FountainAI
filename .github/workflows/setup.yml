@@ -9,7 +9,7 @@ jobs:
     steps:
       # Debug step to verify secrets
       - name: Verify SSH Key Secret
-        run: echo "${{ secrets.VPS_SSH_KEY }}"
+        run: echo "SSH Key: ${{ secrets.VPS_SSH_KEY }}"
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
 
