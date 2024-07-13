@@ -3,7 +3,7 @@ name: Main Workflow for Production
 on:
   push:
     branches:
-      - production
+      - main
     paths:
       - '**'
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup VPS
+      - name: Call setup workflow
         uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: UFW Configuration
+      - name: Call ufw-config workflow
         uses: ./.github/workflows/ufw-config.yml
 
   build:
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Build Docker Image
+      - name: Call build workflow
         uses: ./.github/workflows/build.yml
 
   test:
@@ -45,7 +45,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Test
+      - name: Call test workflow
         uses: ./.github/workflows/test.yml
 
   deploy:
@@ -55,5 +55,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Deploy to Production
+      - name: Call deploy-production workflow
         uses: ./.github/workflows/deploy-production.yml
