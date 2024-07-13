@@ -1108,3 +1108,74 @@ The output of the compiler and other build steps can be accessed through the Git
 ### Conclusion
 
 Following this guide will set up a robust environment for developing and deploying the FountainAI project using Vapor. The combination of Docker, Nginx, PostgreSQL, Redis, RedisAI, and GitHub Actions ensures a seamless workflow from development to production. Implementing the OpenAPI specification in a TDD fashion will lead to a reliable and maintainable codebase, leveraging the benefits of automated testing and continuous deployment. Managing the VPS UFW settings enhances security, ensuring only necessary ports are open, including the NYDUS service port, for a secure and well-functioning application environment.
+
+
+## Addendum 1: Generating a Super Powerful GitHub Personal Access Token
+
+### Steps to Generate the Token
+
+1. **Navigate to GitHub Settings**:
+   - Go to [GitHub](https://github.com/) and log in to your account.
+   - Click on your profile picture in the top right corner and select `Settings`.
+
+2. **Access Developer Settings**:
+   - In the left sidebar, click on `Developer settings`.
+
+3. **Generate a Personal Access Token**:
+   - Click on `Personal access tokens`.
+   - Click on `Tokens (classic)`.
+   - Click on `Generate new token`.
+
+4. **Configure the Token**:
+   - Give your token a descriptive name, such as `FountainAI Project Token`.
+   - Set the expiration date as needed (e.g., 90 days).
+   - Select the scopes/permissions for the token. For a super powerful access token, select the following scopes:
+
+     #### Repository Permissions
+     - `repo` (Full control of private repositories)
+     - `workflow` (Update GitHub Action workflows)
+     - `write:packages` (Upload packages to GitHub Package Registry)
+     - `read:packages` (Download packages from GitHub Package Registry)
+     - `admin:repo_hook` (Full control of repository hooks)
+     - `admin:org` (Read and write org and team membership, read and write org projects)
+
+     #### Account Permissions
+     - `read:user` (Read all user profile data)
+     - `user:email` (Read user email addresses)
+     - `write:discussion` (Manage discussions)
+     - `admin:org_hook` (Full control of organization webhooks)
+
+     #### GPG Key Permissions
+     - `admin:gpg_key` (Full control of user GPG keys)
+
+     #### SSH Key Permissions
+     - `admin:ssh_key` (Full control of user public SSH keys)
+
+     #### Personal Access Token Permissions
+     - `admin:public_key` (Full control of user public keys)
+     - `admin:org` (Full control of orgs and teams)
+
+     #### Other Permissions
+     - `delete_repo` (Delete repositories)
+     - `admin:enterprise` (Manage enterprise accounts)
+     - `admin:org_project` (Manage org projects)
+     - `admin:repo` (Manage repositories)
+     - `admin:repo_hook` (Manage repository webhooks)
+
+5. **Generate and Copy the Token**:
+   - Click on `Generate token`.
+   - Copy the generated token and store it securely. This token will be used in your `config.env` file.
+
+### Storing the Token in `config.env`
+
+Add the generated token to your `config.env` file as follows:
+
+```env
+G_TOKEN=your_generated_token
+```
+
+### Important Note
+
+Handle this token with care as it has extensive permissions and can make critical changes to your GitHub account and repositories. Do not share this token or expose it in public repositories.
+
+
