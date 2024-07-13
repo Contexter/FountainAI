@@ -39,4 +39,4 @@ jobs:
 
       - name: Run linters and capture output
         run: |
-          docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ env.REPO_OWNER_LOWER }}/linting sh -c "find /linting/.github/workflows -name '*.yml' -or -name '*.yaml' | xargs yamllint -c /linting/linting/.yamllint"
+          find .github/workflows -name '*.yml' -or -name '*.yaml' | xargs yamllint -c /github/workspace/.yamllint
