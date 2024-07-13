@@ -8,6 +8,17 @@ on:
 jobs:
   verify-secrets:
     uses: ./.github/workflows/verify-secrets.yml
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+      VPS_IP: ${{ secrets.VPS_IP }}
+      DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+      REPO_OWNER: ${{ secrets.REPO_OWNER }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      DOMAIN: ${{ secrets.DOMAIN }}
+      STAGING_DOMAIN: ${{ secrets.STAGING_DOMAIN }}
+      G_TOKEN: ${{ secrets.G_TOKEN }}
 
   setup:
     needs: verify-secrets
