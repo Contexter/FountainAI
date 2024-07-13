@@ -20,7 +20,7 @@ jobs:
           docker stop $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
           docker rm $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging || true
           docker run -d --env-file ${{ secrets.DEPLOY_DIR }}/.env -p 8081:8080 --name $(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')-staging ghcr.io/${{ secrets.REPO_OWNER }}/$(echo ${{ secrets.APP_NAME }} | tr '[:upper:]' '[:lower:]')
-EOF
+          EOF
 
       - name: Verify Nginx and SSL Configuration (Staging)
         run: |
@@ -39,4 +39,4 @@ EOF
             echo "Domain is not properly configured"
             exit 1
           fi
-EOF
+          EOF
