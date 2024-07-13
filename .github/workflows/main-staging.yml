@@ -10,13 +10,17 @@ jobs:
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
+    needs: setup
     uses: ./.github/workflows/ufw-config.yml
 
   build:
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
+    needs: build
     uses: ./.github/workflows/test.yml
 
   deploy:
+    needs: test
     uses: ./.github/workflows/deploy-staging.yml

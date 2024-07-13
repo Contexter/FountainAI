@@ -7,17 +7,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # Debugging step to check if secret is accessible
-      - name: Check SSH key length
-        run: echo "SSH key length: ${#secrets.VPS_SSH_KEY}"
-
-      # Set up SSH agent to allow connecting to the VPS
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      # Install Docker and Dependencies on the VPS
       - name: Install Docker and Dependencies
         run: |
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
