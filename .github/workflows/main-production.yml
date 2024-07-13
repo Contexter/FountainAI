@@ -11,24 +11,19 @@ on:
 jobs:
   setup:
     uses: ./.github/workflows/setup.yml
-    secrets: inherit
 
   ufw-config:
     needs: setup
     uses: ./.github/workflows/ufw-config.yml
-    secrets: inherit
 
   build:
     needs: ufw-config
     uses: ./.github/workflows/build.yml
-    secrets: inherit
 
   test:
     needs: build
     uses: ./.github/workflows/test.yml
-    secrets: inherit
 
   deploy:
     needs: test
     uses: ./.github/workflows/deploy-production.yml
-    secrets: inherit
