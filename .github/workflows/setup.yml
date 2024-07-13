@@ -4,11 +4,14 @@ on: [workflow_call]
 
 jobs:
   setup-vps:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      # Debug step to verify secrets
+      - name: Verify SSH Key Secret
+        run: echo "${{ secrets.VPS_SSH_KEY }}"
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
 
       # Set up SSH agent to allow connecting to the VPS
       - name: Set up SSH
@@ -19,7 +22,7 @@ jobs:
       # Install Docker and Dependencies on the VPS
       - name: Install Docker and Dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo apt update
           sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
