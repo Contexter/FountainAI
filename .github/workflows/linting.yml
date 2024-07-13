@@ -16,27 +16,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Debug - Show current directory
+        run: pwd
+
+      - name: Debug - List current directory contents
+        run: ls -la
+
+      - name: Debug - Show environment variables
+        run: printenv
+
       - name: Log in to GitHub Container Registry
-        run: |
-          echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
-          echo "Login to GitHub Container Registry completed."
+        run: echo "${{ secrets.G_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+
+      - name: Debug - Verify Docker login
+        run: docker info
 
       - name: Pull linting Docker image
-        run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/linting
-          echo "Docker image pull completed."
+        run: docker pull ghcr.io/${{ github.repository_owner }}/linting
 
-      - name: List files in workspace
-        run: |
-          ls -la ${{ github.workspace }}
-          echo "Listing files in workspace completed."
-
-      - name: List files in linting directory
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting ls -la /linting
-          echo "Listing files in linting directory completed."
+      - name: Debug - List Docker images
+        run: docker images
 
       - name: Run linters
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting yamllint /linting
-          echo "Linting process completed."
+        run: docker run --rm -v ${{ github.workspace }}:/linting ghcr.io/${{ github.repository_owner }}/linting
