@@ -1,12 +1,15 @@
-name: UFW Configuration
+name: Configure UFW
 
 on: [workflow_call]
 
 jobs:
   configure-ufw:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       # Set up SSH agent to allow connecting to the VPS
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -16,7 +19,7 @@ jobs:
       # Configure UFW on the VPS
       - name: Configure UFW
         run: |
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} << 'EOF'
           sudo ufw allow 22/tcp   # Ensure SSH remains allowed
           sudo ufw allow 80/tcp   # Allow HTTP
           sudo ufw allow 443/tcp  # Allow HTTPS
