@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup VPS
-        run: echo "Setup VPS"
+        run: echo "Setup VPS using ${{ secrets.VPS_SSH_KEY }}"
 
   build:
     needs: setup
@@ -58,4 +58,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Deploy to Production
-        run: echo "Deploy to production"
+        run: echo "Deploy to production using ${{ secrets.VPS_SSH_KEY }}"

@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup VPS
-        run: echo "Setup VPS"
+        run: echo "Setup VPS using ${{ secrets.VPS_SSH_KEY }}"
 
   build:
     needs: setup
@@ -58,65 +58,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Deploy to Staging
-        run: echo "Deploy to staging"
-name: Main Workflow for Staging
-
-on:
-  push:
-    branches:
-      - staging
-
-jobs:
-  verify-secrets:
-    uses: ./.github/workflows/verify-secrets.yml
-    with:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
-      vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-      vps_username: ${{ secrets.VPS_USERNAME }}
-      vps_ip: ${{ secrets.VPS_IP }}
-      deploy_dir: ${{ secrets.DEPLOY_DIR }}
-      repo_owner: ${{ secrets.REPO_OWNER }}
-      app_name: ${{ secrets.APP_NAME }}
-      domain: ${{ secrets.DOMAIN }}
-      staging_domain: ${{ secrets.STAGING_DOMAIN }}
-      g_token: ${{ secrets.G_TOKEN }}
-
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup VPS
-        run: echo "Setup VPS"
-
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Build
-        run: echo "Build step"
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Test
-        run: echo "Test step"
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Deploy to Staging
-        run: echo "Deploy to staging"
+        run: echo "Deploy to staging using ${{ secrets.VPS_SSH_KEY }}"
