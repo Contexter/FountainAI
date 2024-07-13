@@ -29,22 +29,17 @@ else
   exit 1
 fi
 
-# Build the Docker image
-docker build -t ghcr.io/$REPO_OWNER_LOWER/linting .
+# Set up Docker buildx
+docker buildx create --use
+
+# Build the Docker image for multiple platforms
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/$REPO_OWNER_LOWER/linting --push .
 
 # Log in to GitHub Container Registry non-interactively
 if echo "$G_TOKEN" | docker login ghcr.io -u "$REPO_OWNER_LOWER" --password-stdin; then
   echo "Successfully logged in to GitHub Container Registry."
 else
   echo "Error: Failed to log in to GitHub Container Registry."
-  exit 1
-fi
-
-# Push the Docker image to GitHub Container Registry
-if docker push ghcr.io/$REPO_OWNER_LOWER/linting; then
-  echo "Successfully pushed the Docker image to GitHub Container Registry."
-else
-  echo "Error: Failed to push the Docker image to GitHub Container Registry."
   exit 1
 fi
 
