@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Call setup workflow
+      - name: Run Setup Workflow
         uses: ./.github/workflows/setup.yml
 
   ufw-config:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Call ufw-config workflow
+      - name: Run UFW Configuration Workflow
         uses: ./.github/workflows/ufw-config.yml
 
   build:
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Call build workflow
+      - name: Run Build Workflow
         uses: ./.github/workflows/build.yml
 
   test:
@@ -45,7 +45,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Call test workflow
+      - name: Run Test Workflow
         uses: ./.github/workflows/test.yml
 
   deploy:
@@ -55,5 +55,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Call deploy-staging workflow
+      - name: Run Deploy Workflow
         uses: ./.github/workflows/deploy-staging.yml
