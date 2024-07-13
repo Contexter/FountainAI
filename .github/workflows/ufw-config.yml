@@ -28,4 +28,4 @@ jobs:
           sudo ufw allow 2224/tcp # Allow NYDUS Service
           sudo ufw default deny incoming  # Deny all other incoming connections
           sudo ufw enable
-EOF
+          EOF
