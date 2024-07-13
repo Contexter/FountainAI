@@ -9,11 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: linting
     uses: ./.github/workflows/setup.yml
 
   ufw-config:

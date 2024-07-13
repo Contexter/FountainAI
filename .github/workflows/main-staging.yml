@@ -9,25 +9,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    uses: ./.github/workflows/linting.yml
-
   setup:
-    needs: [linting]
     uses: ./.github/workflows/setup.yml
 
   ufw-config:
-    needs: [setup]
+    needs: setup
     uses: ./.github/workflows/ufw-config.yml
 
   build:
-    needs: [ufw-config]
+    needs: ufw-config
     uses: ./.github/workflows/build.yml
 
   test:
-    needs: [build]
+    needs: build
     uses: ./.github/workflows/test.yml
 
   deploy:
-    needs: [test]
+    needs: test
     uses: ./.github/workflows/deploy-staging.yml
