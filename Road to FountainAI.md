@@ -1,8 +1,8 @@
-# Roadmap to the Vapor of FountainAI
+# Road to FountainAI
 
 ## Introduction
 
-Welcome to "FountainAI's Vapor," the story guide of setting up and deploying FountainAI, an AI-driven model designed to analyze and process theatrical and screenplay scripts. Leveraging the power of Vapor, Docker, and modern CI/CD practices, this guide will take you through every step, from initial setup to deploying a Dockerized Vapor application managed by a CI/CD pipeline.
+Welcome to "FountainAI's Vapor," the road story of setting up and deploying FountainAI, an AI-driven model designed to analyze and process theatrical and screenplay scripts. Leveraging the power of Vapor, Docker, and modern CI/CD practices, this guide will take you through every step, from initial setup to deploying a Dockerized Vapor application managed by a CI/CD pipeline.
 
 ### FountainAI Network Graph
 
