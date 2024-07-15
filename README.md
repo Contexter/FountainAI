@@ -214,9 +214,7 @@ G_TOKEN=your_generated_token
 
 1. **Open your terminal**.
 2. **Generate an SSH Key Pair**:
-   - Run the following command, replacing `your
-
-_email@example.com` with your email:
+   - Run the following command, replacing `your_email@example.com` with your email:
      ```sh
      ssh-keygen -t ed25519 -C "your_email@example.com"
      ```
@@ -454,9 +452,7 @@ Branches in GitHub are an essential feature for managing and developing differen
 Using branches helps you:
 1. **Organize Work**: Separate different tasks or features into their respective branches.
 2. **Enable Collaboration**: Multiple team members can work on different branches without interfering with each other’s work.
-3. **
-
-Ensure Stability**: Keep the main branch stable and deployable by merging changes only after they have been tested and reviewed.
+3. **Ensure Stability**: Keep the main branch stable and deployable by merging changes only after they have been tested and reviewed.
 
 #### Project-Specific Branching Strategy
 
