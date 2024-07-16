@@ -1,0 +1,5 @@
+name: 'Build Project'
+description: 'Action to build the project'
+runs:
+  using: 'node20'
+  main: 'index.js'

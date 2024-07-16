@@ -1,0 +1,10 @@
+name: 'Setup Environment'
+description: 'Action to setup the environment'
+inputs:
+  vps_ssh_key:
+    description: 'VPS SSH Key'
+    required: true
+    type: string
+runs:
+  using: 'node20'
+  main: 'index.js'

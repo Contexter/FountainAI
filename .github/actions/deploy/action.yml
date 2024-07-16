@@ -1,0 +1,5 @@
+name: 'Deploy Project'
+description: 'Action to deploy the project'
+runs:
+  using: 'node20'
+  main: 'index.js'

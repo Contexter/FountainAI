@@ -1,0 +1,5 @@
+name: 'Test Project'
+description: 'Action to test the project'
+runs:
+  using: 'node20'
+  main: 'index.js'
