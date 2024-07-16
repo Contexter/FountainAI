@@ -1,19 +1,23 @@
-# /episodes/episode4.md
-
-## Episode 4: Test-Driven Development for Core Features
+### Episode 4: Test-Driven Development for Core Features
 
 ### Table of Contents
 1. [Introduction](#introduction)
 2. [Reviewing the OpenAPI Specification](#reviewing-the-openapi-specification)
-3. [Setting Up the Project Structure](#setting-up-the-project-structure)
-4. [Writing Tests Based on OpenAPI](#writing-tests-based-on-openapi)
-5. [Running Tests and Seeing Them Fail](#running-tests-and-seeing-them-fail)
-6. [Developing Core API Endpoints](#developing-core-api-endpoints)
-7. [Connecting to the PostgreSQL Database](#connecting-to-the-postgresql-database)
-8. [Implementing Basic CRUD Operations](#implementing-basic-crud-operations)
-9. [Running Tests and Seeing Them Pass](#running-tests-and-seeing-them-pass)
-10. [Integrating with CI/CD Pipeline](#integrating-with-cicd-pipeline)
-11. [Conclusion](#conclusion)
+3. **A: Changes in the Vapor Application**
+   1. [Setting Up the Project Structure](#setting-up-the-project-structure)
+   2. [Writing Tests Based on OpenAPI](#writing-tests-based-on-openapi)
+   3. [Running Tests and Seeing Them Fail](#running-tests-and-seeing-them-fail)
+   4. [Developing Core API Endpoints](#developing-core-api-endpoints)
+   5. [Connecting to the PostgreSQL Database](#connecting-to-the-postgresql-database)
+   6. [Implementing Basic CRUD Operations](#implementing-basic-crud-operations)
+   7. [Running Tests and Seeing Them Pass](#running-tests-and-seeing-them-pass)
+4. **B: Updates to the CI/CD Pipeline**
+   1. [Environment Setup Action](#environment-setup-action)
+   2. [Build Action](#build-action)
+   3. [Deploy Action](#deploy-action)
+   4. [Development Workflow](#development-workflow)
+5. [Testing the API with Curl Commands](#testing-the-api-with-curl-commands)
+6. [Conclusion](#conclusion)
 
 ---
 
@@ -86,9 +90,11 @@ These paths guide our implementation steps, ensuring we meet the defined API req
 
 ---
 
-### Setting Up the Project Structure
+### A: Changes in the Vapor Application
 
-To ensure our project is well-organized and maintainable, we will set up a clear project structure. This involves creating necessary directories and files for controllers, models, and tests.
+#### Setting Up the Project Structure
+
+To ensure our project is well-organized and maintainable, we will set up a clear project structure. This involves creating necessary directories and files for controllers, models, migrations, and tests.
 
 #### Create a Script to Set Up the Project Structure
 
@@ -98,14 +104,20 @@ Create a file named `setup_project_structure.sh` with the following content:
 #!/bin/bash
 
 # Ensure we're in the root directory of the existing repository
-cd path/to/your/fountainAI
+cd /path/to/your/fountainAI
 
 # Create necessary directories for controllers, models, and tests
 mkdir -p Sources/App/Controllers
 mkdir -p Sources/App/Models
+mkdir -p Sources/App/Migrations
 mkdir -p Tests/AppTests
 
 echo "Project structure setup complete."
+
+# Commit the changes to the repository
+git add Sources/App Tests/AppTests
+git commit -m "Set up initial project structure"
+git push origin development
 ```
 
 Make this script executable and run it:
@@ -117,11 +129,11 @@ chmod +x setup_project_structure.sh
 
 **Expected Outcome:**
 
-You should now have a well-organized project structure with separate directories for controllers, models, and tests. This will help keep your codebase clean and maintainable.
+You should now have a well-organized project structure with separate directories for controllers, models, migrations, and tests. This will help keep your codebase clean and maintainable.
 
 ---
 
-### Writing Tests Based on OpenAPI
+#### Writing Tests Based on OpenAPI
 
 Following the TDD approach, we will start by writing tests for the core API endpoints we want to implement, guided by the OpenAPI specification.
 
@@ -187,6 +199,11 @@ final class ScriptTests: XCTestCase {
 EOF
 
 echo "Tests created."
+
+# Commit the changes to the repository
+git add ScriptTests.swift
+git commit -m "Add unit tests for script API endpoints"
+git push origin development
 ```
 
 Make this script executable and run it:
@@ -202,7 +219,7 @@ You now have unit tests for creating, retrieving, and deleting scripts, based on
 
 ---
 
-### Running Tests and Seeing Them Fail
+#### Running Tests and Seeing Them Fail
 
 Next, we will run the tests to see them fail, as we haven't implemented the functionality yet.
 
@@ -216,7 +233,7 @@ The tests should fail, indicating that the functionality is not yet implemented.
 
 ---
 
-### Developing Core API Endpoints
+#### Developing Core API Endpoints
 
 We will now develop the core API endpoints to make the tests pass.
 
@@ -249,7 +266,8 @@ struct ScriptController: RouteCollection {
     }
 
     func create(req: Request) throws -> EventLoopFuture<Script> {
-        let script = try req.content.decode(Script.self)
+        let scriptCreateRequest = try req.content.decode(ScriptCreateRequest.self)
+        let script = Script(title: scriptCreateRequest.title, description: scriptCreateRequest.description, author: scriptCreateRequest.author)
         return script.save(on: req.db).map { script }
     }
 
@@ -264,6 +282,13 @@ struct ScriptController: RouteCollection {
 EOF
 
 echo "API endpoints created."
+
+# Commit the changes to the repository
+git add
+
+ ScriptController.swift
+git commit -m "Implement API endpoints for scripts"
+git push origin development
 ```
 
 Make this script executable and run it:
@@ -279,7 +304,7 @@ The core API endpoints for creating, retrieving, and deleting scripts are now im
 
 ---
 
-### Connecting to the PostgreSQL Database
+#### Connecting to the PostgreSQL Database
 
 We need to configure our Vapor application to connect to the PostgreSQL database.
 
@@ -291,12 +316,10 @@ Create a file named `setup_database.sh` with the following content:
 #!/bin/bash
 
 # Navigate to the root directory
-cd path/to/your/fountainAI
+cd /path/to/your/fountainAI
 
 # Update the configure.swift file to set up database connection
-cat << '
-
-EOF' > Sources/App/configure.swift
+cat << 'EOF' > Sources/App/configure.swift
 import Vapor
 import Fluent
 import FluentPostgresDriver
@@ -339,6 +362,11 @@ struct CreateScript: Migration {
 EOF
 
 echo "Database configuration and migration setup complete."
+
+# Commit the changes to the repository
+git add Sources/App/configure.swift Sources/App/Migrations/CreateScript.swift
+git commit -m "Set up PostgreSQL database configuration and migration"
+git push origin development
 ```
 
 Make this script executable and run it:
@@ -354,7 +382,7 @@ Your Vapor application is now configured to connect to a PostgreSQL database, an
 
 ---
 
-### Implementing Basic CRUD Operations
+#### Implementing Basic CRUD Operations
 
 We will now implement the model for the Script entity and complete the CRUD operations.
 
@@ -397,9 +425,20 @@ final class Script: Model, Content {
         self.author = author
     }
 }
+
+struct ScriptCreateRequest: Content {
+    let title: String
+    let description: String
+    let author: String
+}
 EOF
 
 echo "Script model created."
+
+# Commit the changes to the repository
+git add Script.swift
+git commit -m "Create Script model"
+git push origin development
 ```
 
 Make this script executable and run it:
@@ -415,7 +454,7 @@ The Script model is now created, representing the structure of the screenplay sc
 
 ---
 
-### Running Tests and Seeing Them Pass
+#### Running Tests and Seeing Them Pass
 
 With the implementation complete, we will now run the tests again to see them pass.
 
@@ -429,13 +468,11 @@ All tests should pass, indicating that the functionality is correctly implemente
 
 ---
 
-### Integrating with CI/CD Pipeline
+### B: Updates to the CI/CD Pipeline
 
-We need to ensure that our CI/CD pipeline can build, test, and deploy the updated functionality.
+#### Environment Setup Action
 
-#### Update the Environment Setup Action
-
-We will update the environment setup action to include the setup of the database.
+The environment setup action is updated to include the installation of PostgreSQL along with Docker and Docker Compose. This ensures that the database is set up correctly in the environment.
 
 Create a file named `update_setup_environment_action.sh` with the following content:
 
@@ -446,19 +483,15 @@ Create a file named `update_setup_environment_action.sh` with the following cont
 cat << 'EOF' > .github/actions/setup/index.js
 const core = require('@actions/core');
 const exec = require('@actions/exec');
-const fs = require('fs');
-const path = require('path');
 
 async function run() {
     try {
         const vpsUsername = core.getInput('vps_username');
         const vpsIp = core.getInput('vps_ip');
-        const vpsSshKey = core.getInput('vps_ssh_key');
-
-        // Write the SSH key to a file
-        const sshKeyPath = path.join(process.env.HOME, '.ssh', 'id_ed25519');
-        fs.writeFileSync(sshKeyPath, vpsSshKey, { mode: 0o600 });
-
+        
+        // Add SSH key to the agent
+        await exec.exec('ssh-agent bash -c "ssh-add <(echo "$SSH_KEY")"');
+        
         // Commands to install Docker and Docker Compose, and setup PostgreSQL
         const installDockerCmd = `
             sudo apt-get update &&
@@ -485,7 +518,7 @@ async function run() {
         `;
 
         // SSH command to execute the installation on the VPS
-        await exec.exec(`ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
+        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
         
         core.info('Docker, Docker Compose, and PostgreSQL installed successfully on the VPS');
     } catch (error) {
@@ -511,7 +544,9 @@ chmod +x update_setup_environment_action.sh
 ./update_setup_environment_action.sh
 ```
 
-#### Update the Build Action
+#### Build Action
+
+This action now builds the Docker image for the Vapor application and pushes it to GitHub Container Registry.
 
 Create a file named `update_build_action.sh` with the following content:
 
@@ -558,7 +593,9 @@ chmod +x update_build_action.sh
 ./update_build_action.sh
 ```
 
-#### Update the Deploy Action
+#### Deploy Action
+
+This action pulls the latest Docker images and runs the Docker Compose stack on the VPS. We need to add a step to run the database migrations after deploying the Docker Compose stack.
 
 Create a file named `update_deploy_action.sh` with the following content:
 
@@ -573,15 +610,24 @@ const exec = require('@actions/exec');
 async function run() {
     try {
         const environment = core.getInput('environment');
-        const vpsUsername = core.getInput('vps_username');
+        const vpsUsername = core.getInput('
+
+vps_username');
         const vpsIp = core.getInput('vps_ip');
         const deployDir = core.getInput('deploy_dir');
+        
+        // Add SSH key to the agent
+        await exec.exec('ssh-agent bash -c "ssh-add <(echo "$SSH_KEY")"');
 
         // SSH into VPS and pull the latest Docker images, then run the Docker Compose stack
-        await exec.exec(`ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
+        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
             + `'cd ${deployDir} && docker-compose pull && docker-compose up -d --remove-orphans'`);
+
+        // Run database migrations
+        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
+            + `'cd ${deployDir} && docker-compose exec vapor ./Run migrate --env production'`);
         
-        core.info(`Deployed to ${environment} environment successfully`);
+        core.info(`Deployed to ${environment} environment successfully and migrations run`);
     } catch (error) {
         core.setFailed(`Action failed with error ${error}`);
     }
@@ -592,7 +638,7 @@ EOF
 
 # Commit the deploy action changes
 git add .github/actions/deploy/index.js
-git commit -m "Updated deploy action to deploy Docker Compose stack"
+git commit -m "Updated deploy action to deploy Docker Compose stack and run migrations"
 git push origin development
 
 echo "Deploy action updated and pushed to development branch."
@@ -605,7 +651,9 @@ chmod +x update_deploy_action.sh
 ./update_deploy_action.sh
 ```
 
-#### Update Development Workflow
+#### Development Workflow
+
+This workflow now includes steps for setting up the environment, building the project, and deploying the project.
 
 Create a file named `update_development_workflow.sh` with the following content:
 
@@ -682,7 +730,7 @@ EOF
 
 # Commit the development workflow changes
 git add .github/workflows/development.yml
-git commit -m "Updated development workflow to include Docker build, push, and deployment steps"
+git commit -m "Updated development workflow to include Docker build, push, deployment, and migration steps"
 git push origin development
 
 echo "Development workflow updated and pushed to development branch."
@@ -695,6 +743,66 @@ chmod +x update_development_workflow.sh
 ./update_development_workflow.sh
 ```
 
+### Running the Pipeline
+
+To run the pipeline and stage the Vapor app, push the changes to the `development` branch. This will trigger the development workflow, which includes setting up the environment, building the project, deploying the project, and running the database migrations.
+
+```sh
+git push origin development
+```
+
+Monitor the GitHub Actions page for the repository to ensure that all steps in the workflow complete successfully.
+
+---
+
+#### Testing the API with Curl Commands
+
+After successfully running the pipeline and deploying the app to the staging domain, we can use curl commands to test the API endpoints.
+
+Create a file named `test_api_with_curl.sh` with the following content:
+
+```sh
+#!/bin/bash
+
+# Source environment variables
+source config.env
+
+# Base URL of the API
+BASE_URL="${STAGING_DOMAIN}"
+
+# Test creating a script
+echo "Creating a script..."
+curl -X POST "$BASE_URL/scripts" -H "Content-Type: application/json" -d '{
+    "title": "Test Script",
+    "description": "A test script",
+    "author": "Author"
+}'
+echo
+
+# Test retrieving all scripts
+echo "Retrieving all scripts..."
+curl -X GET "$BASE_URL/scripts"
+echo
+
+# Test deleting a script
+echo "Retrieving the first script to delete..."
+SCRIPT_ID=$(curl -X GET "$BASE_URL/scripts" | jq -r '.[0].id')
+echo "Deleting script with ID $SCRIPT_ID..."
+curl -X DELETE "$BASE_URL/scripts/$SCRIPT_ID"
+echo
+```
+
+Make this script executable and run it:
+
+```sh
+chmod +x test_api_with_curl.sh
+./test_api_with_curl.sh
+```
+
+**Expected Outcome:**
+
+The curl commands should demonstrate that the API endpoints for creating, retrieving, and deleting scripts are working as expected.
+
 ### Conclusion
 
 In this episode, we extended the functionality of the FountainAI application by following the Test-Driven Development (TDD) approach. We started with the OpenAPI specification as our initial "test" or blueprint, wrote tests for our desired functionality, ran them to see them fail, then implemented the functionality to make the tests pass. We developed core API endpoints, connected to the PostgreSQL database, and implemented basic CRUD operations.
@@ -702,19 +810,3 @@ In this episode, we extended the functionality of the FountainAI application by 
 By following these steps, we ensured that our implementation adheres to the OpenAPI specification and that our tests validate the functionality. Additionally, we integrated these tests into our CI/CD pipeline, ensuring a reliable and automated deployment process.
 
 Stay tuned for the next episodes, where we will continue to build upon this foundation, implementing more complex features and further refining our development process.
-
----
-
-**Next Episode Suggestion:**
-### Episode 5: Enhancing the Vapor Application with Authentication and Authorization
-
-In the next episode, we will implement authentication and authorization for the FountainAI application. We will ensure that only authenticated users can access certain endpoints and that users have appropriate permissions for their actions. This will involve integrating JWT (JSON Web Tokens) for secure authentication and setting up role-based access control (RBAC).
-
----
-
-**Expected Outcome:**
-
-By the end of Episode 5, you will have a secure API with authentication and authorization mechanisms in place, ensuring that only authorized users can access and modify resources.
-
----
-
