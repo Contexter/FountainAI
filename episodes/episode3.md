@@ -17,7 +17,7 @@
 
 ## Introduction
 
-In this episode, we will focus on creating a basic "Hello, World!" Vapor application, Dockerizing it, and integrating it into the CI/CD pipeline established in Episode 2. We will also introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
+In this episode, we will focus on creating a basic "Hello, World!" Vapor application, Dockerizing it, and integrating it into the CI/CD pipeline established in Episode 2. We will also introduce Docker Compose to manage multiple containers and ensure a smooth deployment process. This integration will utilize the secrets management scheme already set up to handle sensitive information securely.
 
 ## Setting Up the Vapor Application
 
@@ -147,72 +147,70 @@ version: '3.8'
 
 services:
   nginx:
-    image: nginx:latest  # Use the latest Nginx image
-    container_name: nginx  # Name the container nginx
+    image: nginx:latest
+    container_name: nginx
     ports:
-      - "80:80"  # Map port 80 of the host to port 80 of the container
-      - "443:443"  # Map port 443 of the host to port 443 of the container
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d  # Mount the local nginx/conf.d directory to the container's configuration directory
-      - ./nginx/certbot/conf:/etc/letsencrypt  # Mount the Let's Encrypt configuration directory for SSL certificates
-      - ./nginx/certbot/www:/var/www/certbot  # Mount the Let's Encrypt webroot directory for certificate challenges
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
     depends_on:
-      - vapor  # Ensure the Vapor container starts before Nginx
+      - vapor
     networks:
-      - fountainai_network  # Connect the container to the custom network
+      - fountainai_network
 
   vapor:
     build:
-      context: .  # Use the current directory as the build context
-      dockerfile: Dockerfile  # Specify the Dockerfile to use
-    container_name: vapor  # Name the container vapor
+      context: .
+      dockerfile: Dockerfile
+    container_name: vapor
     ports:
-      - "8080:8080"  # Map port 8080 of the host to port 8080 of the container
+      - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://fountainai_user:your_db_password@postgres:5432/fountainai_db  # Set the database URL environment variable
-      - REDIS_URL=redis://redis:6379  # Set the Redis URL environment variable
-      - REDISAI_URL=redis://redisai:6378  # Set the RedisAI URL environment variable
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - REDISAI_URL=${REDISAI_URL}
     depends_on:
-      - postgres  # Ensure the PostgreSQL container starts before Vapor
-      - redis  # Ensure the Redis container starts before Vapor
-      - redisai  # Ensure the RedisAI container starts before Vapor
+      - postgres
+      - redis
+      - redisai
     networks:
-      - fountainai_network  # Connect the container to the custom network
+      - fountainai_network
 
   postgres:
-    image: postgres:13  # Use the PostgreSQL 13 image
-    container_name: postgres  # Name the container postgres
+    image: postgres:13
+    container_name: postgres
     environment:
-      POSTGRES_DB: fountainai_db  # Set the PostgreSQL database name
-      POSTGRES_USER: fountainai_user  # Set the PostgreSQL user
-      POSTGRES_PASSWORD: your_db_password  # Set the PostgreSQL user password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Mount a volume for persistent PostgreSQL data
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - fountainai_network  # Connect the container to the custom network
+      - fountainai_network
 
   redis:
-    image: redis:6  # Use the Redis 6 image
-    container_name: redis  # Name the container redis
+    image: redis:6
+    container_name: redis
     ports:
-      - "6379:6379"  # Map port 6379 of the host to port 6379 of the container
+      - "6379:6379"
     networks:
-      - fountainai_network  # Connect the container to the custom network
+      - fountainai_network
 
   redisai:
-    image: redislabs/redisai:latest  # Use the latest RedisAI image
-    container_name: redisai  # Name the container redisai
+    image: redislabs/redisai:latest
+    container_name: redisai
     ports:
-      - "6378:6378"  # Map port 6378 of the host to port 6378 of the container
+      - "6378:6378"
     networks:
-      - fountainai_network  # Connect the container to the custom network
+      - fountainai_network
 
-# Define a custom bridge network for inter-container communication
 networks:
   fountainai_network:
     driver: bridge
 
-# Define a volume for persistent PostgreSQL data
 volumes:
   postgres_data:
 EOF
@@ -225,7 +223,7 @@ git push origin development
 echo "Docker Compose configuration added and pushed to development branch."
 ```
 
-This script creates the `docker-compose.yml` file, defining the services and their dependencies, networks, and volumes. Each section is commented to explain what it does. It then commits and pushes the configuration to the development branch.
+This script creates the `docker-compose.yml` file, defining the services and their dependencies, networks, and volumes. The environment variables are placeholders that will be replaced with secrets managed by the CI/CD pipeline. It then commits and pushes the configuration to the development branch.
 
 Make this script executable and run it:
 
@@ -236,13 +234,31 @@ chmod +x setup_docker_compose.sh
 
 ## Integrating with CI/CD Pipeline
 
-We need to ensure that our CI/CD pipeline can build, push, and deploy the Docker Compose stack. We'll update our CI/CD pipeline scripts to include these steps.
+We need to ensure that our CI/CD pipeline can build, push, and deploy the Docker Compose stack. We'll update our CI/CD pipeline scripts to include these steps, leveraging the secrets management from Episode 2.
+
+### How the CI/CD Pipeline Manages Secrets Injection into the Docker Compose File
+
+The CI/CD pipeline leverages the `Manage Secrets` action to securely inject secrets into the Docker Compose file. Here's how it works:
+
+1. **Define Secrets in CI/CD Environment**:
+   - Secrets such as `DATABASE_URL`, `REDIS_URL`, `REDISAI_URL`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` are securely stored in the CI/CD environment (e.g., GitHub Secrets).
+
+2. **Manage Secrets Action**:
+   - The `Manage Secrets` action retrieves these secrets from the CI/CD environment and sets them as environment variables for subsequent steps in the workflow.
+
+3. **Docker Compose File Configuration**:
+   - The `docker-compose.yml` file is configured to use environment variables for sensitive information. Placeholders like `${DATABASE_URL}` are used in the `docker-compose.yml` file.
+   - When the pipeline runs, the environment variables set by the `Manage Secrets` action replace these placeholders with actual values.
+
+4. **Pipeline Workflow**:
+   - The workflow uses the `Manage Secrets` action to validate and export secrets.
+   - The `Setup Environment` action prepares the VPS environment.
+   - The `Build Project` action builds the Docker image, ensuring that the environment variables are available during the build process.
+   - The `Deploy Project` action deploys the Docker Compose stack, injecting the secrets into the running containers.
 
 ### Update the Environment Setup Action
 
-We'll update the environment setup action to include the installation of Docker and Docker Compose.
-
-Create a file named `update_setup_environment_action.sh` with the following content:
+To securely manage SSH keys, we will use `ssh-agent` to handle the SSH key in-memory, avoiding writing it to disk. Here is the revised `update_setup_environment_action.sh`:
 
 ```sh
 #!/bin/bash
@@ -251,8 +267,6 @@ Create a file named `update_setup_environment_action.sh` with the following cont
 cat << 'EOF' > .github/actions/setup/index.js
 const core = require('@actions/core');
 const exec = require('@actions/exec');
-const fs = require('fs');
-const path = require('path');
 
 async function run() {
     try {
@@ -260,9 +274,12 @@ async function run() {
         const vpsIp = core.getInput('vps_ip');
         const vpsSshKey = core.getInput('vps_ssh_key');
 
-        // Write the SSH key to a file
-        const sshKeyPath = path.join(process.env.HOME, '.ssh', 'id_ed25519');
-        fs.writeFileSync(sshKeyPath, vpsSshKey, { mode: 0o600 });
+        // Start the SSH agent
+        await exec.exec('ssh-agent', ['-a', '/tmp/ssh-agent.sock']);
+        core.exportVariable('SSH_AUTH_SOCK', '/tmp/ssh-agent.sock');
+
+        // Add the SSH key to the agent
+        await exec.exec('ssh-add', ['-'], { input: vpsSshKey });
 
         // Commands to install Docker and Docker Compose
         const installDockerCmd = `
@@ -287,7 +304,7 @@ async function run() {
         `;
 
         // SSH command to execute the installation on the VPS
-        await exec.exec(`ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
+        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
         
         core.info('Docker and Docker Compose installed successfully on the VPS');
     } catch (error) {
@@ -300,13 +317,13 @@ EOF
 
 # Commit the setup environment action changes
 git add .github/actions/setup/index.js
-git commit -m "Updated setup environment action to install Docker and Docker Compose"
+git commit -m "Updated setup environment action to use ssh-agent for SSH key management"
 git push origin development
 
 echo "Setup environment action updated and pushed to development branch."
 ```
 
-This script updates the environment setup action to include the installation of Docker and Docker Compose on the VPS. It writes the SSH key to a file, uses it to SSH into the VPS, and runs the installation commands. It then commits and pushes the changes to the development branch.
+This script updates the environment setup action to use `ssh-agent` for managing the SSH key securely in memory. It starts the SSH agent, adds the SSH key to the agent from the provided input, and uses the SSH agent to authenticate and run the installation commands on the VPS. It then commits and pushes the changes to the development branch.
 
 Make this script executable and run it:
 
@@ -333,7 +350,7 @@ async function run() {
         await exec.exec('docker build -t ghcr.io/Contexter/fountainai:latest .');
         
         // Log in to GitHub Container Registry
-        await exec.exec('echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Contexter --password-stdin');
+        await exec.exec(`echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Contexter --password-stdin`);
         
         // Push Docker image to GitHub Container Registry
         await exec.exec('docker push ghcr.io/Contexter/fountainai:latest');
@@ -525,7 +542,9 @@ chmod +x update_development_workflow.sh
 
 ## Conclusion
 
-In this episode, we created a basic "Hello, World!" Vapor application, Dockerized it, and integrated it into the CI/CD pipeline established in Episode 2. By introducing Docker Compose, we set up a multi-container environment to manage different services, ensuring a robust and scalable infrastructure for the FountainAI project.
+In this episode, we created a basic "Hello, World!" Vapor application, Dockerized it, and integrated it into the CI/CD pipeline established in Episode 2. By introducing Docker Compose, we set up a multi-container environment to manage different services, ensuring a robust and scalable infrastructure for the FountainAI project. 
+
+We also detailed how the CI/CD pipeline manages secrets injection into the Docker Compose file using the `Manage Secrets` action, ensuring that sensitive information is securely handled. Additionally, we improved the security of SSH key management by using `ssh-agent` to keep the key in memory, avoiding the risk associated with writing keys to disk.
 
 By following these steps and using shell scripts to automate file creation and updates, we ensured that our CI/CD pipeline is functioning correctly and efficiently. This setup will support the seamless integration and deployment of new features and services as we continue to develop FountainAI.
 
