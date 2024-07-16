@@ -9,7 +9,7 @@ Welcome to "FountainAI's Vapor," the road story of setting up and deploying Foun
 1. [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/episode1.md)
 2. [Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions](episodes/episode2.md)
 3. [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/episode3.md)
-4. [Episode 4: Placeholder Title](episodes/episode4.md)
+4. [Episode 4: Implementing the Script Entity with TDD](episodes/episode4.md)
 5. [Episode 5: Placeholder Title](episodes/episode5.md)
 6. [Episode 6: Placeholder Title](episodes/episode6.md)
 7. [Episode 7: Placeholder Title](episodes/episode7.md)
@@ -54,3 +54,7 @@ In this episode, we create and manage a CI/CD pipeline using GitHub Actions. Thi
 ### [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/episode3.md)
 
 In this episode, we create a basic "Hello, World!" Vapor application, Dockerize it, and integrate it into the CI/CD pipeline established in Episode 2. We introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
+
+### [Episode 4: Implementing the Script Entity with TDD](episodes/episode4.md)
+
+In this episode, we implement the Script entity using Test-Driven Development (TDD). We begin by writing tests based on the OpenAPI specification, run the tests to see them fail, then implement the functionality to make the tests pass. We develop core API endpoints, connect to the PostgreSQL database, and implement basic CRUD operations.
