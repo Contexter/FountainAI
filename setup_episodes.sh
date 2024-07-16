@@ -1,3 +1,47 @@
+#!/bin/bash
+
+# Backup existing README.md if it exists
+if [ -f "README.md" ]; then
+  echo "Backing up existing README.md..."
+  mv README.md README_backup.md
+  echo "Backup created as README_backup.md"
+fi
+
+# Create the episodes directory
+mkdir -p episodes
+
+# Create episode markdown files with placeholder content
+for i in {1..10}; do
+  cat <<EOF > episodes/episode$i.md
+# Episode $i: Placeholder Title
+
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [Section 1](#section-1)
+3. [Section 2](#section-2)
+4. [Conclusion](#conclusion)
+
+## Introduction
+
+This is the placeholder content for Episode $i.
+
+## Section 1
+
+Content for section 1.
+
+## Section 2
+
+Content for section 2.
+
+## Conclusion
+
+Conclusion for Episode $i.
+EOF
+done
+
+# Create the main README.md file with Table of Contents
+cat <<EOF > README.md
 # Road to FountainAI
 
 ## Introduction
@@ -54,3 +98,7 @@ In this episode, we create and manage a CI/CD pipeline using GitHub Actions. Thi
 ### [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/episode3.md)
 
 In this episode, we create a basic "Hello, World!" Vapor application, Dockerize it, and integrate it into the CI/CD pipeline established in Episode 2. We introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
+EOF
+
+echo "Episodes directory and files have been created successfully."
+
