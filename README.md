@@ -1,3 +1,5 @@
+Understood. Here is the revised `README.md` with the requested changes:
+
 ### `README.md`
 
 # Road to FountainAI
@@ -5,21 +7,6 @@
 ## Introduction
 
 Welcome to "FountainAI's Vapor," the road story of setting up and deploying FountainAI, an AI-driven model designed to analyze and process theatrical and screenplay scripts. Leveraging the power of Vapor, Docker, and modern CI/CD practices, this guide will take you through every step, from initial setup to deploying a Dockerized Vapor application managed by a CI/CD pipeline.
-
-### Table of Contents
-
-1. [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/episode1.md)
-2. [Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions](episodes/episode2.md)
-3. [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/episode3.md)
-4. [Episode 4: Decoupling Secrets Management from the CI/CD Pipeline](episodes/episode4.md)
-5. [Episode 5: Implementing the Script Entity with TDD](episodes/episode5.md)
-6. [Episode 6: Placeholder Title](episodes/episode6.md)
-7. [Episode 7: Placeholder Title](episodes/episode7.md)
-8. [Episode 8: Placeholder Title](episodes/episode8.md)
-9. [Episode 9: Placeholder Title](episodes/episode9.md)
-10. [Episode 10: Placeholder Title](episodes/episode10.md)
-
----
 
 ### FountainAI Network Graph
 
@@ -33,54 +20,46 @@ The OpenAPI specification serves as the detailed blueprint for FountainAI, trans
 
 ---
 
-By following this guide, you will:
-
-1. **Set up the development environment**: Create a GitHub repository, configure environment variables, generate necessary tokens, and establish secure communication between your local machine and a Virtual Private Server (VPS).
-2. **Implement a CI/CD pipeline**: Use GitHub Actions to automate the process of building, testing, and deploying the application, ensuring continuous integration and continuous deployment.
-3. **Create and manage the Vapor application**: Develop the Vapor application based on the FountainAI OpenAPI specification, Dockerize the application, and integrate it into the CI/CD pipeline for seamless deployment.
-
-By the end of this guide, you will have a fully functional, automated deployment process for FountainAI, leveraging the power of Docker, Vapor, and GitHub Actions.
-
----
-
 ## Episode Overviews
 
-### [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/episode1.md)
+### [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/Episode1/episode1.md)
 
 In this episode, we set up the foundational components required for developing and deploying FountainAI. This includes creating a GitHub repository, configuring environment variables, and establishing secure communication with a VPS.
 
-### [Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions](episodes/episode2.md)
+### [Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions](episodes/Episode2/episode2.md)
 
 In this episode, we create and manage a CI/CD pipeline using GitHub Actions. This pipeline automates the process of building, testing, and deploying the FountainAI application, ensuring continuous integration and continuous deployment.
 
-### [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/episode3.md)
+### [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/Episode3/episode3.md)
 
 In this episode, we create a basic "Hello, World!" Vapor application, Dockerize it, and integrate it into the CI/CD pipeline established in Episode 2. We introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
 
-### [Episode 4: Decoupling Secrets Management from the CI/CD Pipeline](episodes/episode4.md)
+### [Episode 4: Decoupling Secrets Management from the CI/CD Pipeline](episodes/Episode4/episode4.md)
 
 In this episode, we enhance our CI/CD pipeline by decoupling secrets management using a centralized secrets repository and GPG encryption. We create a new repository to store encrypted secrets and update our workflows to dynamically fetch and decrypt these secrets. This approach ensures better security, reduces duplication, and simplifies the maintenance of sensitive information across multiple projects.
 
-### [Episode 5: Implementing the Script Entity with TDD](episodes/episode5.md)
+### [Episode 5: Implementing the Script Entity with TDD](episodes/Episode5/episode5.md)
 
 In this episode, we implement the Script entity using Test-Driven Development (TDD). We begin by writing tests based on the OpenAPI specification, run the tests to see them fail, then implement the functionality to make the tests pass. We develop core API endpoints, connect to the PostgreSQL database, and implement basic CRUD operations.
 
-### [Episode 6: Placeholder Title](episodes/episode6.md)
+### [Episode 6: Placeholder Title](episodes/Episode6/episode6.md)
 
 Content to be added.
 
-### [Episode 7: Placeholder Title](episodes/episode7.md)
+### [Episode 7: Placeholder Title](episodes/Episode7/episode7.md)
 
 Content to be added.
 
-### [Episode 8: Placeholder Title](episodes/episode8.md)
+### [Episode 8: Placeholder Title](episodes/Episode8/episode8.md)
 
 Content to be added.
 
-### [Episode 9: Placeholder Title](episodes/episode9.md)
+### [Episode 9: Placeholder Title](episodes/Episode9/episode9.md)
 
 Content to be added.
 
-### [Episode 10: Placeholder Title](episodes/episode10.md)
+### [Episode 10: Placeholder Title](episodes/Episode10/episode10.md)
 
 Content to be added.
+
+---
