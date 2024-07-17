@@ -1,667 +1,219 @@
-### Episode 4: Test-Driven Development for Core Features
+### `episodes/episode4.md`
 
-### Table of Contents
+# Episode 4: Decoupling Secrets Management from the CI/CD Pipeline
+
+## Table of Contents
+
 1. [Introduction](#introduction)
-2. [Reviewing the OpenAPI Specification](#reviewing-the-openapi-specification)
-3. **A: Changes in the Vapor Application**
-   1. [Setting Up the Project Structure](#setting-up-the-project-structure)
-   2. [Writing Tests Based on OpenAPI](#writing-tests-based-on-openapi)
-   3. [Running Tests and Seeing Them Fail](#running-tests-and-seeing-them-fail)
-   4. [Developing Core API Endpoints](#developing-core-api-endpoints)
-   5. [Connecting to the PostgreSQL Database](#connecting-to-the-postgresql-database)
-   6. [Implementing Basic CRUD Operations](#implementing-basic-crud-operations)
-   7. [Running Tests and Seeing Them Pass](#running-tests-and-seeing-them-pass)
-4. **B: Updates to the CI/CD Pipeline**
-   1. [Environment Setup Action](#environment-setup-action)
-   2. [Build Action](#build-action)
-   3. [Deploy Action](#deploy-action)
-   4. [Development Workflow](#development-workflow)
-5. [Testing the API with Curl Commands](#testing-the-api-with-curl-commands)
-6. [Conclusion](#conclusion)
+2. [Rationale for Decoupling](#rationale-for-decoupling)
+3. [What is GPG?](#what-is-gpg)
+4. [Creating the Central Secrets Repository](#creating-the-central-secrets-repository)
+5. [Encrypting and Storing Secrets](#encrypting-and-storing-secrets)
+6. [Updating the Manage Secrets Action](#updating-the-manage-secrets-action)
+7. [Modifying CI/CD Workflows](#modifying-cicd-workflows)
+   1. [Development Workflow](#development-workflow)
+   2. [Testing Workflow](#testing-workflow)
+   3. [Staging Workflow](#staging-workflow)
+   4. [Production Workflow](#production-workflow)
+8. [Conclusion](#conclusion)
 
 ---
 
-### Introduction
+## Introduction
 
-In this episode, we will extend the functionality of the FountainAI application by following the Test-Driven Development (TDD) approach. We will start with the OpenAPI specification as our initial "test" or blueprint, write tests for our desired functionality, run them to see them fail, then implement the functionality to make the tests pass. We will focus on developing core API endpoints, connecting to the PostgreSQL database, and implementing basic CRUD operations.
+In the previous episode, we focused on creating a basic "Hello, World!" Vapor application, Dockerizing it, and integrating it into our CI/CD pipeline. We introduced Docker Compose to manage multiple containers and ensured a smooth deployment process. This integration utilized secrets management to handle sensitive information securely.
 
-**Expected Outcome:**
+In this episode, we will enhance our CI/CD pipeline by decoupling secrets management from the main repository. This will make our pipeline more flexible and reusable across multiple projects. We will create a centralized secrets repository and update our workflows to fetch and decrypt secrets dynamically. This approach ensures better security and maintainability of sensitive information.
 
-By the end of this episode, you will have a fully functional API that can create, retrieve, and delete screenplay scripts, with tests that ensure the reliability of these endpoints. Additionally, these tests will be integrated into your CI/CD pipeline.
+## Rationale for Decoupling
 
-### Reviewing the OpenAPI Specification
+Managing secrets directly within each repository's CI/CD pipeline can lead to several issues:
+1. **Duplication of Secrets**: Each repository needs to manage its own set of secrets, leading to duplication and potential inconsistencies.
+2. **Security Risks**: Storing secrets directly in each repository increases the risk of accidental exposure.
+3. **Maintenance Overhead**: Updating secrets across multiple repositories can be tedious and error-prone.
 
-According to the [OpenAPI specification](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml), we need to set up endpoints for managing screenplay scripts. Here are the relevant paths:
+By centralizing secrets management, we can:
+1. **Reduce Duplication**: Store secrets in a single repository, ensuring consistency across multiple projects.
+2. **Enhance Security**: Use encryption to secure secrets and control access to the central repository.
+3. **Simplify Maintenance**: Update secrets in one place and propagate changes to all dependent repositories.
+
+## What is GPG?
+
+GPG (GNU Privacy Guard) is a tool for secure communication and data storage. It uses cryptographic techniques to provide data encryption, ensuring that sensitive information can be securely stored and transferred. GPG allows users to encrypt and decrypt data, create digital signatures, and manage keys.
+
+### Key Features of GPG
+
+- **Encryption**: GPG can encrypt data to ensure that only intended recipients can read it.
+- **Decryption**: GPG can decrypt data that has been encrypted with the recipient's public key.
+- **Digital Signatures**: GPG can create digital signatures to verify the authenticity of data.
+- **Key Management**: GPG allows users to generate, store, and manage cryptographic keys.
+
+### How GPG Works
+
+GPG uses a system of public and private keys for encryption and decryption. Here’s a brief overview:
+
+1. **Public Key**: Used to encrypt data. It can be shared openly.
+2. **Private Key**: Used to decrypt data. It must be kept secret.
+
+To encrypt data, you need the recipient's public key. The encrypted data can only be decrypted using the corresponding private key, ensuring that only the intended recipient can access the information.
+
+## Creating the Central Secrets Repository
+
+### Step 1: Create the Repository
+
+1. **Create a new GitHub repository named `central-secrets`**:
+   - Go to GitHub and create a new repository named `central-secrets`.
+   - Initialize the repository with a `README.md` file.
+
+2. **Clone the Repository Locally**:
+   ```sh
+   git clone https://github.com/YourUsername/central-secrets.git
+   cd central-secrets
+   ```
+
+## Encrypting and Storing Secrets
+
+### Step 2: Encrypt Secrets Using GPG
+
+1. **Generate GPG Keys**:
+   - If you don't have a GPG key pair, generate one:
+     ```sh
+     gpg --full-generate-key
+     ```
+   - Follow the prompts to create your GPG key pair.
+
+2. **Export Your Public Key**:
+   - Export your public key to share with others who need to encrypt secrets for you:
+     ```sh
+     gpg --export -a "Your Name" > public-key.asc
+     ```
+
+3. **Encrypt Secrets**:
+   - Create a `secrets` directory in your `central-secrets` repository:
+     ```sh
+     mkdir secrets
+     ```
+
+   - Encrypt each secret using your public key and store it in the `secrets` directory. Below are the commands for encrypting the secrets from your `config.env` file:
+     ```sh
+     gpg --encrypt --armor --recipient "Your Name" <<< "fountainAI" > secrets/APP_NAME.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "Contexter" > secrets/REPO_OWNER.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "fountainAI" > secrets/REPO_NAME.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "your_generated_token" > secrets/G_TOKEN.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----" > secrets/VPS_SSH_KEY.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "your_vps_username" > secrets/VPS_USERNAME.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "your_vps_ip" > secrets/VPS_IP.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "example.com" > secrets/DOMAIN.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "staging.example.com" > secrets/STAGING_DOMAIN.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "/home/your_vps_username/deployment_directory" > secrets/DEPLOY_DIR.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "mail@benedikt-eickhoff.de" > secrets/EMAIL.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "fountainai_db" > secrets/DB_NAME.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "fountainai_user" > secrets/DB_USER.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "your_db_password" > secrets/DB_PASSWORD.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "6379" > secrets/REDIS_PORT.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "6378" > secrets/REDISAI_PORT.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "your_generated_runner_token" > secrets/RUNNER_TOKEN.asc
+     gpg --encrypt --armor --recipient "Your Name" <<< "2224" > secrets/NYDUS_PORT.asc
+     ```
+
+4. **Store Encrypted Secrets in the Repository**:
+   - Add the encrypted secrets to the `central-secrets` repository:
+     ```sh
+     git add secrets
+     git commit -m "Add encrypted secrets"
+     git push origin main
+     ```
+
+## Updating the Manage Secrets Action
+
+### Step 3: Modify the Manage Secrets Action
+
+Update the `index.js` of the Manage Secrets action to fetch and decrypt secrets from the `central-secrets` repository.
+
+```js
+const core = require('@actions/core');
+const exec = require('@actions/exec');
+const fs = require('fs');
+
+async function run() {
+    try {
+        const secretsRepo = core.getInput('central_repo');
+        const gpgPrivateKey = core.getInput('gpg_private_key');
+        const gpgPassphrase = core.getInput('gpg_passphrase');
+
+        // Clone the central-secrets repository
+        await exec.exec(`git clone https://github.com/${secretsRepo}.git`);
+
+        // Import the GPG private key
+        await exec.exec(`echo "${gpgPrivateKey}" | gpg --batch --import`);
+
+        // Decrypt secrets
+        const secrets = [
+            'APP_NAME',
+            'REPO_OWNER',
+            'REPO_NAME',
+            'G_TOKEN',
+            'VPS_SSH_KEY',
+            'VPS_USERNAME',
+            'VPS_IP',
+            'DOMAIN',
+            'STAGING_DOMAIN',
+            'DEPLOY_DIR',
+            'EMAIL',
+            'DB_NAME',
+            'DB_USER',
+            'DB_PASSWORD',
+            'REDIS_PORT',
+            'REDISAI_PORT',
+            'RUNNER_TOKEN',
+            'NYDUS_PORT'
+        ];
+
+        for (const secret of secrets) {
+            await exec.exec(`gpg --batch --yes --decrypt --passphrase "${gpgPassphrase}" --output ${secret} central-secrets/secrets/${secret}.asc`);
+            const value = fs.readFileSync(secret, 'utf8').trim();
+            core.exportVariable(secret, value);
+        }
+    } catch (error) {
+        core.setFailed(`Action failed with error ${error}`);
+    }
+}
+
+run();
+```
+
+**Comments and Changes in the Code:**
+1. **Clone the Repository**:
+   - Clones the `central-secrets` repository to access the encrypted secrets.
+   ```js
+
+
+   await exec.exec(`git clone https://github.com/${secretsRepo}.git`);
+   ```
+
+2. **Import the GPG Private Key**:
+   - Imports the GPG private key to decrypt the secrets.
+   ```js
+   await exec.exec(`echo "${gpgPrivateKey}" | gpg --batch --import`);
+   ```
+
+3. **Decrypt Secrets**:
+   - Iterates over the list of secrets, decrypts each one, and exports it as an environment variable.
+   ```js
+   for (const secret of secrets) {
+       await exec.exec(`gpg --batch --yes --decrypt --passphrase "${gpgPassphrase}" --output ${secret} central-secrets/secrets/${secret}.asc`);
+       const value = fs.readFileSync(secret, 'utf8').trim();
+       core.exportVariable(secret, value);
+   }
+   ```
+
+## Modifying CI/CD Workflows
+
+### Development Workflow
+
+Update the `development.yml` workflow to use the centralized secrets.
 
 ```yaml
-paths:
-  /scripts:
-    get:
-      summary: Retrieve All Scripts
-      operationId: listScripts
-      description: |
-        Lists all screenplay scripts stored within the system. This endpoint leverages Redis caching for improved query performance.
-      responses:
-        '200':
-          description: An array of scripts.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Script'
-    post:
-      summary: Create a New Script
-      operationId: createScript
-      description: |
-        Creates a new screenplay script record in the system. RedisAI provides recommendations and validation during creation.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ScriptCreateRequest'
-      responses:
-        '201':
-          description: Script successfully created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Script'
-  /scripts/{scriptId}:
-    delete:
-      summary: Delete a Script by ID
-      operationId: deleteScript
-      description: Deletes a specific screenplay script from the system, identified by its scriptId.
-      parameters:
-        - name: scriptId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Script successfully deleted.
-        '404':
-          description: The script with the specified ID was not found.
-```
-
-These paths guide our implementation steps, ensuring we meet the defined API requirements.
-
----
-
-### A: Changes in the Vapor Application
-
-#### Setting Up the Project Structure
-
-To ensure our project is well-organized and maintainable, we will set up a clear project structure. This involves creating necessary directories and files for controllers, models, migrations, and tests.
-
-#### Create a Script to Set Up the Project Structure
-
-Create a file named `setup_project_structure.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Ensure we're in the root directory of the existing repository
-cd /path/to/your/fountainAI
-
-# Create necessary directories for controllers, models, and tests
-mkdir -p Sources/App/Controllers
-mkdir -p Sources/App/Models
-mkdir -p Sources/App/Migrations
-mkdir -p Tests/AppTests
-
-echo "Project structure setup complete."
-
-# Commit the changes to the repository
-git add Sources/App Tests/AppTests
-git commit -m "Set up initial project structure"
-git push origin development
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x setup_project_structure.sh
-./setup_project_structure.sh
-```
-
-**Expected Outcome:**
-
-You should now have a well-organized project structure with separate directories for controllers, models, migrations, and tests. This will help keep your codebase clean and maintainable.
-
----
-
-#### Writing Tests Based on OpenAPI
-
-Following the TDD approach, we will start by writing tests for the core API endpoints we want to implement, guided by the OpenAPI specification.
-
-#### Create a Script for Tests
-
-Create a file named `create_tests.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Navigate to the Tests directory
-cd Tests/AppTests
-
-# Create a new file for the Script tests
-cat << 'EOF' > ScriptTests.swift
-import XCTVapor
-@testable import App
-
-final class ScriptTests: XCTestCase {
-    func testCreateScript() throws {
-        let app = Application(.testing)
-        defer { app.shutdown() }
-        try configure(app)
-
-        try app.test(.POST, "scripts", beforeRequest: { req in
-            try req.content.encode(ScriptCreateRequest(title: "Test Script", description: "A test script", author: "Author"))
-        }, afterResponse: { res in
-            XCTAssertEqual(res.status, .created)
-            let script = try res.content.decode(Script.self)
-            XCTAssertEqual(script.title, "Test Script")
-            XCTAssertEqual(script.description, "A test script")
-            XCTAssertEqual(script.author, "Author")
-        })
-    }
-
-    func testGetScripts() throws {
-        let app = Application(.testing)
-        defer { app.shutdown() }
-        try configure(app)
-
-        try app.test(.GET, "scripts", afterResponse: { res in
-            XCTAssertEqual(res.status, .ok)
-            let scripts = try res.content.decode([Script].self)
-            XCTAssertGreaterThan(scripts.count, 0)
-        })
-    }
-
-    func testDeleteScript() throws {
-        let app = Application(.testing)
-        defer { app.shutdown() }
-        try configure(app)
-
-        // First create a script to delete
-        let script = Script(title: "Test Script", description: "A test script", author: "Author")
-        try script.save(on: app.db).wait()
-
-        // Then delete the script
-        try app.test(.DELETE, "scripts/\(script.id!)", afterResponse: { res in
-            XCTAssertEqual(res.status, .noContent)
-        })
-    }
-}
-EOF
-
-echo "Tests created."
-
-# Commit the changes to the repository
-git add ScriptTests.swift
-git commit -m "Add unit tests for script API endpoints"
-git push origin development
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x create_tests.sh
-./create_tests.sh
-```
-
-**Expected Outcome:**
-
-You now have unit tests for creating, retrieving, and deleting scripts, based on the OpenAPI specification. These tests describe the expected behavior of your API endpoints.
-
----
-
-#### Running Tests and Seeing Them Fail
-
-Next, we will run the tests to see them fail, as we haven't implemented the functionality yet.
-
-```sh
-swift test
-```
-
-**Expected Outcome:**
-
-The tests should fail, indicating that the functionality is not yet implemented. This failure will guide our implementation process.
-
----
-
-#### Developing Core API Endpoints
-
-We will now develop the core API endpoints to make the tests pass.
-
-#### Create a Script for API Endpoints
-
-Create a file named `create_api_endpoints.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Navigate to the Controllers directory
-cd Sources/App/Controllers
-
-# Create a new file for the scripts controller
-cat << 'EOF' > ScriptController.swift
-import Vapor
-
-struct ScriptController: RouteCollection {
-    func boot(routes: RoutesBuilder) throws {
-        let scripts = routes.grouped("scripts")
-        scripts.get(use: index)
-        scripts.post(use: create)
-        scripts.group(":scriptID") { script in
-            script.delete(use: delete)
-        }
-    }
-
-    func index(req: Request) throws -> EventLoopFuture<[Script]> {
-        return Script.query(on: req.db).all()
-    }
-
-    func create(req: Request) throws -> EventLoopFuture<Script> {
-        let scriptCreateRequest = try req.content.decode(ScriptCreateRequest.self)
-        let script = Script(title: scriptCreateRequest.title, description: scriptCreateRequest.description, author: scriptCreateRequest.author)
-        return script.save(on: req.db).map { script }
-    }
-
-    func delete(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        return Script.find(req.parameters.get("scriptID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { script in
-                script.delete(on: req.db)
-            }.transform(to: .noContent)
-    }
-}
-EOF
-
-echo "API endpoints created."
-
-# Commit the changes to the repository
-git add
-
- ScriptController.swift
-git commit -m "Implement API endpoints for scripts"
-git push origin development
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x create_api_endpoints.sh
-./create_api_endpoints.sh
-```
-
-**Expected Outcome:**
-
-The core API endpoints for creating, retrieving, and deleting scripts are now implemented.
-
----
-
-#### Connecting to the PostgreSQL Database
-
-We need to configure our Vapor application to connect to the PostgreSQL database.
-
-#### Create a Script to Set Up Database Configuration
-
-Create a file named `setup_database.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Navigate to the root directory
-cd /path/to/your/fountainAI
-
-# Update the configure.swift file to set up database connection
-cat << 'EOF' > Sources/App/configure.swift
-import Vapor
-import Fluent
-import FluentPostgresDriver
-
-public func configure(_ app: Application) throws {
-    // Database configuration
-    app.databases.use(.postgres(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        username: Environment.get("DATABASE_USER") ?? "vapor",
-        password: Environment.get("DATABASE_PASSWORD") ?? "password",
-        database: Environment.get("DATABASE_NAME") ?? "fountainai"
-    ), as: .psql)
-
-    // Migrations
-    app.migrations.add(CreateScript())
-
-    // Register routes
-    try routes(app)
-}
-EOF
-
-# Create a migration for the Script model
-cat << 'EOF' > Sources/App/Migrations/CreateScript.swift
-import Fluent
-
-struct CreateScript: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("scripts")
-            .id()
-            .field("title", .string, .required)
-            .field("description", .string, .required)
-            .field("author", .string, .required)
-            .create()
-    }
-
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("scripts").delete()
-    }
-}
-EOF
-
-echo "Database configuration and migration setup complete."
-
-# Commit the changes to the repository
-git add Sources/App/configure.swift Sources/App/Migrations/CreateScript.swift
-git commit -m "Set up PostgreSQL database configuration and migration"
-git push origin development
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x setup_database.sh
-./setup_database.sh
-```
-
-**Expected Outcome:**
-
-Your Vapor application is now configured to connect to a PostgreSQL database, and a migration for the Script model is set up.
-
----
-
-#### Implementing Basic CRUD Operations
-
-We will now implement the model for the Script entity and complete the CRUD operations.
-
-#### Create a Script for the Script Model
-
-Create a file named `create_script_model.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Navigate to the Models directory
-cd Sources/App/Models
-
-# Create a new file for the Script model
-cat << 'EOF' > Script.swift
-import Fluent
-import Vapor
-
-final class Script: Model, Content {
-    static let schema = "scripts"
-
-    @ID(key: .id)
-    var id: UUID?
-
-    @Field(key: "title")
-    var title: String
-
-    @Field(key: "description")
-    var description: String
-
-    @Field(key: "author")
-    var author: String
-
-    init() {}
-
-    init(id: UUID? = nil, title: String, description: String, author: String) {
-        self.id = id
-        self.title = title
-        self.description = description
-        self.author = author
-    }
-}
-
-struct ScriptCreateRequest: Content {
-    let title: String
-    let description: String
-    let author: String
-}
-EOF
-
-echo "Script model created."
-
-# Commit the changes to the repository
-git add Script.swift
-git commit -m "Create Script model"
-git push origin development
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x create_script_model.sh
-./create_script_model.sh
-```
-
-**Expected Outcome:**
-
-The Script model is now created, representing the structure of the screenplay scripts in your database.
-
----
-
-#### Running Tests and Seeing Them Pass
-
-With the implementation complete, we will now run the tests again to see them pass.
-
-```sh
-swift test
-```
-
-**Expected Outcome:**
-
-All tests should pass, indicating that the functionality is correctly implemented and adheres to the OpenAPI specification.
-
----
-
-### B: Updates to the CI/CD Pipeline
-
-#### Environment Setup Action
-
-The environment setup action is updated to include the installation of PostgreSQL along with Docker and Docker Compose. This ensures that the database is set up correctly in the environment.
-
-Create a file named `update_setup_environment_action.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the setup environment action index.js file
-cat << 'EOF' > .github/actions/setup/index.js
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        const vpsUsername = core.getInput('vps_username');
-        const vpsIp = core.getInput('vps_ip');
-        
-        // Add SSH key to the agent
-        await exec.exec('ssh-agent bash -c "ssh-add <(echo "$SSH_KEY")"');
-        
-        // Commands to install Docker and Docker Compose, and setup PostgreSQL
-        const installDockerCmd = `
-            sudo apt-get update &&
-            sudo apt-get install -y \
-                apt-transport-https \
-                ca-certificates \
-                curl \
-                gnupg \
-                lsb-release &&
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&
-            echo "deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null &&
-            sudo apt-get update &&
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io &&
-            sudo usermod -aG docker ${vpsUsername} &&
-            sudo systemctl enable docker &&
-            sudo systemctl start docker &&
-            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose &&
-            sudo chmod +x /usr/local/bin/docker-compose &&
-            sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose &&
-            docker-compose --version &&
-            sudo apt-get install -y postgresql postgresql-contrib &&
-            sudo -u postgres createuser --interactive &&
-            sudo -u postgres createdb fountainai
-        `;
-
-        // SSH command to execute the installation on the VPS
-        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
-        
-        core.info('Docker, Docker Compose, and PostgreSQL installed successfully on the VPS');
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-
-# Commit the setup environment action changes
-git add .github/actions/setup/index.js
-git commit -m "Updated setup environment action to install Docker, Docker Compose, and PostgreSQL"
-git push origin development
-
-echo "Setup environment action updated and pushed to development branch."
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_setup_environment_action.sh
-./update_setup_environment_action.sh
-```
-
-#### Build Action
-
-This action now builds the Docker image for the Vapor application and pushes it to GitHub Container Registry.
-
-Create a file named `update_build_action.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the build action index.js file
-cat << 'EOF' > .github/actions/build/index.js
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        // Build Docker image
-        await exec.exec('docker build -t ghcr.io/Contexter/fountainai:latest .');
-        
-        // Log in to GitHub Container Registry
-        await exec.exec('echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Contexter --password-stdin');
-        
-        // Push Docker image to GitHub Container Registry
-        await exec.exec('docker push ghcr.io/Contexter/fountainai:latest');
-        
-        core.info('Docker image built and pushed successfully');
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-
-# Commit the build action changes
-git add .github/actions/build/index.js
-git commit -m "Updated build action to build and push Docker image"
-git push origin development
-
-echo "Build action updated and pushed to development branch."
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_build_action.sh
-./update_build_action.sh
-```
-
-#### Deploy Action
-
-This action pulls the latest Docker images and runs the Docker Compose stack on the VPS. We need to add a step to run the database migrations after deploying the Docker Compose stack.
-
-Create a file named `update_deploy_action.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the deploy action index.js file
-cat << 'EOF' > .github/actions/deploy/index.js
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        const environment = core.getInput('environment');
-        const vpsUsername = core.getInput('
-
-vps_username');
-        const vpsIp = core.getInput('vps_ip');
-        const deployDir = core.getInput('deploy_dir');
-        
-        // Add SSH key to the agent
-        await exec.exec('ssh-agent bash -c "ssh-add <(echo "$SSH_KEY")"');
-
-        // SSH into VPS and pull the latest Docker images, then run the Docker Compose stack
-        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
-            + `'cd ${deployDir} && docker-compose pull && docker-compose up -d --remove-orphans'`);
-
-        // Run database migrations
-        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
-            + `'cd ${deployDir} && docker-compose exec vapor ./Run migrate --env production'`);
-        
-        core.info(`Deployed to ${environment} environment successfully and migrations run`);
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-
-# Commit the deploy action changes
-git add .github/actions/deploy/index.js
-git commit -m "Updated deploy action to deploy Docker Compose stack and run migrations"
-git push origin development
-
-echo "Deploy action updated and pushed to development branch."
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_deploy_action.sh
-./update_deploy_action.sh
-```
-
-#### Development Workflow
-
-This workflow now includes steps for setting up the environment, building the project, and deploying the project.
-
-Create a file named `update_development_workflow.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the development workflow file
-cat << 'EOF' > .github/workflows/development.yml
 name: Development Workflow
 
 on:
@@ -679,25 +231,9 @@ jobs:
       - name: Manage Secrets
         uses: ./.github/actions/manage-secrets
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-          vps_username: ${{ secrets.VPS_USERNAME }}
-          vps_ip: ${{ secrets.VPS_IP }}
-          deploy_dir: ${{ secrets.DEPLOY_DIR }}
-          repo_owner: ${{ secrets.REPO_OWNER }}
-          app_name: ${{ secrets.APP_NAME }}
-          domain: ${{ secrets.DOMAIN }}
-          staging_domain: ${{ secrets.STAGING_DOMAIN }}
-          db_name: ${{ secrets.DB_NAME }}
-          db_user: ${{ secrets.DB_USER }}
-          db_password: ${{ secrets.DB_PASSWORD }}
-          email: ${{ secrets.EMAIL }}
-          main_dir: ${{ secrets.MAIN_DIR }}
-          nydus_port: ${{ secrets.NYDUS_PORT }}
-          redisai_port: ${{ secrets.REDISAI_PORT }}
-          redis_port: ${{ secrets.REDIS_PORT }}
-          repo_name: ${{ secrets.REPO_NAME }}
-          runner_token: ${{ secrets.RUNNER_TOKEN }}
+          central_repo: YourUsername/central-secrets
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
   setup:
     needs: verify-secrets
@@ -706,7 +242,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
+          vps_ssh_key: ${{ env.VPS_SSH_KEY }}
 
   build:
     needs: setup
@@ -715,98 +251,202 @@ jobs:
       - name: Build Project
         uses: ./.github/actions/build
 
-  deploy:
+  test:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Project
+        uses: ./.github/actions/test
+
+  deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Deploy Project
         uses: ./.github/actions/deploy
         with:
           environment: staging
-          vps_username: ${{ secrets.VPS_USERNAME }}
-          vps_ip: ${{ secrets.VPS_IP }}
-          deploy_dir: ${{ secrets.DEPLOY_DIR }}
-EOF
-
-# Commit the development workflow changes
-git add .github/workflows/development.yml
-git commit -m "Updated development workflow to include Docker build, push, deployment, and migration steps"
-git push origin development
-
-echo "Development workflow updated and pushed to development branch."
+          vps_username: ${{ env.VPS_USERNAME }}
+          vps_ip: ${{ env.VPS_IP }}
+          deploy_dir: ${{ env.DEPLOY_DIR }}
 ```
 
-Make this script executable and run it:
+### Testing Workflow
 
-```sh
-chmod +x update_development_workflow.sh
-./update_development_workflow.sh
+Update the `testing.yml` workflow similarly to the development workflow.
+
+```yaml
+name: Testing Workflow
+
+on:
+  push:
+    branches:
+      - testing
+
+jobs:
+  verify-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Manage Secrets
+        uses: ./.github/actions/manage-secrets
+        with:
+          central_repo: YourUsername/central-secrets
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+  setup:
+    needs: verify-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          vps_ssh_key: ${{ env.VPS_SSH_KEY }}
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Project
+        uses: ./.github/actions/build
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Project
+        uses: ./.github/actions/test
 ```
 
-### Running the Pipeline
+### Staging Workflow
 
-To run the pipeline and stage the Vapor app, push the changes to the `development` branch. This will trigger the development workflow, which includes setting up the environment, building the project, deploying the project, and running the database migrations.
+Update the `staging.yml` workflow similarly.
 
-```sh
-git push origin development
+```yaml
+name: Staging Workflow
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  verify-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Manage Secrets
+        uses: ./.github/actions/manage-secrets
+        with:
+          central_repo: YourUsername/central-secrets
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+  setup:
+    needs: verify-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          vps_ssh_key: ${{ env.VPS_SSH_KEY }}
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Project
+        uses: ./.github/actions/build
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Project
+        uses: ./.github/actions/test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Project
+        uses: ./.github/actions/deploy
+        with:
+          environment: staging
+          vps_username: ${{ env.VPS_USERNAME }}
+          vps_ip: ${{ env.VPS_IP }}
+          deploy_dir: ${{ env.DEPLOY_DIR }}
 ```
 
-Monitor the GitHub Actions page for the repository to ensure that all steps in the workflow complete successfully.
+### Production Workflow
 
----
+Update the `production.yml` workflow similarly.
 
-#### Testing the API with Curl Commands
+```yaml
+name: Production Workflow
 
-After successfully running the pipeline and deploying the app to the staging domain, we can use curl commands to test the API endpoints.
+on:
+  push:
+    branches:
+      - main
 
-Create a file named `test_api_with_curl.sh` with the following content:
+jobs:
+  verify-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-```sh
-#!/bin/bash
+      - name: Manage Secrets
+        uses: ./.github/actions/manage-secrets
+        with:
+          central_repo: YourUsername/central-secrets
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-# Source environment variables
-source config.env
+  setup:
+    needs: verify-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          vps_ssh_key: ${{ env.VPS_SSH_KEY }}
 
-# Base URL of the API
-BASE_URL="${STAGING_DOMAIN}"
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Project
+        uses: ./.github/actions/build
 
-# Test creating a script
-echo "Creating a script..."
-curl -X POST "$BASE_URL/scripts" -H "Content-Type: application/json" -d '{
-    "title": "Test Script",
-    "description": "A test script",
-    "author": "Author"
-}'
-echo
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Project
+        uses: ./.github/actions/test
 
-# Test retrieving all scripts
-echo "Retrieving all scripts..."
-curl -X GET "$BASE_URL/scripts"
-echo
-
-# Test deleting a script
-echo "Retrieving the first script to delete..."
-SCRIPT_ID=$(curl -X GET "$BASE_URL/scripts" | jq -r '.[0].id')
-echo "Deleting script with ID $SCRIPT_ID..."
-curl -X DELETE "$BASE_URL/scripts/$SCRIPT_ID"
-echo
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Project
+        uses: ./.github/actions/deploy
+        with:
+          environment: production
+          vps_username: ${{ env.VPS_USERNAME }}
+          vps_ip: ${{ env.VPS_IP }}
+          deploy_dir: ${{ env.DEPLOY_DIR }}
 ```
 
-Make this script executable and run it:
+## Conclusion
 
-```sh
-chmod +x test_api_with_curl.sh
-./test_api_with_curl.sh
-```
+In this episode, we enhanced our CI/CD pipeline by decoupling secrets management using a centralized secrets repository and GPG encryption. We created a new repository to store encrypted secrets and updated our workflows to dynamically fetch and decrypt these secrets. This approach ensures better security, reduces duplication, and simplifies the maintenance of sensitive information across multiple projects.
 
-**Expected Outcome:**
-
-The curl commands should demonstrate that the API endpoints for creating, retrieving, and deleting scripts are working as expected.
-
-### Conclusion
-
-In this episode, we extended the functionality of the FountainAI application by following the Test-Driven Development (TDD) approach. We started with the OpenAPI specification as our initial "test" or blueprint, wrote tests for our desired functionality, ran them to see them fail, then implemented the functionality to make the tests pass. We developed core API endpoints, connected to the PostgreSQL database, and implemented basic CRUD operations.
-
-By following these steps, we ensured that our implementation adheres to the OpenAPI specification and that our tests validate the functionality. Additionally, we integrated these tests into our CI/CD pipeline, ensuring a reliable and automated deployment process.
-
-Stay tuned for the next episodes, where we will continue to build upon this foundation, implementing more complex features and further refining our development process.
+By following these steps, we have created a more flexible and reusable CI/CD pipeline that can be easily adapted for future projects.
