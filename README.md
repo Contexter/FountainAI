@@ -1,4 +1,3 @@
-
 ### `README.md`
 
 # Road to FountainAI
@@ -33,9 +32,9 @@ In this episode, we create and manage a CI/CD pipeline using GitHub Actions. Thi
 
 In this episode, we create a basic "Hello, World!" Vapor application, Dockerize it, and integrate it into the CI/CD pipeline established in Episode 2. We introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
 
-### [Episode 4: Decoupling Secrets Management from the CI/CD Pipeline](episodes/Episode4/episode4.md)
+### [Episode 4: Automating Secrets Management with a Swift Command-Line Tool](episodes/Episode4/episode4.md)
 
-In this episode, we enhance our CI/CD pipeline by decoupling secrets management using a centralized secrets repository and GPG encryption. We create a new repository to store encrypted secrets and update our workflows to dynamically fetch and decrypt these secrets. This approach ensures better security, reduces duplication, and simplifies the maintenance of sensitive information across multiple projects.
+In this episode, we enhance our CI/CD pipeline by creating a Swift-based command-line tool to manage GitHub secrets. This tool is Dockerized and integrated into our CI/CD workflows, allowing for seamless and automated secrets management. This approach ensures better security, reduces manual effort, and maintains consistency across different environments.
 
 ### [Episode 5: Implementing the Script Entity with TDD](episodes/Episode5/episode5.md)
 
@@ -61,4 +60,3 @@ Content to be added.
 
 Content to be added.
 
----
