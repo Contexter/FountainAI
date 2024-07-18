@@ -1,10 +1,9 @@
-### `README.md`
 
 # Road to FountainAI
 
 ## Introduction
 
-Welcome to "FountainAI's Vapor," the road story of setting up and deploying FountainAI, an AI-driven model designed to analyze and process theatrical and screenplay scripts. Leveraging the power of Vapor, Docker, and modern CI/CD practices, this guide will take you through every step, from initial setup to deploying a Dockerized Vapor application managed by a CI/CD pipeline.
+Welcome to "FountainAI's Vapor," the story of setting up and deploying FountainAI, an AI-driven model designed to analyze and process theatrical and screenplay scripts. Leveraging the power of Vapor, Docker, and modern CI/CD practices, this guide will take you through every step, from initial setup to deploying a Dockerized Vapor application managed by a CI/CD pipeline.
 
 ### FountainAI Network Graph
 
@@ -36,9 +35,9 @@ In this episode, we create a basic "Hello, World!" Vapor application, Dockerize 
 
 In this episode, we enhance our CI/CD pipeline by creating a Swift-based command-line tool to manage GitHub secrets. This tool is Dockerized and integrated into our CI/CD workflows, allowing for seamless and automated secrets management. This approach ensures better security, reduces manual effort, and maintains consistency across different environments.
 
-### [Episode 5: Implementing the Script Entity with TDD](episodes/Episode5/episode5.md)
+### [Episode 5: Generating a Full-Stack Vapor Application and CI/CD Pipeline with GPT-4](episodes/Episode5/episode5.md)
 
-In this episode, we implement the Script entity using Test-Driven Development (TDD). We begin by writing tests based on the OpenAPI specification, run the tests to see them fail, then implement the functionality to make the tests pass. We develop core API endpoints, connect to the PostgreSQL database, and implement basic CRUD operations.
+In this episode, we leverage GPT-4 to generate a full-stack Vapor application and an accompanying CI/CD pipeline. The GPT-4 model uses the provided OpenAPI specification to produce all necessary code components, streamlining our development workflow and enhancing productivity.
 
 ### [Episode 6: Placeholder Title](episodes/Episode6/episode6.md)
 
@@ -59,4 +58,4 @@ Content to be added.
 ### [Episode 10: Placeholder Title](episodes/Episode10/episode10.md)
 
 Content to be added.
-
+```
