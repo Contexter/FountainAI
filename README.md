@@ -1,4 +1,3 @@
-Understood. Here is the revised `README.md` with the requested changes:
 
 ### `README.md`
 
