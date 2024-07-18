@@ -6,14 +6,20 @@
 
 1. [Introduction](#introduction)
 2. [Setting Up the Vapor Application](#setting-up-the-vapor-application)
+   - [Folder Structure Before Setup](#folder-structure-before-setup)
+   - [Setup Vapor Application Script](#setup-vapor-application-script)
+   - [Folder Structure After Setup](#folder-structure-after-setup)
 3. [Dockerizing the Vapor Application](#dockerizing-the-vapor-application)
+   - [Update Dockerfile Script](#update-dockerfile-script)
 4. [Introduction to Docker Compose](#introduction-to-docker-compose)
-5. [Configuring Docker Compose](#configuring-docker-compose)
-6. [Integrating with CI/CD Pipeline](#integrating-with-cicd-pipeline)
-7. [Testing and Monitoring the Deployment](#testing-and-monitoring-the-deployment)
-8. [Conclusion](#conclusion)
-
----
+   - [Benefits of Docker Compose](#benefits-of-docker-compose)
+   - [Setup Docker Compose Script](#setup-docker-compose-script)
+5. [Integrating with CI/CD Pipeline](#integrating-with-cicd-pipeline)
+   - [Manage Secrets Injection](#manage-secrets-injection)
+   - [Update CI/CD Pipeline Script](#update-cicd-pipeline-script)
+6. [Testing and Monitoring the Deployment](#testing-and-monitoring-the-deployment)
+7. [Conclusion](#conclusion)
+8. [Foreshadowing the Next Episode](#foreshadowing-the-next-episode)
 
 ## Introduction
 
@@ -21,17 +27,89 @@ In this episode, we will focus on creating a basic "Hello, World!" Vapor applica
 
 ## Setting Up the Vapor Application
 
-First, we need to set up a new Vapor project within the existing `fountainAI` repository. This will serve as the foundation for our application. To streamline this process, we'll use a shell script to automate the setup.
+First, we need to set up a new Vapor project within the existing `fountainAI` repository. This will serve as the foundation for our application.
 
-### Create a Script to Set Up the Vapor Application
+### Folder Structure Before Setup
 
-Create a file named `setup_vapor_project.sh` with the following content:
+Before setting up the Vapor application, the folder structure is as follows:
 
-```sh
+```
+fountainAI/
+├── .github
+│   ├── actions
+│   │   ├── build
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── deploy
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── manage-secrets
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── setup
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── test
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   ├── workflows
+│   │   ├── development.yml
+│   │   ├── production.yml
+│   │   ├── staging.yml
+│   │   └── testing.yml
+├── README.md
+├── config.env
+├── episodes
+│   ├── Episode1
+│   │   ├── episode1.md
+│   │   ├── setup_all.sh
+│   │   ├── setup_episodes.sh
+│   │   └── setup_project_structure.sh
+│   ├── Episode10
+│   │   └── episode10.md
+│   ├── Episode2
+│   │   ├── episode2.md
+│   │   ├── pipeline_setup.sh
+│   ├── Episode3
+│   │   └── episode3.md
+│   ├── Episode4
+│   │   └── episode4.md
+│   ├── Episode5
+│   │   └── episode5.md
+│   ├── Episode6
+│   │   └── episode6.md
+│   ├── Episode7
+│   │   └── episode7.md
+│   ├── Episode8
+│   │   └── episode8.md
+│   └── Episode9
+│       └── episode9.md
+└── openAPI
+    ├── Class openAPI
+    │   ├── Action.yaml
+    │   ├── Character.yaml
+    │   ├── MusicSound.yaml
+    │   ├── Note.yaml
+    │   ├── Script.yaml
+    │   ├── SectionHeading.yaml
+    │   ├── SpokenWord.yaml
+    │   └── Transition.yaml
+    ├── FountainAI-Admin-openAPI.yaml
+    ├── GPT-constructive-openAPI.yaml
+    ├── README.md
+    └── Tools openAPI
+        └── trainoptimizeseed.yaml
+```
+
+### Setup Vapor Application Script
+
+Create a file named `setup_vapor_application.sh` in the `episodes/Episode3` directory with the following content:
+
+```bash
 #!/bin/bash
 
-# Ensure we're in the root directory of the existing repository
-cd path/to/your/fountainAI
+# Navigate to the root directory of the repository
+cd $(git rev-parse --show-toplevel)
 
 # Initialize a new Vapor project (without git initialization)
 vapor new . --template=api --no-git
@@ -45,24 +123,109 @@ git push origin development
 echo "Vapor project setup complete and pushed to development branch."
 ```
 
-This script navigates to the root directory of your existing repository, initializes a new Vapor project using the API template without creating a new Git repository, adds the generated files to the existing Git repository, and pushes the changes to the development branch.
-
 Make this script executable and run it:
 
 ```sh
-chmod +x setup_vapor_project.sh
-./setup_vapor_project.sh
+chmod +x episodes/Episode3/setup_vapor_application.sh
+./episodes/Episode3/setup_vapor_application.sh
+```
+
+### Folder Structure After Setup
+
+After setting up the Vapor application, the folder structure should look like this:
+
+```
+fountainAI/
+├── .github
+│   ├── actions
+│   │   ├── build
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── deploy
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── manage-secrets
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── setup
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   │   ├── test
+│   │   │   ├── action.yml
+│   │   │   └── index.js
+│   ├── workflows
+│   │   ├── development.yml
+│   │   ├── production.yml
+│   │   ├── staging.yml
+│   │   └── testing.yml
+├── README.md
+├── config.env
+├── episodes
+│   ├── Episode1
+│   │   ├── episode1.md
+│   │   ├── setup_all.sh
+│   │   ├── setup_episodes.sh
+│   │   └── setup_project_structure.sh
+│   ├── Episode10
+│   │   └── episode10.md
+│   ├── Episode2
+│   │   ├── episode2.md
+│   │   ├── pipeline_setup.sh
+│   ├── Episode3
+│   │   ├── episode3.md
+│   │   └── setup_vapor_application.sh
+│   ├── Episode4
+│   │   └── episode4.md
+│   ├── Episode5
+│   │   └── episode5.md
+│   ├── Episode6
+│   │   └── episode6.md
+│   ├── Episode7
+│   │   └── episode7.md
+│   ├── Episode8
+│   │   └── episode8.md
+│   └── Episode9
+│       └── episode9.md
+├── Sources
+│   ├── App
+│   │   ├── Controllers
+│   │   │   └── HelloController.swift
+│   │   ├── Models
+│   │   │   └── User.swift
+│   │   ├── app.swift
+│   │   ├── configure.swift
+│   │   └── routes.swift
+│   ├── Run
+│   │   └── main.swift
+├── Tests
+│   ├── AppTests
+│   │   └── AppTests.swift
+└── openAPI
+    ├── Class openAPI
+    │   ├── Action.yaml
+    │   ├── Character.yaml
+    │   ├── MusicSound.yaml
+    │   ├── Note.yaml
+    │   ├── Script.yaml
+    │   ├── SectionHeading.yaml
+    │   ├── SpokenWord.yaml
+    │   └── Transition.yaml
+    ├── FountainAI-Admin-openAPI.yaml
+    ├── GPT-constructive-openAPI.yaml
+    ├── README.md
+    └── Tools openAPI
+        └── trainoptimizeseed.yaml
 ```
 
 ## Dockerizing the Vapor Application
 
 Next, we need to ensure that the Vapor application can be containerized using Docker. The Vapor toolbox generates a default Dockerfile, which we will review and update if necessary.
 
-### Verify and Update the Dockerfile
+### Update Dockerfile Script
 
-Create a file named `update_dockerfile.sh` with the following content:
+Create a file named `update_dockerfile.sh` in the `episodes/Episode3` directory with the following content:
 
-```sh
+```bash
 #!/bin/bash
 
 # Create or update the Dockerfile with the following content
@@ -112,33 +275,28 @@ git push origin development
 echo "Dockerfile updated and pushed to development branch."
 ```
 
-This script ensures that the Dockerfile is set up correctly by copying the necessary files, building the Vapor application in release mode, and creating a slimmer runtime image. It then commits and pushes the Dockerfile to the development branch.
-
 Make this script executable and run it:
 
 ```sh
-chmod +x update_dockerfile.sh
-./update_dockerfile.sh
+chmod +x episodes/Episode3/update_dockerfile.sh
+./episodes/Episode3/update_dockerfile.sh
 ```
 
 ## Introduction to Docker Compose
 
 Docker Compose is a tool for defining and running multi-container Docker applications. With Compose, you can manage different services such as your web server, database, and cache with a single configuration file.
 
-#### Benefits of Docker Compose:
+### Benefits of Docker Compose
+
 - **Multi-Container Management**: Easily manage multiple containers for different services (e.g., web server, database, cache).
 - **Declarative Configuration**: Define all your services in a single `docker-compose.yml` file.
 - **Simplified Deployment**: One command to start and stop all services, simplifying the deployment process.
 
-## Configuring Docker Compose
+### Setup Docker Compose Script
 
-Given the [OpenAPI specification](https://github.com/Contexter/fountainAI/blob/main/openAPI/FountainAI-Admin-openAPI.yaml), we need to set up an environment with multiple services: Nginx, Vapor, PostgreSQL, Redis, and RedisAI.
+Create a file named `setup_docker_compose.sh` in the `episodes/Episode3` directory with the following content:
 
-### Create a Script to Set Up Docker Compose
-
-Create a file named `setup_docker_compose.sh` with the following content:
-
-```sh
+```bash
 #!/bin/bash
 
 # Create the docker-compose.yml file with the following content
@@ -223,20 +381,18 @@ git push origin development
 echo "Docker Compose configuration added and pushed to development branch."
 ```
 
-This script creates the `docker-compose.yml` file, defining the services and their dependencies, networks, and volumes. The environment variables are placeholders that will be replaced with secrets managed by the CI/CD pipeline. It then commits and pushes the configuration to the development branch.
-
 Make this script executable and run it:
 
 ```sh
-chmod +x setup_docker_compose.sh
-./setup_docker_compose.sh
+chmod +x episodes/Episode3/setup_docker_compose.sh
+./episodes/Episode3/setup_docker_compose.sh
 ```
 
 ## Integrating with CI/CD Pipeline
 
 We need to ensure that our CI/CD pipeline can build, push, and deploy the Docker Compose stack. We'll update our CI/CD pipeline scripts to include these steps, leveraging the secrets management from Episode 2.
 
-### How the CI/CD Pipeline Manages Secrets Injection into the Docker Compose File
+### Manage Secrets Injection
 
 The CI/CD pipeline leverages the `Manage Secrets` action to securely inject secrets into the Docker Compose file. Here's how it works:
 
@@ -250,21 +406,16 @@ The CI/CD pipeline leverages the `Manage Secrets` action to securely inject secr
    - The `docker-compose.yml` file is configured to use environment variables for sensitive information. Placeholders like `${DATABASE_URL}` are used in the `docker-compose.yml` file.
    - When the pipeline runs, the environment variables set by the `Manage Secrets` action replace these placeholders with actual values.
 
-4. **Pipeline Workflow**:
-   - The workflow uses the `Manage Secrets` action to validate and export secrets.
-   - The `Setup Environment` action prepares the VPS environment.
-   - The `Build Project` action builds the Docker image, ensuring that the environment variables are available during the build process.
-   - The `Deploy Project` action deploys the Docker Compose stack, injecting the secrets into the running containers.
+### Update CI/CD Pipeline Script
 
-### Update the Environment Setup Action
+Create a file named `update_pipeline.sh` in the `episodes/Episode3` directory with the following content:
 
-To securely manage SSH keys, we will use `ssh-agent` to handle the SSH key in-memory, avoiding writing it to disk. Here is the revised `update_setup_environment_action.sh`:
-
-```sh
+```bash
 #!/bin/bash
 
-# Create or update the setup environment action index.js file
-cat << 'EOF' > .github/actions/setup/index.js
+# Function to update setup environment action
+update_setup_environment_action() {
+  cat << 'EOF' > .github/actions/setup/index.js
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 
@@ -314,33 +465,11 @@ async function run() {
 
 run();
 EOF
+}
 
-# Commit the setup environment action changes
-git add .github/actions/setup/index.js
-git commit -m "Updated setup environment action to use ssh-agent for SSH key management"
-git push origin development
-
-echo "Setup environment action updated and pushed to development branch."
-```
-
-This script updates the environment setup action to use `ssh-agent` for managing the SSH key securely in memory. It starts the SSH agent, adds the SSH key to the agent from the provided input, and uses the SSH agent to authenticate and run the installation commands on the VPS. It then commits and pushes the changes to the development branch.
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_setup_environment_action.sh
-./update_setup_environment_action.sh
-```
-
-### Update the Build Action
-
-Create a file named `update_build_action.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the build action index.js file
-cat << 'EOF' > .github/actions/build/index.js
+# Function to update build action
+update_build_action() {
+  cat << 'EOF' > .github/actions/build/index.js
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 
@@ -363,33 +492,13 @@ async function run() {
 
 run();
 EOF
+}
 
-# Commit the build action changes
-git add .github/actions/build/index.js
-git commit -m "Updated build action to build and push Docker image"
-git push origin development
+# Function to update deploy action
+update_deploy_action() {
+  cat << 'EOF' > .github/actions/deploy/index.js
 
-echo "Build action updated and pushed to development branch."
-```
 
-This script updates the build action to build the Docker image and push it to the GitHub Container Registry. It then commits and pushes the changes to the development branch.
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_build_action.sh
-./update_build_action.sh
-```
-
-### Update the Deploy Action
-
-Create a file named `update_deploy_action.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the deploy action index.js file
-cat << 'EOF' > .github/actions/deploy/index.js
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 
@@ -412,33 +521,11 @@ async function run() {
 
 run();
 EOF
+}
 
-# Commit the deploy action changes
-git add .github/actions/deploy/index.js
-git commit -m "Updated deploy action to deploy Docker Compose stack"
-git push origin development
-
-echo "Deploy action updated and pushed to development branch."
-```
-
-This script updates the deploy action to SSH into the VPS, pull the latest Docker images, and run the Docker Compose stack. It then commits and pushes the changes to the development branch.
-
-Make this script executable and run it:
-
-```sh
-chmod +x update_deploy_action.sh
-./update_deploy_action.sh
-```
-
-### Update Development Workflow
-
-Create a file named `update_development_workflow.sh` with the following content:
-
-```sh
-#!/bin/bash
-
-# Create or update the development workflow file
-cat << 'EOF' > .github/workflows/development.yml
+# Function to update development workflow
+update_development_workflow() {
+  cat << 'EOF' > .github/workflows/development.yml
 name: Development Workflow
 
 on:
@@ -499,27 +586,32 @@ jobs:
       - name: Deploy Project
         uses: ./.github/actions/deploy
         with:
-          environment: staging
+          environment: development
           vps_username: ${{ secrets.VPS_USERNAME }}
           vps_ip: ${{ secrets.VPS_IP }}
           deploy_dir: ${{ secrets.DEPLOY_DIR }}
 EOF
+}
 
-# Commit the development workflow changes
-git add .github/workflows/development.yml
-git commit -m "Updated development workflow to include Docker build, push, and deployment steps"
+# Execute the functions to update the actions and workflow
+update_setup_environment_action
+update_build_action
+update_deploy_action
+update_development_workflow
+
+# Commit and push the changes
+git add .github/actions/setup/index.js .github/actions/build/index.js .github/actions/deploy/index.js .github/workflows/development.yml
+git commit -m "Updated CI/CD pipeline actions and workflows for Docker Compose integration"
 git push origin development
 
-echo "Development workflow updated and pushed to development branch."
+echo "CI/CD pipeline actions and workflows updated and pushed to development branch."
 ```
-
-This script updates the development workflow to include steps for building, pushing, and deploying the Docker Compose stack. It then commits and pushes the changes to the development branch.
 
 Make this script executable and run it:
 
 ```sh
-chmod +x update_development_workflow.sh
-./update_development_workflow.sh
+chmod +x episodes/Episode3/update_pipeline.sh
+./episodes/Episode3/update_pipeline.sh
 ```
 
 ## Testing and Monitoring the Deployment
@@ -542,10 +634,16 @@ chmod +x update_development_workflow.sh
 
 ## Conclusion
 
-In this episode, we created a basic "Hello, World!" Vapor application, Dockerized it, and integrated it into the CI/CD pipeline established in Episode 2. By introducing Docker Compose, we set up a multi-container environment to manage different services, ensuring a robust and scalable infrastructure for the FountainAI project. 
+In this episode, we created a basic "Hello, World!" Vapor application, Dockerized it, and integrated it into the CI/CD pipeline established in Episode 2. By introducing Docker Compose, we set up a multi-container environment to manage different services, ensuring a robust and scalable infrastructure for the FountainAI project.
 
 We also detailed how the CI/CD pipeline manages secrets injection into the Docker Compose file using the `Manage Secrets` action, ensuring that sensitive information is securely handled. Additionally, we improved the security of SSH key management by using `ssh-agent` to keep the key in memory, avoiding the risk associated with writing keys to disk.
 
 By following these steps and using shell scripts to automate file creation and updates, we ensured that our CI/CD pipeline is functioning correctly and efficiently. This setup will support the seamless integration and deployment of new features and services as we continue to develop FountainAI.
 
+## Foreshadowing the Next Episode
+
 Stay tuned for the next episodes, where we will delve deeper into the implementation of FountainAI, building upon the solid groundwork established in this episode. We will expand the functionality of the Vapor application, integrate additional services, and continue refining our deployment process to ensure a seamless and reliable development experience.
+
+---
+
+This revised episode now follows the editorial rules and includes the pipeline updates as requested.
