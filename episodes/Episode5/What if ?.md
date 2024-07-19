@@ -298,3 +298,381 @@ services:
    - This approach scales well as new models or features can be added independently without disrupting the existing setup.
 
 By following this structured approach, the complex OpenAPI specification can be effectively managed, ensuring a robust and maintainable implementation.
+
+## Configure Common Services 
+
+Given we have a one to one mapping of vapor app and openAPI model - can these apps use the same dockerized services ? - 
+Yes, these apps can use the same dockerized services. When implementing a one-to-one mapping of each model from the OpenAPI specification to a separate Vapor application, you can configure these applications to share common services such as PostgreSQL, Redis, and RedisAI. This approach ensures consistency and efficient resource utilization.
+
+### How to Share Dockerized Services Among Multiple Apps
+
+1. **Docker Network Configuration:**
+   - Ensure all Docker services and applications are on the same Docker network so they can communicate with each other.
+
+2. **Environment Variables:**
+   - Use environment variables to configure each Vapor application to connect to the shared services.
+
+3. **Docker Compose Setup:**
+   - Define a single `docker-compose.yml` file that includes all services and applications. Each application will be a separate service in the compose file.
+
+### Example Docker Compose Configuration
+
+Below is an example `docker-compose.yml` configuration that demonstrates how to set up shared services and multiple Vapor applications:
+
+**docker-compose.yml**
+```yaml
+version: '3.8'
+
+services:
+  # Shared PostgreSQL database
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # Shared Redis cache
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  # Shared RedisAI service
+  redisai:
+    image: redisai/redisai:latest
+    ports:
+      - "6378:6378"
+    environment:
+      - REDISAI=1
+    networks:
+      - app-network
+
+  # Vapor app for managing Scripts
+  script-app:
+    build:
+      context: ./script-app
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/database
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+      - redisai
+    ports:
+      - "8081:8080"
+
+  # Vapor app for managing SectionHeadings
+  section-heading-app:
+    build:
+      context: ./section-heading-app
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/database
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+      - redisai
+    ports:
+      - "8082:8080"
+
+  # Additional Vapor apps can be added similarly...
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+```
+
+### Directory Structure
+
+To support this setup, you should organize your directory structure to include separate directories for each Vapor application:
+
+```
+/project-root
+  /script-app
+    Dockerfile
+    Sources/
+    ...
+  /section-heading-app
+    Dockerfile
+    Sources/
+    ...
+  /additional-apps
+    Dockerfile
+    Sources/
+    ...
+  docker-compose.yml
+```
+
+### Dockerfiles for Each App
+
+Ensure each Vapor application has its own `Dockerfile`. Here is an example for `script-app`:
+
+**script-app/Dockerfile**
+```Dockerfile
+# Use the official Swift image to build the app
+FROM swift:5.3 as builder
+
+# Create a working directory
+WORKDIR /app
+
+# Copy the source code to the container
+COPY . .
+
+# Build the Vapor app
+RUN swift build --enable-test-discovery -c release
+
+# Create a runtime image
+FROM swift:5.3-slim
+WORKDIR /app
+COPY --from=builder /app/.build/release /app
+
+# Expose the port the app runs on
+EXPOSE 8080
+
+# Run the Vapor app
+CMD ["./Run"]
+```
+
+### Environment Configuration
+
+Each application needs to be configured to use the shared services. The environment variables in the `docker-compose.yml` file ensure that each app points to the correct service URLs.
+
+### Conclusion
+
+By sharing dockerized services among multiple Vapor applications, you ensure a consistent environment and efficient resource usage. This setup supports the modular development of each model's CRUD API while maintaining a cohesive system architecture. Using Docker Compose allows for easy orchestration of these services, making the development, testing, and deployment processes more streamlined and manageable.
+
+## Enter Stage: The Migrations Manager
+
+To enable multiple Vapor applications to manage migrations on a shared PostgreSQL database, you need to ensure that the migrations are coordinated properly. Here's a structured approach to handle database migrations in a shared, dockerized PostgreSQL environment:
+
+### Approach
+
+1. **Centralized Migration Management:**
+   - Choose one of the Vapor applications to act as the migration manager. This application will be responsible for running all migrations, including those from other applications.
+   - Alternatively, create a separate migration manager service that runs migrations for all applications.
+
+2. **Shared Database Schema:**
+   - Ensure that all applications are aware of the database schema and that migrations are idempotent (i.e., they can be run multiple times without causing issues).
+
+3. **Migration Scripts:**
+   - Write migration scripts for each application and ensure they are included in the migration manager.
+
+4. **Docker Compose Configuration:**
+   - Configure Docker Compose to run migrations before starting the services.
+
+### Example Setup
+
+#### 1. **Directory Structure:**
+```
+/project-root
+  /script-app
+    Dockerfile
+    Sources/
+    Migrations/
+    ...
+  /section-heading-app
+    Dockerfile
+    Sources/
+    Migrations/
+    ...
+  /migration-manager
+    Dockerfile
+    Sources/
+    Migrations/
+    ...
+  docker-compose.yml
+```
+
+#### 2. **Migration Manager Application:**
+
+Create a new Vapor application or designate one of the existing applications to handle all migrations. This application will include migrations from all other applications.
+
+**migration-manager/Sources/App/Migrations/CreateScripts.swift**
+```swift
+import Fluent
+
+struct CreateScripts: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("scripts")
+            .id()
+            .field("title", .string, .required)
+            .field("description", .string, .required)
+            .field("author", .string, .required)
+            .field("sequence", .int, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("scripts").delete()
+    }
+}
+```
+
+**migration-manager/Sources/App/Migrations/CreateSectionHeadings.swift**
+```swift
+import Fluent
+
+struct CreateSectionHeadings: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("section_headings")
+            .id()
+            .field("script_id", .uuid, .required, .references("scripts", "id"))
+            .field("title", .string, .required)
+            .field("sequence", .int, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("section_headings").delete()
+    }
+}
+```
+
+Include similar migration scripts for other applications.
+
+**migration-manager/Sources/App/configure.swift**
+```swift
+import Fluent
+import FluentPostgresDriver
+import Vapor
+
+public func configure(_ app: Application) throws {
+    // Configure the database connection
+    app.databases.use(.postgres(
+        hostname: Environment.get("DB_HOST") ?? "localhost",
+        username: Environment.get("DB_USER") ?? "user",
+        password: Environment.get("DB_PASS") ?? "password",
+        database: Environment.get("DB_NAME") ?? "database"
+    ), as: .psql)
+    
+    // Register migrations
+    app.migrations.add(CreateScripts())
+    app.migrations.add(CreateSectionHeadings())
+    // Add other migrations here
+
+    // Run migrations automatically
+    try app.autoMigrate().wait()
+}
+```
+
+#### 3. **Docker Compose Configuration:**
+
+Update your `docker-compose.yml` to include the migration manager service.
+
+**docker-compose.yml**
+```yaml
+version: '3.8'
+
+services:
+  # Shared PostgreSQL database
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # Shared Redis cache
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  # Shared RedisAI service
+  redisai:
+    image: redisai/redisai:latest
+    ports:
+      - "6378:6378"
+    environment:
+      - REDISAI=1
+    networks:
+      - app-network
+
+  # Migration manager service
+  migration-manager:
+    build:
+      context: ./migration-manager
+    environment:
+      - DB_HOST=db
+      - DB_USER=user
+      - DB_PASS=password
+      - DB_NAME=database
+    networks:
+      - app-network
+    depends_on:
+      - db
+    command: ["vapor", "migrate"]
+
+  # Vapor app for managing Scripts
+  script-app:
+    build:
+      context: ./script-app
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/database
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+      - redisai
+    ports:
+      - "8081:8080"
+
+  # Vapor app for managing SectionHeadings
+  section-heading-app:
+    build:
+      context: ./section-heading-app
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/database
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+      - redisai
+    ports:
+      - "8082:8080"
+
+  # Additional Vapor apps can be added similarly...
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+```
+
+#### 4. **Build and Run the Docker Compose Setup:**
+
+Run the Docker Compose setup to build the images and start the containers. The migration manager will run the migrations before starting the other services.
+
+```sh
+docker-compose up --build
+```
+
+### Conclusion
+
+By centralizing the migration management in a dedicated service or one of the Vapor applications, you can ensure that migrations are coordinated properly across all applications sharing the same PostgreSQL database. This approach helps maintain a consistent database schema and avoids potential conflicts or duplications in migrations. The Docker Compose setup orchestrates the services, ensuring that migrations are applied before the applications start, leading to a smooth and reliable deployment process.
