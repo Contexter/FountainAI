@@ -1,4 +1,3 @@
-
 # Road to FountainAI
 
 ## Introduction
@@ -35,9 +34,9 @@ In this episode, we create a basic "Hello, World!" Vapor application, Dockerize 
 
 In this episode, we enhance our CI/CD pipeline by creating a Swift-based command-line tool to manage GitHub secrets. This tool is Dockerized and integrated into our CI/CD workflows, allowing for seamless and automated secrets management. This approach ensures better security, reduces manual effort, and maintains consistency across different environments.
 
-### [Episode 5: Generating a Full-Stack Vapor Application and CI/CD Pipeline with GPT-4](episodes/Episode5/episode5.md)
+### [Episode 5: Try or Die - Forcing the Monolith](episodes/Episode5/episode5.md)
 
-In this episode, we leverage GPT-4 to generate a full-stack Vapor application and an accompanying CI/CD pipeline. The GPT-4 model uses the provided OpenAPI specification to produce all necessary code components, streamlining our development workflow and enhancing productivity.
+In this turning point episode, we leverage GPT-4 to generate a full-stack Vapor application and an accompanying CI/CD pipeline. The GPT-4 model uses the provided OpenAPI specification to produce all necessary code components, streamlining our development workflow and enhancing productivity. Based on the test results, this episode marks a significant shift in our approach, highlighting both the potential and the limitations of using AI-driven code generation for complex applications.
 
 ### [Episode 6: Placeholder Title](episodes/Episode6/episode6.md)
 
@@ -58,4 +57,3 @@ Content to be added.
 ### [Episode 10: Placeholder Title](episodes/Episode10/episode10.md)
 
 Content to be added.
-```
