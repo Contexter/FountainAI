@@ -1,4 +1,5 @@
-### Episode 5: Try or Die - Generating a Full-Stack Vapor Application and CI/CD Pipeline with GPT-4o
+### Episode 5: Try or Die - Forcing the Monolyth
+> Generating a Full-Stack Vapor Application and CI/CD Pipeline with GPT-4o
 
 #### Table of Contents
 1. [Introduction](#introduction)
