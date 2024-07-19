@@ -1,4 +1,4 @@
-### Episode 5: Try or Die - Forcing the Monolyth
+### Episode 5: Try or Die - Forcing the Monolith
 > Generating a Full-Stack Vapor Application and CI/CD Pipeline with GPT-4o
 
 #### Table of Contents
@@ -8,9 +8,9 @@
 4. [Prompt Engineering for Vapor Application](#prompt-engineering-for-vapor-application)
 5. [Prompt Engineering for CI/CD Pipeline](#prompt-engineering-for-cicd-pipeline)
 6. [The Comprehensive Prompt](#the-comprehensive-prompt)
-7. [Generating and Testing the Code](#generating-and-testing-the-code)
-8. [Guide for Using the Prompt](#guide-for-using-the-prompt)
-9. [Conclusion](#conclusion)
+7. [Result of Prompting the Monolith](#result-of-prompting-the-monolith)
+8. [Conclusion](#conclusion)
+9. [Foreshadowing Problem Solution Strategy - Episode 6](#foreshadowing-problem-solution-strategy---episode-6)
 
 ---
 
@@ -54,7 +54,6 @@ Here is the comprehensive prompt for GPT-4o:
 ---
 
 **START OF PROMPT**
-
 
 You are a highly capable AI trained to assist with software development. Given the following OpenAPI specification, generate a fully functional Vapor application in Swift. The code must be fully commented. Also, integrate a CI/CD pipeline using GitHub Actions, leveraging the secrets manager command-line tool previously created. The code must be provided in executable shell scripts that again produce the code correctly integrated into the FountainAI repository.
 
@@ -249,7 +248,9 @@ struct CreateScript: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: Database
+
+) -> EventLoopFuture<Void> {
         return database.schema("scripts").delete()
     }
 }
@@ -257,9 +258,7 @@ EOF
 
 echo "Migrations created."
 
-# Commit the changes to
-
- the repository
+# Commit the changes to the repository
 git add CreateScript.swift
 git commit -m "Create migrations based on OpenAPI specification"
 git push origin development
@@ -410,26 +409,71 @@ echo "CI/CD workflows updated successfully."
 **END OF PROMPT**
 ___
 
-### Generating and Testing the generated Code
+### Result of Prompting the Monolith 
 
-1. **Run the Scripts**: Execute each shell script in the given order to set up the project structure, create models, controllers, migrations, and CI/CD workflows.
-2. **Verify Integration**: Ensure that the generated code is correctly integrated into the FountainAI repository.
-3. **Run the CI/CD Pipeline**: Push changes to the repository and monitor the CI/CD pipeline to verify successful builds, tests, and deployments.
+**Outcome and Resume**
 
-### Guide for Using the Prompt
+**Outcome:** After thorough testing and analysis, it has been determined that the GPT model is currently unable to directly meet the level of complexity required by detailed OpenAPI specifications. This conclusion is based on several identified limitations in the model’s scope, context management, precision in code generation, and ability to handle integrations and middleware.
 
-To efficiently use the prompt with GPT-4o:
+**Resume:** The test focused on evaluating the GPT model's capability to generate a fully functional Vapor application in Swift based on a comprehensive OpenAPI specification. The evaluation encompassed multiple dimensions, including understanding of detailed specifications, state management, precision in code generation, and handling complex integrations. Despite its advanced capabilities, the GPT model fell short in meeting the intricate requirements of the task.
 
-1. **Prepare the OpenAPI Specification**: Ensure the full OpenAPI specification is available and correctly formatted.
-2. **Create a New Markdown File**: Save the comprehensive prompt (from START OF PROMPT to END OF PROMPT) into a new `.md` file, including the placeholder for the OpenAPI specification.
-3. **Insert the OpenAPI Specification**: Replace the placeholder with the actual OpenAPI specification from [FountainAI-Admin-openAPI.yaml](https://github.com/Contexter/fountainAI/blob/staging/openAPI/FountainAI-Admin-openAPI.yaml).
-4. **Copy the Markdown File Content**: Select all the content of this newly created `.md` file and copy it.
-5. **Paste into ChatGPT**: Open ChatGPT, verify GPT-4o model use and paste the copied content as a prompt.
-6. **Run the Prompt**: Execute the prompt and review the generated code.
-7. **Run the Shell Scripts**: Save the generated shell scripts and run them to implement the Vapor application and CI/CD pipeline.
+**Prompts Used for Testing:**
+- [Prompt Version 1](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode5/FountainAI%20Prompt%20Engineering%20-%20Prompt%20Version%201.md)
+- [Prompt Version 2](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode5/FountainAI%20Prompt%20Engineering%20-%20Prompt%20Version%202.md)
+
+## Table of Contents
+1. [Scope and Depth of Understanding](#1-scope-and-depth-of-understanding)
+2. [Context and State Management](#2-context-and-state-management)
+3. [Precision and Accuracy in Code Generation](#3-precision-and-accuracy-in-code-generation)
+4. [Integration and Middleware](#4-integration-and-middleware)
+5. [Why Writing More Descriptive Prompts Doesn't Change the Situation](#why-writing-more-descriptive-prompts-doesnt-change-the-situation)
+6. [Conclusion](#conclusion)
+7. [Foreshadowing Problem Solution Strategy - Episode 6](#foreshadowing-problem-solution-strategy---episode-6)
+
+### 1. Scope and Depth of Understanding
+
+- **Complexity of OpenAPI Specifications:** OpenAPI specifications can be highly complex, involving detailed schema definitions, relationships, error handling, middleware, and integration with various services like databases, caches, and third-party APIs.
+- **Model Limitations:** GPT models are trained on a wide array of text data but are not specifically optimized to understand and execute detailed technical specifications like those found in an OpenAPI document. The model might miss nuanced details or fail to fully grasp the intricate relationships and validation rules that are critical for a robust implementation.
+
+### 2. Context and State Management
+
+- **Limited Context Window:** GPT models have a limited context window (for example, 2048 tokens for GPT-3), which means they can only consider a portion of the input at a time. Detailed specifications often exceed this limit, causing the model to lose track of essential details as it processes the text.
+- **Lack of State Awareness:** The model does not retain state between interactions, making it difficult to build upon previous outputs in a coherent manner. This is crucial for managing complex, multi-step processes like setting up a comprehensive CI/CD pipeline or implementing interdependent models and controllers.
+
+### 3. Precision and Accuracy in Code Generation
+
+- **Nuanced Requirements:** Specifications often include nuanced requirements and edge cases that need precise implementation. GPT-generated code may lack the accuracy and detail required to handle these effectively.
+- **Error Handling and Validation:** Implementing robust error handling and validation requires a deep understanding of the domain logic and user expectations, which the model might not fully capture from the input prompt.
+
+### 4. Integration and Middleware
+
+- **Complex Integrations:** Integrating Redis, RedisAI, Docker, and other services involves not only code but also configuration files, environment setup, and operational knowledge that goes beyond what a static text model can generate accurately.
+- **Middleware and Caching:** Detailed configurations and middleware setups require a specific order of operations and precise parameters that the model might not fully detail or understand, leading to incomplete or incorrect implementations.
+
+### Why Writing More Descriptive Prompts Doesn't Change the Situation
+
+1. **Descriptive Prompts vs. Practical Execution:**
+   - **Information Overload:** Providing more descriptive prompts might overload the model with too much information at once, leading to confusion and errors. The model can struggle to prioritize and organize the information effectively.
+   - **Lack of Practical Execution Context:** Descriptive prompts can outline what needs to be done, but the model lacks the practical execution context to implement these steps correctly. It doesn't interact with real-world systems or tools to validate and refine its output.
+
+2. **Ambiguity and Interpretation:**
+   - **Ambiguous Instructions:** More descriptive prompts can still be interpreted in multiple ways. The model may generate code that appears correct but does not function as intended in the real-world context.
+   - **Misinterpretation of Specifications:** The model might misinterpret complex relationships and dependencies outlined in the specifications, leading to incomplete or incorrect code.
+
+3. **Iterative Development and Feedback Loops:**
+   - **Need for Iterative Refinement:** Complex software development often requires iterative refinement and feedback loops, something that a static model output cannot provide. Developers usually test, debug, and refine their code in cycles, adapting to unexpected issues and edge cases.
+   - **Real-Time Adjustments:** Descriptive prompts cannot account for real-time adjustments and problem-solving that occur during development. The model cannot dynamically adjust its approach based on testing and feedback.
 
 ### Conclusion
 
-In this episode, we leveraged GPT-4 to automate the generation of a full-stack Vapor application and its CI/CD pipeline based on the provided OpenAPI specification. By creating a comprehensive prompt and generating executable shell scripts, we streamlined the development process and ensured seamless integration into our existing repository.
+While GPT models can assist in generating code snippets and providing a starting point, they are currently limited in their ability to fully implement complex specifications like those found in an OpenAPI document. The depth of understanding, context management, precision, and real-world execution required for such tasks exceed the capabilities of the model. Forcing the model to become aware of the complexity through descriptive prompts does not bridge these fundamental gaps, as the model lacks practical execution capabilities, iterative refinement, and precise handling of nuanced requirements.
 
-This approach not only saves time but also reduces the risk of errors, enabling us to focus on further enhancing the application and its features. Stay tuned for the next episodes, where we will continue to build upon this foundation, implementing more complex features and refining our development workflow.
+### Foreshadowing Problem Solution Strategy - Episode 6
+
+#### Recomposition Strategy for Implementing Complex OpenAPI Specification
+
+In the next episode, we will explore a recomposition strategy to manage the complexity of the given OpenAPI specification. This approach involves breaking down the specification into smaller, manageable components, implementing single model CRUD APIs, and utilizing CI/CD pipelines, custom GitHub Actions, and Docker Compose for incremental development and integration. By structuring the implementation into well-defined steps, we can effectively build and integrate the components required for the full specification, ensuring a robust and maintainable solution.
+
+#### Optimistic Use of GPT Models
+
+Despite the challenges, GPT models can generate instantly valid code with managed complexity. By providing well-structured prompts and breaking down tasks into simpler components, GPT can produce code beyond mere snippets, facilitating faster development cycles and offering substantial assistance in the software development process.
