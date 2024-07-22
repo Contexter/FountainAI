@@ -1,6 +1,9 @@
 ### `episodes/episode1.md`
 
 # Episode 1: Initial Setup and Manual GitHub Secrets Creation
+> also read: 
+> [The Ultimate Guide to GitHub Tokens](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode1/The%20Ultimate%20Guide%20to%20GitHub%20Tokens.md)
+> [The Ultimate Guide to GitHub Runners](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode1/The%20Ultimate%20Guide%20to%20GitHub%20Runners.md)
 
 ## Table of Contents
 
