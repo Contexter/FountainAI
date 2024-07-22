@@ -26,13 +26,13 @@ In this episode, we set up the foundational components required for developing a
 
 In this episode, we create and manage a CI/CD pipeline using GitHub Actions. This pipeline automates the process of building, testing, and deploying the FountainAI application, ensuring continuous integration and continuous deployment.
 
-### [Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline](episodes/Episode3/episode3.md)
+### [Episode 3: Creating an OpenAPI-based Vapor Wrapper App around "gh"](episodes/Episode3/episode3.md)
 
-In this episode, we create a basic "Hello, World!" Vapor application, Dockerize it, and integrate it into the CI/CD pipeline established in Episode 2. We introduce Docker Compose to manage multiple containers and ensure a smooth deployment process.
+In this episode, we create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app will provide a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We will start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and push it to the GitHub Docker registry.
 
-### [Episode 4: Automating Secrets Management with a Swift Command-Line Tool](episodes/Episode4/episode4.md)
+### [Episode 4: Pipeline Integration of the Vapor App](episodes/Episode4/episode4.md)
 
-In this episode, we enhance our CI/CD pipeline by creating a Swift-based command-line tool to manage GitHub secrets. This tool is Dockerized and integrated into our CI/CD workflows, allowing for seamless and automated secrets management. This approach ensures better security, reduces manual effort, and maintains consistency across different environments.
+This episode is a placeholder and will cover the integration of the Vapor app created in Episode 3 into the CI/CD pipeline. We will explore how to automate the deployment process, manage environment variables, and ensure secure and efficient continuous delivery of the application.
 
 ### [Episode 5: Try or Die - Forcing the Monolith](episodes/Episode5/episode5.md)
 
