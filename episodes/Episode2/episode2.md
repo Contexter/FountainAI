@@ -1,79 +1,46 @@
 ### `episodes/episode2.md`
-# Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions
+# Episode 2: Creating and Managing the CI/CD Pipeline for The FountainAI with GitHub Actions
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Folder Structure Before Running the Script](#folder-structure-before-running-the-script)
-3. [Pipeline Setup Script](#pipeline-setup-script)
-4. [Folder Structure After Running the Script](#folder-structure-after-running-the-script)
-5. [Discussion](#discussion)
+2. [Pipeline Setup Script](#pipeline-setup-script)
+3. [Discussion](#discussion)
    - [Branch Management](#branch-management)
    - [Triggering Workflows](#triggering-workflows)
    - [CI/CD Pipeline](#cicd-pipeline)
-6. [Conclusion](#conclusion)
-7. [Foreshadowing the Next Episode](#foreshadowing-the-next-episode)
+4. [Conclusion](#conclusion)
+5. [Foreshadowing the Next Episode](#foreshadowing-the-next-episode)
 
 ## Introduction
 
-In this episode, we will create and manage a CI/CD pipeline using GitHub Actions. This pipeline will automate the process of building, testing, and deploying the FountainAI application, ensuring continuous integration and continuous deployment.
+In this episode, we will create and manage a CI/CD pipeline for The FountainAI with GitHub Actions. This pipeline will automate the process of building, testing, and deploying The FountainAI application, ensuring continuous integration and continuous deployment.
 
-We will guide you through a single script that sets up the folder structure for the CI/CD pipeline, creates GitHub branches, and generates the necessary actions and workflows. We'll then discuss how committing to a branch triggers workflows and the overall reasoning behind the CI/CD pipeline.
+For more details on CI/CD and GitHub workflows, please refer to the [Ultimate Guide to CI/CD and GitHub Workflows](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode2/The%20Ultimate%20Guide%20to%20CI_CD%20and%20GitHub%20Workflows.md).
 
-## Folder Structure Before Running the Script
+We will guide you through a single script that sets up the folder structure for the CI/CD pipeline, creates GitHub branches, and generates the necessary actions and workflows using Docker-based custom actions. We'll then discuss how committing to a branch triggers workflows and the overall reasoning behind the CI/CD pipeline.
 
-Before running the setup script, the folder structure is as follows:
+For more details on the API endpoints and the Dockerized environment, you can refer to the [FountainAI API OpenAPI specification](https://github.com/Contexter/fountainAI/blob/editorial/openAPI/FountainAI-Admin-openAPI.yaml). This API integrates functionalities for managing scripts, including section headings, transitions, spoken words, orchestration, complete script management, characters, and actions, along with their paraphrases. The Dockerized environment includes Nginx for SSL termination, a Swift-based Vapor app, PostgreSQL for data persistence, Redis for caching, and RedisAI for recommendations and validations.
 
-```
-fountainAI/
-├── README.md
-├── config.env
-├── episodes
-│   ├── Episode1
-│   │   ├── episode1.md
-│   │   ├── setup_all.sh
-│   │   ├── setup_episodes.sh
-│   │   └── setup_project_structure.sh
-│   ├── Episode10
-│   │   └── episode10.md
-│   ├── Episode2
-│   │   └── episode2.md
-│   ├── Episode3
-│   │   └── episode3.md
-│   ├── Episode4
-│   │   └── episode4.md
-│   ├── Episode5
-│   │   └── episode5.md
-│   ├── Episode6
-│   │   └── episode6.md
-│   ├── Episode7
-│   │   └── episode7.md
-│   ├── Episode8
-│   │   └── episode8.md
-│   └── Episode9
-│       └── episode9.md
-└── openAPI
-    ├── Class openAPI
-    │   ├── Action.yaml
-    │   ├── Character.yaml
-    │   ├── MusicSound.yaml
-    │   ├── Note.yaml
-    │   ├── Script.yaml
-    │   ├── SectionHeading.yaml
-    │   ├── SpokenWord.yaml
-    │   └── Transition.yaml
-    ├── FountainAI-Admin-openAPI.yaml
-    ├── GPT-constructive-openAPI.yaml
-    ├── README.md
-    └── Tools openAPI
-        └── trainoptimizeseed.yaml
-```
+### Putting Things into Perspective
+
+The FountainAI API operates within a highly integrated Dockerized environment, leveraging several containerized services to ensure performance, security, and scalability. Here’s why this CI/CD pipeline is particularly well-suited to this environment:
+
+1. **Dockerized Custom Actions**: By using Docker-based custom actions in the CI/CD pipeline, we can ensure that each step in the workflow is executed in a consistent environment. This eliminates the "works on my machine" problem and ensures that the same versions of dependencies and tools are used in development, testing, and production environments.
+
+2. **Service Integration**: The FountainAI API relies on multiple services running in Docker containers, including Nginx for SSL termination, a Vapor application server, PostgreSQL for data persistence, Redis for caching, and RedisAI for advanced recommendations and validations. The CI/CD pipeline can be configured to start and test these services as part of the workflow, ensuring that any changes to the codebase are compatible with the entire system architecture.
+
+3. **Automated Testing and Deployment**: Automated workflows ensure that every code change is tested in an environment that mirrors production as closely as possible. This includes running unit tests, integration tests, and end-to-end tests that interact with the Dockerized services. This rigorous testing helps catch issues early in the development process.
+
+4. **Scalability and Consistency**: With Docker, scaling services is straightforward. The CI/CD pipeline can be extended to deploy multiple instances of the Vapor app or other components as needed, ensuring that the system can handle increased load while maintaining consistent performance.
+
+5. **Secrets Management**: Managing secrets such as API keys, SSH keys, and database credentials is critical in a Dockerized environment. The pipeline includes a custom action for managing secrets, ensuring that sensitive information is handled securely and is only accessible to authorized parts of the workflow.
 
 ## Pipeline Setup Script
 
 ### The Setup Script
 
-Create the following script to set up the folder structure, create GitHub branches, and generate actions and workflows for the CI/CD pipeline.
+Create the following script to set up the folder structure, create GitHub branches, and generate actions and workflows for the CI/CD pipeline using Docker-based custom actions.
 
 ```bash
 #!/bin/bash
@@ -135,25 +102,21 @@ inputs:
     required: true
     type: string
 runs:
-  using: 'node20'
-  main: 'index.js'
-EOL
-
-  cat <<EOL > .github/actions/manage-secrets/index.js
-const core = require('@actions/core');
-try {
-  const secrets = ['github_token'];
-  secrets.forEach(secret => {
-    const value = core.getInput(secret);
-    if (!value) {
-      core.setFailed(\`\${secret.toUpperCase()} is not set\`);
-    } else {
-      core.info(\`\${secret.toUpperCase()} is set\`);
-    }
-  });
-} catch (error) {
-  core.setFailed(error.message);
-}
+  using: 'docker'
+  image: 'alpine:3.12'
+  args:
+    - /bin/sh
+    - -c
+    - |
+      # Check if the github_token is set
+      # Placeholder for actual action content
+      if [ -z "\${{ inputs.github_token }}" ]; then
+        echo "GITHUB_TOKEN is not set"
+        exit 1
+      else
+        echo "GITHUB_TOKEN is set"
+        # Add actual management and validation commands here
+      fi
 EOL
   echo "Manage Secrets action created successfully!"
 }
@@ -171,20 +134,21 @@ inputs:
     required: true
     type: string
 runs:
-  using: 'node20'
-  main: 'index.js'
-EOL
-
-  cat <<EOL > .github/actions/setup/index.js
-const core = require('@actions/core');
-try {
-  const vpsSshKey = core.getInput('vps_ssh_key');
-  if (!vpsSshKey) core.setFailed('VPS_SSH_KEY is not set');
-  // Here is where you will provide the commands to setup the environment
-  core.info('VPS setup with SSH key');
-} catch (error) {
-  core.setFailed(error.message);
-}
+  using: 'docker'
+  image: 'alpine:3.12'
+  args:
+    - /bin/sh
+    - -c
+    - |
+      # Check if the vps_ssh_key is set
+      # Placeholder for actual action content
+      if [ -z "\${{ inputs.vps_ssh_key }}" ]; then
+        echo "VPS_SSH_KEY is not set"
+        exit 1
+      else
+        echo "VPS_SSH_KEY is set"
+        # Add actual environment setup commands here
+      fi
 EOL
   echo "Setup Environment action created successfully!"
 }
@@ -197,18 +161,15 @@ create_build_project_action() {
 name: 'Build Project'
 description: 'Action to build the project'
 runs:
-  using: 'node20'
-  main: 'index.js'
-EOL
-
-  cat <<EOL > .github/actions/build/index.js
-const core = require('@actions/core');
-try {
-  // Here is where you will provide the commands to build the project
-  core.info('Project build process started');
-} catch (error) {
-  core.setFailed(error.message);
-}
+  using: 'docker'
+  image: 'node:14'
+  args:
+    - /bin/sh
+    - -c
+    - |
+      # Placeholder for actual action content
+      echo "Building project..."
+      # Add actual build commands here
 EOL
   echo "Build Project action created successfully!"
 }
@@ -221,18 +182,15 @@ create_test_project_action() {
 name: 'Test Project'
 description: 'Action to test the project'
 runs:
-  using: 'node20'
-  main: 'index.js'
-EOL
-
-  cat <<EOL > .github/actions/test/index.js
-const core = require('@actions/core');
-try {
-  // Here is where you will provide the commands to test the project
-  core.info('Project test process started');
-} catch (error) {
-  core.setFailed(error.message);
-}
+  using: 'docker'
+  image: 'node:14'
+  args:
+    - /bin/sh
+    - -c
+    - |
+      # Placeholder for actual action content
+      echo "Running tests..."
+      # Add actual test commands here
 EOL
   echo "Test Project action created successfully!"
 }
@@ -245,24 +203,23 @@ create_deploy_project_action() {
 name: 'Deploy Project'
 description: 'Action to deploy the project'
 runs:
-  using: 'node20'
-  main: 'index.js'
-EOL
-
-  cat <<EOL > .github/actions/deploy/index.js
-const core = require('@actions/core');
-try {
-  // Here is where you will provide the commands to deploy the project
-  core.info('Project deploy process started');
-} catch (error) {
-  core.setFailed(error.message);
-}
+  using: 'docker'
+  image: 'alpine:3.12'
+  args:
+    - /bin/sh
+    - -c
+    - |
+      # Placeholder for actual action content
+      echo "Deploying to environment..."
+      # Add actual deployment commands here
 EOL
   echo "Deploy Project action created successfully!"
 }
 
 # Step 8: Create the Development Workflow
-create_development_workflow() {
+create_development
+
+_workflow() {
   echo "Creating Development Workflow..."
   cat <<EOL > .github/workflows/development.yml
 name: Development Workflow
@@ -275,8 +232,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-
-
         uses: actions/checkout@v2
       - name: Manage Secrets
         uses: ./.github/actions/manage-secrets
@@ -470,78 +425,6 @@ chmod +x episodes/Episode2/pipeline_setup.sh
 ./episodes/Episode2/pipeline_setup.sh
 ```
 
-## Folder Structure After Running the Script
-
-After running the setup script, the folder structure should look like this:
-
-```
-fountainAI/
-├── .github
-│   ├── actions
-│   │   ├── build
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── deploy
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── manage-secrets
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── setup
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── test
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   ├── workflows
-│   │   ├── development.yml
-│   │   ├── production.yml
-│   │   ├── staging.yml
-│   │   └── testing.yml
-├── README.md
-├── config.env
-├── episodes
-│   ├── Episode1
-│   │   ├── episode1.md
-│   │   ├── setup_all.sh
-│   │   ├── setup_episodes.sh
-│   │   └── setup_project_structure.sh
-│   ├── Episode10
-│   │   └── episode10.md
-│   ├── Episode2
-│   │   ├── episode2.md
-│   │   ├── pipeline_setup.sh
-│   ├── Episode3
-│   │   └── episode3.md
-│   ├── Episode4
-│   │   └── episode4.md
-│   ├── Episode5
-│   │   └── episode5.md
-│   ├── Episode6
-│   │   └── episode6.md
-│   ├── Episode7
-│   │   └── episode7.md
-│   ├── Episode8
-│   │   └── episode8.md
-│   └── Episode9
-│       └── episode9.md
-└── openAPI
-    ├── Class openAPI
-    │   ├── Action.yaml
-    │   ├── Character.yaml
-    │   ├── MusicSound.yaml
-    │   ├── Note.yaml
-    │   ├── Script.yaml
-    │   ├── SectionHeading.yaml
-    │   ├── SpokenWord.yaml
-    │   └── Transition.yaml
-    ├── FountainAI-Admin-openAPI.yaml
-    ├── GPT-constructive-openAPI.yaml
-    ├── README.md
-    └── Tools openAPI
-        └── trainoptimizeseed.yaml
-```
-
 ## Discussion
 
 ### Branch Management
@@ -554,34 +437,94 @@ Each branch is associated with specific workflows that are triggered upon events
 
 ### CI/CD Pipeline
 
-The CI/CD pipeline automates the process of building, testing, and deploying the FountainAI application. Here's how it works:
+The CI/CD pipeline automates the process of building, testing, and deploying The FountainAI application. Here's how it works:
 
 1. **Setup Folder Structure**: The first step of the script creates the necessary directory structure for GitHub Actions workflows and custom actions.
 2. **Custom Actions Creation**: Each custom action script sets up specific actions used in the workflows, such as managing secrets, setting up the environment, building the project, testing, and deploying.
 3. **Workflows Definition**: Workflow scripts define the sequences of actions that run on specific events (e.g., push to a branch).
 
-### Code Comments
+### Action Placeholders
 
-In the action scripts, you'll find comments indicating where to add commands in the future:
+The scripts include placeholders for actual commands that need to be executed for managing secrets, setting up the environment, building, testing, and deploying the project. These placeholders need to be replaced with actual commands specific to The FountainAI application. For example:
+
+- **Manage Secrets Action**:
+  ```yaml
+  runs:
+    using: 'docker'
+    image: 'alpine:3.12'
+    args:
+      - /bin/sh
+      - -c
+      - |
+        # Check if the github_token is set
+        if [ -z "${{ inputs.github_token }}" ]; then
+          echo "GITHUB_TOKEN is not set"
+          exit 1
+        else
+          echo "GITHUB_TOKEN is set"
+          # Add actual management and validation commands here
+        fi
+  ```
 
 - **Setup Environment Action**:
-  ```js
-  // Here is where you will provide the commands to setup the environment
+  ```yaml
+  runs:
+    using: 'docker'
+    image: 'alpine:3.12'
+    args:
+      - /bin/sh
+      - -c
+      - |
+        # Check if the vps_ssh_key is set
+        if [ -z "${{ inputs.vps_ssh_key }}" ]; then
+          echo "VPS_SSH_KEY is not set"
+          exit 1
+        else
+          echo "VPS_SSH_KEY is set"
+          # Add actual environment setup commands here
+        fi
   ```
 
 - **Build Project Action**:
-  ```js
-  // Here is where you will provide the commands to build the project
+  ```yaml
+  runs:
+    using: 'docker'
+    image: 'node:14'
+    args:
+      - /bin/sh
+      - -c
+      - |
+        # Placeholder for actual action content
+        echo "Building project..."
+        # Add actual build commands here
   ```
 
 - **Test Project Action**:
-  ```js
-  // Here is where you will provide the commands to test the project
+  ```yaml
+  runs:
+    using: 'docker'
+    image: 'node:14'
+    args:
+      - /bin/sh
+      - -c
+      - |
+        # Placeholder for actual action content
+        echo "Running tests..."
+        # Add actual test commands here
   ```
 
 - **Deploy Project Action**:
-  ```js
-  // Here is where you will provide the commands to deploy the project
+  ```yaml
+  runs:
+    using: 'docker'
+    image: 'alpine:3.12'
+    args:
+      - /bin/sh
+      - -c
+      - |
+        # Placeholder for actual action content
+        echo "Deploying to environment..."
+        # Add actual deployment commands here
   ```
 
 ### Benefits Realized
