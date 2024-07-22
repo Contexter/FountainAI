@@ -1,649 +1,726 @@
-### `episodes/episode3.md`
-
-# Episode 3: Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline
+# Episode 3: Creating an OpenAPI-based Vapor Wrapper App around "gh"
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Setting Up the Vapor Application](#setting-up-the-vapor-application)
-   - [Folder Structure Before Setup](#folder-structure-before-setup)
-   - [Setup Vapor Application Script](#setup-vapor-application-script)
-   - [Folder Structure After Setup](#folder-structure-after-setup)
-3. [Dockerizing the Vapor Application](#dockerizing-the-vapor-application)
-   - [Update Dockerfile Script](#update-dockerfile-script)
-4. [Introduction to Docker Compose](#introduction-to-docker-compose)
-   - [Benefits of Docker Compose](#benefits-of-docker-compose)
-   - [Setup Docker Compose Script](#setup-docker-compose-script)
-5. [Integrating with CI/CD Pipeline](#integrating-with-cicd-pipeline)
-   - [Manage Secrets Injection](#manage-secrets-injection)
-   - [Update CI/CD Pipeline Script](#update-cicd-pipeline-script)
-6. [Testing and Monitoring the Deployment](#testing-and-monitoring-the-deployment)
+2. [Why Create This App?](#why-create-this-app)
+   - [Enhancing Software Development](#enhancing-software-development)
+   - [Usefulness in AI-Aided Development](#usefulness-in-ai-aided-development)
+   - [Example Scenario](#example-scenario)
+3. [OpenAPI Specification](#openapi-specification)
+4. [Implementing the Vapor App](#implementing-the-vapor-app)
+   - [Project Setup](#project-setup)
+   - [Define Routes and Controllers](#define-routes-and-controllers)
+   - [Handling GitHub CLI Commands](#handling-github-cli-commands)
+   - [Writing Tests](#writing-tests)
+5. [Dockerizing the Vapor App](#dockerizing-the-vapor-app)
+6. [Pushing the Docker Image to GitHub Docker Registry](#pushing-the-docker-image-to-github-docker-registry)
 7. [Conclusion](#conclusion)
 8. [Foreshadowing the Next Episode](#foreshadowing-the-next-episode)
 
 ## Introduction
 
-In this episode, we will focus on creating a basic "Hello, World!" Vapor application, Dockerizing it, and integrating it into the CI/CD pipeline established in Episode 2. We will also introduce Docker Compose to manage multiple containers and ensure a smooth deployment process. This integration will utilize the secrets management scheme already set up to handle sensitive information securely.
+In this episode, we will create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app will provide a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We will start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and push it to the GitHub Docker registry.
 
-## Setting Up the Vapor Application
+## Why Create This App?
 
-First, we need to set up a new Vapor project within the existing `fountainAI` repository. This will serve as the foundation for our application.
+### Enhancing Software Development
 
-### Folder Structure Before Setup
+This GitHub CLI Wrapper app is designed to simplify and enhance the software development process by providing a web interface to interact with GitHub repositories. By wrapping the `gh` CLI in a web API, we make it easier to:
 
-Before setting up the Vapor application, the folder structure is as follows:
+- **Automate Repository Management**: Automate tasks such as listing contents, fetching file data, and managing branches without needing to manually run commands in the terminal.
+- **Integrate with Other Tools**: Easily integrate repository management tasks into other tools and systems via HTTP requests.
 
-```
-fountainAI/
-├── .github
-│   ├── actions
-│   │   ├── build
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── deploy
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── manage-secrets
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── setup
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── test
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   ├── workflows
-│   │   ├── development.yml
-│   │   ├── production.yml
-│   │   ├── staging.yml
-│   │   └── testing.yml
-├── README.md
-├── config.env
-├── episodes
-│   ├── Episode1
-│   │   ├── episode1.md
-│   │   ├── setup_all.sh
-│   │   ├── setup_episodes.sh
-│   │   └── setup_project_structure.sh
-│   ├── Episode10
-│   │   └── episode10.md
-│   ├── Episode2
-│   │   ├── episode2.md
-│   │   ├── pipeline_setup.sh
-│   ├── Episode3
-│   │   └── episode3.md
-│   ├── Episode4
-│   │   └── episode4.md
-│   ├── Episode5
-│   │   └── episode5.md
-│   ├── Episode6
-│   │   └── episode6.md
-│   ├── Episode7
-│   │   └── episode7.md
-│   ├── Episode8
-│   │   └── episode8.md
-│   └── Episode9
-│       └── episode9.md
-└── openAPI
-    ├── Class openAPI
-    │   ├── Action.yaml
-    │   ├── Character.yaml
-    │   ├── MusicSound.yaml
-    │   ├── Note.yaml
-    │   ├── Script.yaml
-    │   ├── SectionHeading.yaml
-    │   ├── SpokenWord.yaml
-    │   └── Transition.yaml
-    ├── FountainAI-Admin-openAPI.yaml
-    ├── GPT-constructive-openAPI.yaml
-    ├── README.md
-    └── Tools openAPI
-        └── trainoptimizeseed.yaml
-```
+### Usefulness in AI-Aided Development
 
-### Setup Vapor Application Script
+When developing software with the assistance of AI models like GPT-4, having a structured and automated way to interact with your code repositories is invaluable. This app can be particularly useful for:
 
-Create a file named `setup_vapor_application.sh` in the `episodes/Episode3` directory with the following content:
+- **Custom GPT in ChatGPT**: When using OpenAI's custom GPTs in ChatGPT, you can create custom workflows and automations that interact with GitHub repositories directly through the chat interface. This can help streamline tasks such as code reviews, fetching code snippets, and more.
+- **Prompting GPT-4**: You can prompt GPT-4 to execute specific repository tasks via this web interface, making it easier to automate repetitive tasks and improve productivity.
 
-```bash
-#!/bin/bash
+### Example Scenario
 
-# Navigate to the root directory of the repository
-cd $(git rev-parse --show-toplevel)
+Imagine you are working on a project and need to quickly review the structure of a repository, fetch specific files, or list the latest commits. Instead of manually navigating the GitHub interface or running multiple `gh` commands, you can use this app to perform these actions with simple HTTP requests. This seamless integration can be particularly powerful when combined with AI-driven development workflows.
 
-# Initialize a new Vapor project (without git initialization)
-vapor new . --template=api --no-git
+## OpenAPI Specification
 
-# Ensure the generated files are correctly integrated
-# Commit the new files to the existing Git repository
-git add .
-git commit -m "Integrated Vapor project into existing repository"
-git push origin development
+The OpenAPI specification serves as a blueprint for our API, detailing the endpoints, parameters, and responses. Here’s the OpenAPI specification we will use:
 
-echo "Vapor project setup complete and pushed to development branch."
-```
+```yaml
+openapi: 3.0.1
+info:
+  title: GitHub CLI Wrapper
+  version: 1.0.0
+  description: A Vapor app that wraps GitHub CLI commands for repository management, including secrets management
+servers:
+  - url: https://gh.fountain.coach
+paths:
+  /repo/tree:
+    get:
+      summary: Fetch repository tree
+      description: Fetches the tree structure of a repository.
+      operationId: fetchRepoTree
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: branch
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The branch to fetch the tree from (default is "main")
+      responses:
+        '200':
+          description: Successfully fetched repository tree
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/contents:
+    get:
+      summary: List repository contents
+      description: Lists the contents of a repository directory.
+      operationId: listRepoContents
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The directory path to list contents of (default is root)
+      responses:
+        '200':
+          description: Successfully listed contents
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/file:
+    get:
+      summary: Fetch file content
+      description: Fetches the content of a specific file in the repository.
+      operationId: fetchFileContent
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The path to the file to fetch content from
+      responses:
+        '200':
+          description: Successfully fetched file content
+          content:
+            text/plain:
+              schema:
+                type: string
+  /repo/details:
+    get:
+      summary: Get repository details
+      description: Fetches details about the repository.
+      operationId: getRepoDetails
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully fetched repository details
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/branches:
+    get:
+      summary: List repository branches
+      description: Lists the branches of a repository.
+      operationId: listRepoBranches
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed branches
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/commits:
+    get:
+      summary: List repository commits
+      description: Lists the commits of a repository.
+      operationId: listRepoCommits
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed commits
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/contributors:
+    get:
+      summary: List repository contributors
+      description: Lists the contributors of a repository.
+      operationId: listRepoContributors
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed contributors
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/pulls:
+    get:
+      summary: List repository pull requests
+      description: Lists the pull requests of a repository.
+      operationId: listRepoPullRequests
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed pull requests
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/issues:
+    get:
+      summary: List repository issues
+      description: Lists the issues of a repository.
+      operationId: listRepoIssues
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed issues
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/secrets:
+    get:
+      summary: List repository secrets
+      description: Lists the secrets of a repository.
+      operationId: listRepoSecrets
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      responses:
+        '200':
+          description: Successfully listed secrets
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/secrets:
+    post:
+      summary: Create or update a repository secret
+      description: Creates or updates a secret in a repository.
+      operationId: createOrUpdateRepoSecret
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: secret_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the secret
+        - name: secret_value
+         
 
-Make this script executable and run it:
-
-```sh
-chmod +x episodes/Episode3/setup_vapor_application.sh
-./episodes/Episode3/setup_vapor_application.sh
-```
-
-### Folder Structure After Setup
-
-After setting up the Vapor application, the folder structure should look like this:
-
-```
-fountainAI/
-├── .github
-│   ├── actions
-│   │   ├── build
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── deploy
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── manage-secrets
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── setup
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   │   ├── test
-│   │   │   ├── action.yml
-│   │   │   └── index.js
-│   ├── workflows
-│   │   ├── development.yml
-│   │   ├── production.yml
-│   │   ├── staging.yml
-│   │   └── testing.yml
-├── README.md
-├── config.env
-├── episodes
-│   ├── Episode1
-│   │   ├── episode1.md
-│   │   ├── setup_all.sh
-│   │   ├── setup_episodes.sh
-│   │   └── setup_project_structure.sh
-│   ├── Episode10
-│   │   └── episode10.md
-│   ├── Episode2
-│   │   ├── episode2.md
-│   │   ├── pipeline_setup.sh
-│   ├── Episode3
-│   │   ├── episode3.md
-│   │   └── setup_vapor_application.sh
-│   ├── Episode4
-│   │   └── episode4.md
-│   ├── Episode5
-│   │   └── episode5.md
-│   ├── Episode6
-│   │   └── episode6.md
-│   ├── Episode7
-│   │   └── episode7.md
-│   ├── Episode8
-│   │   └── episode8.md
-│   └── Episode9
-│       └── episode9.md
-├── Sources
-│   ├── App
-│   │   ├── Controllers
-│   │   │   └── HelloController.swift
-│   │   ├── Models
-│   │   │   └── User.swift
-│   │   ├── app.swift
-│   │   ├── configure.swift
-│   │   └── routes.swift
-│   ├── Run
-│   │   └── main.swift
-├── Tests
-│   ├── AppTests
-│   │   └── AppTests.swift
-└── openAPI
-    ├── Class openAPI
-    │   ├── Action.yaml
-    │   ├── Character.yaml
-    │   ├── MusicSound.yaml
-    │   ├── Note.yaml
-    │   ├── Script.yaml
-    │   ├── SectionHeading.yaml
-    │   ├── SpokenWord.yaml
-    │   └── Transition.yaml
-    ├── FountainAI-Admin-openAPI.yaml
-    ├── GPT-constructive-openAPI.yaml
-    ├── README.md
-    └── Tools openAPI
-        └── trainoptimizeseed.yaml
-```
-
-## Dockerizing the Vapor Application
-
-Next, we need to ensure that the Vapor application can be containerized using Docker. The Vapor toolbox generates a default Dockerfile, which we will review and update if necessary.
-
-### Update Dockerfile Script
-
-Create a file named `update_dockerfile.sh` in the `episodes/Episode3` directory with the following content:
-
-```bash
-#!/bin/bash
-
-# Create or update the Dockerfile with the following content
-cat << 'EOF' > Dockerfile
-# Use the official Swift image for building the application
-FROM swift:5.7 as builder
-
-# Set the working directory
-WORKDIR /app
-
-# Copy the package files and resolve dependencies
-COPY Package.swift .
-COPY Package.resolved .
-
-# Resolve dependencies
-RUN swift package resolve
-
-# Copy the entire repository into the container
-COPY . .
-
-# Build the application in release mode
-RUN swift build --configuration release --enable-test-discovery
-
-# Create a slimmer runtime image
-FROM swift:5.7-slim
-
-# Set the working directory in the runtime image
-WORKDIR /app
-
-# Copy the build artifacts from the builder image
-COPY --from=builder /app/.build/release /app
-COPY --from=builder /app/Public /app/Public
-COPY --from=builder /app/Resources /app/Resources
-
-# Expose the port that the application will run on
-EXPOSE 8080
-
-# Run the application
-CMD ["./Run"]
-EOF
-
-# Commit the Dockerfile to the repository
-git add Dockerfile
-git commit -m "Updated Dockerfile for Vapor application"
-git push origin development
-
-echo "Dockerfile updated and pushed to development branch."
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x episodes/Episode3/update_dockerfile.sh
-./episodes/Episode3/update_dockerfile.sh
-```
-
-## Introduction to Docker Compose
-
-Docker Compose is a tool for defining and running multi-container Docker applications. With Compose, you can manage different services such as your web server, database, and cache with a single configuration file.
-
-### Benefits of Docker Compose
-
-- **Multi-Container Management**: Easily manage multiple containers for different services (e.g., web server, database, cache).
-- **Declarative Configuration**: Define all your services in a single `docker-compose.yml` file.
-- **Simplified Deployment**: One command to start and stop all services, simplifying the deployment process.
-
-### Setup Docker Compose Script
-
-Create a file named `setup_docker_compose.sh` in the `episodes/Episode3` directory with the following content:
-
-```bash
-#!/bin/bash
-
-# Create the docker-compose.yml file with the following content
-cat << 'EOF' > docker-compose.yml
-version: '3.8'
-
-services:
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
-    depends_on:
-      - vapor
-    networks:
-      - fountainai_network
-
-  vapor:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: vapor
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - REDISAI_URL=${REDISAI_URL}
-    depends_on:
-      - postgres
-      - redis
-      - redisai
-    networks:
-      - fountainai_network
-
-  postgres:
-    image: postgres:13
-    container_name: postgres
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - fountainai_network
-
-  redis:
-    image: redis:6
-    container_name: redis
-    ports:
-      - "6379:6379"
-    networks:
-      - fountainai_network
-
-  redisai:
-    image: redislabs/redisai:latest
-    container_name: redisai
-    ports:
-      - "6378:6378"
-    networks:
-      - fountainai_network
-
-networks:
-  fountainai_network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-EOF
-
-# Commit the docker-compose.yml file to the repository
-git add docker-compose.yml
-git commit -m "Added Docker Compose configuration"
-git push origin development
-
-echo "Docker Compose configuration added and pushed to development branch."
+ in: query
+          required: true
+          schema:
+            type: string
+          description: The value of the secret
+      responses:
+        '200':
+          description: Successfully created or updated secret
+          content:
+            application/json:
+              schema:
+                type: string
+components:
+  schemas:
+    RepositoryTree:
+      type: object
+      properties:
+        path:
+          type: string
+        type:
+          type: string
+    FileContent:
+      type: object
+      properties:
+        content:
+          type: string
+    RepositoryDetails:
+      type: object
+      properties:
+        full_name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+        private:
+          type: boolean
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+    Commit:
+      type: object
+      properties:
+        sha:
+          type: string
+        commit:
+          type: object
+          properties:
+            message:
+              type: string
+    Contributor:
+      type: object
+      properties:
+        login:
+          type: string
+    PullRequest:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+    Issue:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
 ```
 
-Make this script executable and run it:
+## Implementing the Vapor App
 
-```sh
-chmod +x episodes/Episode3/setup_docker_compose.sh
-./episodes/Episode3/setup_docker_compose.sh
-```
+### Project Setup
 
-## Integrating with CI/CD Pipeline
-
-We need to ensure that our CI/CD pipeline can build, push, and deploy the Docker Compose stack. We'll update our CI/CD pipeline scripts to include these steps, leveraging the secrets management from Episode 2.
-
-### Manage Secrets Injection
-
-The CI/CD pipeline leverages the `Manage Secrets` action to securely inject secrets into the Docker Compose file. Here's how it works:
-
-1. **Define Secrets in CI/CD Environment**:
-   - Secrets such as `DATABASE_URL`, `REDIS_URL`, `REDISAI_URL`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` are securely stored in the CI/CD environment (e.g., GitHub Secrets).
-
-2. **Manage Secrets Action**:
-   - The `Manage Secrets` action retrieves these secrets from the CI/CD environment and sets them as environment variables for subsequent steps in the workflow.
-
-3. **Docker Compose File Configuration**:
-   - The `docker-compose.yml` file is configured to use environment variables for sensitive information. Placeholders like `${DATABASE_URL}` are used in the `docker-compose.yml` file.
-   - When the pipeline runs, the environment variables set by the `Manage Secrets` action replace these placeholders with actual values.
-
-### Update CI/CD Pipeline Script
-
-Create a file named `update_pipeline.sh` in the `episodes/Episode3` directory with the following content:
-
-```bash
-#!/bin/bash
-
-# Function to update setup environment action
-update_setup_environment_action() {
-  cat << 'EOF' > .github/actions/setup/index.js
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        const vpsUsername = core.getInput('vps_username');
-        const vpsIp = core.getInput('vps_ip');
-        const vpsSshKey = core.getInput('vps_ssh_key');
-
-        // Start the SSH agent
-        await exec.exec('ssh-agent', ['-a', '/tmp/ssh-agent.sock']);
-        core.exportVariable('SSH_AUTH_SOCK', '/tmp/ssh-agent.sock');
-
-        // Add the SSH key to the agent
-        await exec.exec('ssh-add', ['-'], { input: vpsSshKey });
-
-        // Commands to install Docker and Docker Compose
-        const installDockerCmd = `
-            sudo apt-get update &&
-            sudo apt-get install -y \
-                apt-transport-https \
-                ca-certificates \
-                curl \
-                gnupg \
-                lsb-release &&
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&
-            echo "deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null &&
-            sudo apt-get update &&
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io &&
-            sudo usermod -aG docker ${vpsUsername} &&
-            sudo systemctl enable docker &&
-            sudo systemctl start docker &&
-            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose &&
-            sudo chmod +x /usr/local/bin/docker-compose &&
-            sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose &&
-            docker-compose --version
-        `;
-
-        // SSH command to execute the installation on the VPS
-        await exec.exec(`ssh -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} '${installDockerCmd}'`);
-        
-        core.info('Docker and Docker Compose installed successfully on the VPS');
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-}
-
-# Function to update build action
-update_build_action() {
-  cat << 'EOF' > .github/actions/build/index.js
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        // Build Docker image
-        await exec.exec('docker build -t ghcr.io/Contexter/fountainai:latest .');
-        
-        // Log in to GitHub Container Registry
-        await exec.exec(`echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Contexter --password-stdin`);
-        
-        // Push Docker image to GitHub Container Registry
-        await exec.exec('docker push ghcr.io/Contexter/fountainai:latest');
-        
-        core.info('Docker image built and pushed successfully');
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-}
-
-# Function to update deploy action
-update_deploy_action() {
-  cat << 'EOF' > .github/actions/deploy/index.js
-
-
-const core = require('@actions/core');
-const exec = require('@actions/exec');
-
-async function run() {
-    try {
-        const environment = core.getInput('environment');
-        const vpsUsername = core.getInput('vps_username');
-        const vpsIp = core.getInput('vps_ip');
-        const deployDir = core.getInput('deploy_dir');
-
-        // SSH into VPS and pull the latest Docker images, then run the Docker Compose stack
-        await exec.exec(`ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${vpsUsername}@${vpsIp} `
-            + `'cd ${deployDir} && docker-compose pull && docker-compose up -d --remove-orphans'`);
-        
-        core.info(`Deployed to ${environment} environment successfully`);
-    } catch (error) {
-        core.setFailed(`Action failed with error ${error}`);
-    }
-}
-
-run();
-EOF
-}
-
-# Function to update development workflow
-update_development_workflow() {
-  cat << 'EOF' > .github/workflows/development.yml
-name: Development Workflow
-
-on:
-  push:
-    branches:
-      - development
-
-jobs:
-  verify-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Manage Secrets
-        uses: ./.github/actions/manage-secrets
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-          vps_username: ${{ secrets.VPS_USERNAME }}
-          vps_ip: ${{ secrets.VPS_IP }}
-          deploy_dir: ${{ secrets.DEPLOY_DIR }}
-          repo_owner: ${{ secrets.REPO_OWNER }}
-          app_name: ${{ secrets.APP_NAME }}
-          domain: ${{ secrets.DOMAIN }}
-          staging_domain: ${{ secrets.STAGING_DOMAIN }}
-          db_name: ${{ secrets.DB_NAME }}
-          db_user: ${{ secrets.DB_USER }}
-          db_password: ${{ secrets.DB_PASSWORD }}
-          email: ${{ secrets.EMAIL }}
-          main_dir: ${{ secrets.MAIN_DIR }}
-          nydus_port: ${{ secrets.NYDUS_PORT }}
-          redisai_port: ${{ secrets.REDISAI_PORT }}
-          redis_port: ${{ secrets.REDIS_PORT }}
-          repo_name: ${{ secrets.REPO_NAME }}
-          runner_token: ${{ secrets.RUNNER_TOKEN }}
-
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Project
-        uses: ./.github/actions/build
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Project
-        uses: ./.github/actions/deploy
-        with:
-          environment: development
-          vps_username: ${{ secrets.VPS_USERNAME }}
-          vps_ip: ${{ secrets.VPS_IP }}
-          deploy_dir: ${{ secrets.DEPLOY_DIR }}
-EOF
-}
-
-# Execute the functions to update the actions and workflow
-update_setup_environment_action
-update_build_action
-update_deploy_action
-update_development_workflow
-
-# Commit and push the changes
-git add .github/actions/setup/index.js .github/actions/build/index.js .github/actions/deploy/index.js .github/workflows/development.yml
-git commit -m "Updated CI/CD pipeline actions and workflows for Docker Compose integration"
-git push origin development
-
-echo "CI/CD pipeline actions and workflows updated and pushed to development branch."
-```
-
-Make this script executable and run it:
-
-```sh
-chmod +x episodes/Episode3/update_pipeline.sh
-./episodes/Episode3/update_pipeline.sh
-```
-
-## Testing and Monitoring the Deployment
-
-1. **Push a Change to the Development Branch**:
-   Make a small change to the Vapor application, such as updating the welcome message, and push it to the development branch.
-
-   ```sh
-   echo 'print("Hello, Vapor!")' > Sources/App/Controllers/HelloController.swift
-   git add .
-   git commit -m "Updated welcome message"
-   git push origin development
+1. **Install Vapor**: Ensure you have Vapor installed. If not, you can install it using Homebrew:
+   ```bash
+   brew install vapor
    ```
 
-2. **Monitor the Workflow**:
-   Go to the GitHub Actions tab in your repository to monitor the workflow triggered by the push to the development branch. Ensure that all steps, including building, pushing the Docker image, and deploying to the staging environment, are completed successfully.
+2. **Create a new Vapor project**:
+   ```bash
+   vapor new GitHubCLIWrapper --template=api
+   cd GitHubCLIWrapper
+   ```
 
-3. **Verify Deployment**:
-   Once the deployment is successful, open a web browser and navigate to your staging domain to verify that the Vapor application is running and displaying the updated welcome message.
+3. **Modify `Package.swift`** to include necessary dependencies:
+   ```swift
+   // swift-tools-version:5.3
+   import PackageDescription
+
+   let package = Package(
+       name: "GitHubCLIWrapper",
+       platforms: [
+           .macOS(.v10_15)
+       ],
+       dependencies: [
+           .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
+       ],
+       targets: [
+           .target(name: "App", dependencies: [
+               .product(name: "Vapor", package: "vapor"),
+           ]),
+           .target(name: "Run", dependencies: [.target(name: "App")]),
+           .testTarget(name: "AppTests", dependencies: [
+               .target(name: "App"),
+               .product(name: "XCTVapor", package: "vapor"),
+           ])
+       ]
+   )
+   ```
+
+### Define Routes and Controllers
+
+**Create a `GitHubController.swift` file** in the `Sources/App/Controllers` directory:
+
+```swift
+import Vapor
+
+struct GitHubController: RouteCollection {
+    func boot(routes: RoutesBuilder) throws {
+        let repoRoutes = routes.grouped("repo")
+        repoRoutes.get("tree", use: fetchRepoTree)
+        repoRoutes.get("contents", use: listContents)
+        repoRoutes.get("file", use: fetchFileContent)
+        repoRoutes.get("details", use: getRepoDetails)
+        repoRoutes.get("branches", use: listBranches)
+        repoRoutes.get("commits", use: listCommits)
+        repoRoutes.get("contributors", use: listContributors)
+        repoRoutes.get("pulls", use: listPullRequests)
+        repoRoutes.get("issues", use: listIssues)
+        repoRoutes.get("secrets", use: listSecrets)
+        repoRoutes.post("secrets", use: createOrUpdateSecret)
+    }
+
+    func fetchRepoTree(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let branch = try req.query.get(String.self, at: "branch") ?? "main"
+        let url = URI(string: "https://api.github.com/repos/\(repo)/git/trees/\(branch)?recursive=1")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listContents(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path") ?? ""
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func fetchFileContent(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func getRepoDetails(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listBranches(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/branches")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listCommits(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/commits")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listContributors(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contributors")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listPullRequests(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/pulls")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listIssues(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/issues")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func listSecrets(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    func createOrUpdateSecret(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let secretName = try req.query.get(String.self, at: "secret_name")
+        let secretValue = try req.query.get(String.self, at: "secret_value")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets/\(secretName)")
+        return try makeGHRequest(req: req, url: url, method: .put, body: secretValue)
+    }
+
+    private func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
+        var headers = HTTPHeaders()
+        headers.add(name: .authorization, value: "Bearer \(Environment.get("GITHUB_TOKEN")!)")
+        headers.add(name: .userAgent, value: "VaporApp")
+        headers.add(name: .accept, value: "application/vnd.github.v3+json")
+
+        let clientReq = ClientRequest(
+            method: method,
+            url: url,
+            headers: headers,
+            body: body != nil ? .init(string: body!) : nil
+        )
+        return req.client.send(clientReq)
+    }
+}
+```
+
+**Update `configure.swift` to register the new controller**:
+
+```swift
+import Vapor
+
+public func configure(_ app: Application) throws {
+    // Register routes
+    let gitHubController = GitHubController()
+    try app.register(collection: gitHubController)
+}
+```
+
+**Update `routes.swift` to register the controller routes**:
+
+```swift
+import Vapor
+
+func routes(_ app: Application) throws {
+    let gitHubController = GitHubController()
+    try app.register(collection: gitHubController)
+}
+```
+
+### Writing Tests
+
+We'll write tests to ensure our Vapor app works as expected.
+
+**Create a `GitHubControllerTests.swift` file** in the `Tests/AppTests` directory:
+
+```swift
+import XCTVapor
+@testable import App
+
+final class GitHubControllerTests: XCTestCase {
+    func testFetchRepoTree() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/tree?repo=owner/repo&branch=main", afterResponse:
+
+ { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListContents() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/contents?repo=owner/repo&path=", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testFetchFileContent() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/file?repo=owner/repo&path=README.md", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testGetRepoDetails() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/details?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListBranches() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/branches?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListCommits() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/commits?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListContributors() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/contributors?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListPullRequests() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/pulls?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListIssues() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/issues?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testListSecrets() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.GET, "/repo/secrets?repo=owner/repo", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+
+    func testCreateOrUpdateSecret() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        try app.test(.POST, "/repo/secrets?repo=owner/repo&secret_name=SECRET_KEY&secret_value=SECRET_VALUE", afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+        })
+    }
+}
+```
+
+To run these tests, use the following command:
+
+```bash
+swift test
+```
+
+## Dockerizing the Vapor App
+
+1. **Create a `Dockerfile`** in the root directory of your project:
+
+    ```dockerfile
+    # Stage 1 - Build
+    FROM swift:5.5-focal as builder
+    WORKDIR /app
+    COPY . .
+    RUN swift build --disable-sandbox -c release
+
+    # Stage 2 - Run
+    FROM swift:5.5-focal-slim
+    WORKDIR /app
+    COPY --from=builder /app/.build/release /app
+    ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+    ENTRYPOINT ["/app/Run"]
+    ```
+
+2. **Create a `.dockerignore`** file to exclude unnecessary files from the Docker image:
+
+    ```dockerignore
+    .build/
+    .swiftpm/
+    Packages/
+    Package.resolved
+    Tests/
+    ```
+
+3. **Build and run the Docker container locally**:
+
+    ```bash
+    docker build -t github-cli-wrapper .
+    docker run -p 8080:8080 -e GITHUB_TOKEN=your_github_token_here github-cli-wrapper
+    ```
+
+## Pushing the Docker Image to GitHub Docker Registry
+
+1. **Log in to GitHub Docker Registry**:
+
+    ```bash
+    echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+    ```
+
+    Replace `CR_PAT` with your GitHub Personal Access Token and `USERNAME` with your GitHub username.
+
+2. **Tag and push the Docker image**:
+
+    ```bash
+    docker tag github-cli-wrapper ghcr.io/USERNAME/github-cli-wrapper:latest
+    docker push ghcr.io/USERNAME/github-cli-wrapper:latest
+    ```
+
+    Replace `USERNAME` with your GitHub username.
 
 ## Conclusion
 
-In this episode, we created a basic "Hello, World!" Vapor application, Dockerized it, and integrated it into the CI/CD pipeline established in Episode 2. By introducing Docker Compose, we set up a multi-container environment to manage different services, ensuring a robust and scalable infrastructure for the FountainAI project.
-
-We also detailed how the CI/CD pipeline manages secrets injection into the Docker Compose file using the `Manage Secrets` action, ensuring that sensitive information is securely handled. Additionally, we improved the security of SSH key management by using `ssh-agent` to keep the key in memory, avoiding the risk associated with writing keys to disk.
-
-By following these steps and using shell scripts to automate file creation and updates, we ensured that our CI/CD pipeline is functioning correctly and efficiently. This setup will support the seamless integration and deployment of new features and services as we continue to develop FountainAI.
-
-## Foreshadowing the Next Episode
-
-Stay tuned for the next episodes, where we will delve deeper into the implementation of FountainAI, building upon the solid groundwork established in this episode. We will expand the functionality of the Vapor application, integrate additional services, and continue refining our deployment process to ensure a seamless and reliable development experience.
-
----
-
-This revised episode now follows the editorial rules and includes the pipeline updates as requested.
+In this episode, we created a fully functional Vapor app that wraps GitHub CLI commands and interacts with the GitHub API. We followed TDD principles by writing tests first and then implementing the features to make the tests pass. We also dockerized the app and pushed it to the GitHub Docker registry.
