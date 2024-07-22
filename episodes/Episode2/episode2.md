@@ -545,10 +545,5 @@ In future episodes, we will build upon this foundation to further enhance the CI
 
 By following this guide, you have set up a comprehensive CI/CD pipeline using GitHub Actions with robust secrets management. The custom actions created are modular, maintainable, and reusable across different workflows. You can further extend this setup to include additional workflows and actions as per your project’s requirements.
 
-## Foreshadowing the Next Episode
-
-In the next episode, we will focus on creating a basic "Hello, World!" Vapor application, Dockerizing it, and integrating it into the CI/CD pipeline established in this episode. We will also introduce Docker Compose to manage multiple containers and ensure a smooth deployment process. This integration will utilize the secrets management scheme already set up to handle sensitive information securely.
-
-Stay tuned for Episode 3: "Creating and Managing the Vapor App for FountainAI with CI/CD Pipeline."
 
 ---
