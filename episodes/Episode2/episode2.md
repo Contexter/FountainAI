@@ -61,9 +61,7 @@ A GitHub token is required for authenticating requests made to the GitHub API. T
 
 - **Secure API Requests**: It ensures that the API requests are authenticated and authorized.
 - **Access Control**: It restricts access to the repositories based on the permissions granted to the token.
-- **Rate
-
- Limiting**: It allows tracking and managing the rate limits imposed by GitHub for API requests.
+- **Rate Limiting**: It allows tracking and managing the rate limits imposed by GitHub for API requests.
 
 The GitHub token is essential for the `gh` CLI commands to interact with the GitHub API securely. Without the token, the app cannot perform actions like listing repository contents, fetching file data, or managing secrets.
 
@@ -324,9 +322,7 @@ final class GitHubControllerTests: XCTestCase {
         let token = try generateJWTToken()
 
         try app.test(.GET, "/repo/pulls?repo=owner/repo", headers: ["Authorization": "Bearer \(token)"], afterResponse: { response in
-            XCTAssertEqual
-
-(response.status, .ok)
+            XCTAssertEqual(response.status, .ok)
         })
     }
 
@@ -616,7 +612,7 @@ func routes(_ app: Application) throws {
 
     To run the application using Docker Compose, ensure the environment variables are injected from GitHub Secrets during the pipeline execution.
 
-### Setting Up Dependency Injection in the CI/CD Pipeline
+### Setting Up Runtime Injection in the CI/CD Pipeline
 
 To ensure the environment variables are securely managed, we'll use GitHub Secrets in our pipeline to pass them to the Docker Compose.
 
