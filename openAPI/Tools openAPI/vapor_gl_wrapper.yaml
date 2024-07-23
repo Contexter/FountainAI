@@ -1,251 +1,16 @@
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: GitHub CLI Wrapper
   version: 1.0.0
   description: A Vapor app that wraps GitHub CLI commands for repository management, including secrets management
 servers:
   - url: https://gh.fountain.coach
-paths:
-  /repo/tree:
-    get:
-      summary: Fetch repository tree
-      description: Fetches the tree structure of a repository.
-      operationId: fetchRepoTree
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: branch
-          in: query
-          required: false
-          schema:
-            type: string
-          description: The branch to fetch the tree from (default is "main")
-      responses:
-        '200':
-          description: Successfully fetched repository tree
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/contents:
-    get:
-      summary: List repository contents
-      description: Lists the contents of a repository directory.
-      operationId: listRepoContents
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: path
-          in: query
-          required: false
-          schema:
-            type: string
-          description: The directory path to list contents of (default is root)
-      responses:
-        '200':
-          description: Successfully listed contents
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/file:
-    get:
-      summary: Fetch file content
-      description: Fetches the content of a specific file in the repository.
-      operationId: fetchFileContent
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: path
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The path to the file to fetch content from
-      responses:
-        '200':
-          description: Successfully fetched file content
-          content:
-            text/plain:
-              schema:
-                type: string
-  /repo/details:
-    get:
-      summary: Get repository details
-      description: Fetches details about the repository.
-      operationId: getRepoDetails
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully fetched repository details
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/branches:
-    get:
-      summary: List repository branches
-      description: Lists the branches of a repository.
-      operationId: listRepoBranches
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed branches
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/commits:
-    get:
-      summary: List repository commits
-      description: Lists the commits of a repository.
-      operationId: listRepoCommits
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed commits
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/contributors:
-    get:
-      summary: List repository contributors
-      description: Lists the contributors of a repository.
-      operationId: listRepoContributors
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed contributors
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/pulls:
-    get:
-      summary: List repository pull requests
-      description: Lists the pull requests of a repository.
-      operationId: listRepoPullRequests
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed pull requests
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/issues:
-    get:
-      summary: List repository issues
-      description: Lists the issues of a repository.
-      operationId: listRepoIssues
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed issues
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/secrets:
-    get:
-      summary: List repository secrets
-      description: Lists the secrets of a repository.
-      operationId: listRepoSecrets
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      responses:
-        '200':
-          description: Successfully listed secrets
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/secrets:
-    post:
-      summary: Create or update a repository secret
-      description: Creates or updates a secret in a repository.
-      operationId: createOrUpdateRepoSecret
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: secret_name
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The name of the secret
-        - name: secret_value
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The value of the secret
-      responses:
-        '200':
-          description: Successfully created or updated secret
-          content:
-            application/json:
-              schema:
-                type: string
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     RepositoryTree:
       type: object
@@ -307,4 +72,265 @@ components:
           type: integer
         title:
           type: string
-
+paths:
+  /repo/tree:
+    get:
+      summary: Fetch repository tree
+      description: Fetches the tree structure of a repository.
+      operationId: fetchRepoTree
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: branch
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The branch to fetch the tree from (default is "main")
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully fetched repository tree
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/contents:
+    get:
+      summary: List repository contents
+      description: Lists the contents of a repository directory.
+      operationId: listRepoContents
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The directory path to list contents of (default is root)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed contents
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/file:
+    get:
+      summary: Fetch file content
+      description: Fetches the content of a specific file in the repository.
+      operationId: fetchFileContent
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The path to the file to fetch content from
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully fetched file content
+          content:
+            text/plain:
+              schema:
+                type: string
+  /repo/details:
+    get:
+      summary: Get repository details
+      description: Fetches details about the repository.
+      operationId: getRepoDetails
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully fetched repository details
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/branches:
+    get:
+      summary: List repository branches
+      description: Lists the branches of a repository.
+      operationId: listRepoBranches
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed branches
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/commits:
+    get:
+      summary: List repository commits
+      description: Lists the commits of a repository.
+      operationId: listRepoCommits
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed commits
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/contributors:
+    get:
+      summary: List repository contributors
+      description: Lists the contributors of a repository.
+      operationId: listRepoContributors
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed contributors
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/pulls:
+    get:
+      summary: List repository pull requests
+      description: Lists the pull requests of a repository.
+      operationId: listRepoPullRequests
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed pull requests
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/issues:
+    get:
+      summary: List repository issues
+      description: Lists the issues of a repository.
+      operationId: listRepoIssues
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed issues
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/secrets:
+    get:
+      summary: List repository secrets
+      description: Lists the secrets of a repository.
+      operationId: listRepoSecrets
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed secrets
+          content:
+            application/json:
+              schema:
+                type: string
+  /repo/secrets:
+    post:
+      summary: Create or update a repository secret
+      description: Creates or updates a secret in a repository.
+      operationId: createOrUpdateRepoSecret
+      parameters:
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repo
+        - name: secret_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the secret
+        - name: secret_value
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The value of the secret
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully created or updated secret
+          content:
+            application/json:
+              schema:
+                type: string
