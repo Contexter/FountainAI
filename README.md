@@ -18,21 +18,21 @@ The OpenAPI specification serves as the detailed blueprint for FountainAI, trans
 
 ## Episode Overviews
 
-### [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/Episode1/episode1.md)
+### [Episode 1: Setting Up a General-Purpose Development and Deployment Environment Using GitHub and a VPS](episodes/Episode1/episode1.md)
 
-In this episode, we set up the foundational components required for developing and deploying FountainAI. This includes creating a GitHub repository, configuring environment variables, and establishing secure communication with a VPS.
+In this episode, we set up the foundational components required for developing and deploying applications. This includes creating a GitHub repository for version control, configuring environment variables for secure management of application settings, and establishing secure communication with a Virtual Private Server (VPS). We guide you through setting up SSH keys for secure access, linking your local development environment with GitHub, and ensuring a secure connection to your VPS.
 
-### [Episode 2: Creating and Managing the CI/CD Pipeline with GitHub Actions](episodes/Episode2/episode2.md)
+### [Episode 2: Creating an OpenAPI-based Vapor Wrapper App around "gh"](episodes/Episode2/episode2.md)
 
-In this episode, we create and manage a CI/CD pipeline using GitHub Actions. This pipeline automates the process of building, testing, and deploying the FountainAI application, ensuring continuous integration and continuous deployment.
+In this episode, we create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app provides a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and push it to the GitHub Docker registry.
 
-### [Episode 3: Creating an OpenAPI-based Vapor Wrapper App around "gh"](episodes/Episode3/episode3.md)
+### [Episode 3: Creating and Managing a General Purpose CI/CD Pipeline with GitHub Actions](episodes/Episode3/episode3.md)
 
-In this episode, we create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app will provide a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We will start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and push it to the GitHub Docker registry.
+In this episode, we create and manage a general-purpose CI/CD pipeline using GitHub Actions. This pipeline automates the process of building, testing, and deploying applications, ensuring continuous integration and continuous deployment. The pipeline is designed to be adaptable to various applications, allowing you to adjust the configuration and scripts to suit different project requirements.
 
-### [Episode 4: Pipeline Integration of the Vapor App](episodes/Episode4/episode4.md)
+### [Episode 4: The FountainAI Pipeline](episodes/Episode4/episode4.md)
 
-This episode is a placeholder and will cover the integration of the Vapor app created in Episode 3 into the CI/CD pipeline. We will explore how to automate the deployment process, manage environment variables, and ensure secure and efficient continuous delivery of the application.
+This episode covers the integration of the Vapor app created in Episode 2 into the CI/CD pipeline created in Episode 3. We explore how to automate the deployment process, manage environment variables, and ensure secure and efficient continuous delivery of the application.
 
 ### [Episode 5: Try or Die - Forcing the Monolith](episodes/Episode5/episode5.md)
 
