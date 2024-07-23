@@ -99,7 +99,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/RepositoryTree'
   /repo/contents:
     get:
       summary: List repository contents
@@ -126,7 +128,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/RepositoryTree'
   /repo/file:
     get:
       summary: Fetch file content
@@ -174,7 +178,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/RepositoryDetails'
   /repo/branches:
     get:
       summary: List repository branches
@@ -195,7 +199,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Branch'
   /repo/commits:
     get:
       summary: List repository commits
@@ -216,7 +222,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Commit'
   /repo/contributors:
     get:
       summary: List repository contributors
@@ -237,7 +245,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contributor'
   /repo/pulls:
     get:
       summary: List repository pull requests
@@ -258,7 +268,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/PullRequest'
   /repo/issues:
     get:
       summary: List repository issues
@@ -279,7 +291,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
   /repo/secrets:
     get:
       summary: List repository secrets
@@ -300,7 +314,9 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Secret'
   /repo/secrets:
     post:
       summary: Create or update a repository secret
