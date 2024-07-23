@@ -229,4 +229,4 @@ This ensures that your GitHub Actions workflows can access these sensitive value
 
 ## Conclusion
 
-In this episode, we have set up the foundational components required for developing and deploying your application. We created a GitHub repository, configured environment variables, generated necessary tokens, and established secure communication with a VPS. In the next episode, we will create and manage a CI/CD pipeline using GitHub Actions to automate the process of building, testing, and deploying your application.
+In this episode, we have set up the foundational components required for developing and deploying your application. We created a GitHub repository, configured environment variables, generated necessary tokens, and established secure communication with a VPS. 
