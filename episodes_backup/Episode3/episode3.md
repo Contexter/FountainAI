@@ -1,4 +1,4 @@
-# Episode 2: Creating an OpenAPI-based Vapor Wrapper App around "gh"
+# Episode 3: Creating an OpenAPI-based Vapor Wrapper App around "gh"
 
 ## Table of Contents
 

@@ -1,5 +1,5 @@
 ### `episodes/episode2.md`
-# Episode 3: Creating and Managing the CI/CD Pipeline for The FountainAI with GitHub Actions
+# Episode 2: Creating and Managing the CI/CD Pipeline for The FountainAI with GitHub Actions
 
 ## Table of Contents
 
