@@ -8,21 +8,26 @@
    - [Usefulness in AI-Aided Development](#usefulness-in-ai-aided-development)
    - [Example Scenario](#example-scenario)
 3. [OpenAPI Specification](#openapi-specification)
-4. [Implementing the Vapor App](#implementing-the-vapor-app)
+4. [Security Requirements](#security-requirements)
+   - [Why Use a GitHub Token](#why-use-a-github-token)
+   - [Why Use JWT Authentication](#why-use-jwt-authentication)
+   - [Generating JWT Secret](#generating-jwt-secret)
+   - [Using GitHub Secrets](#using-github-secrets)
+5. [Implementing the Vapor App](#implementing-the-vapor-app)
    - [Project Setup](#project-setup)
+   - [Setting Up the CI/CD Pipeline](#setting-up-the-cicd-pipeline)
    - [Writing Tests](#writing-tests)
    - [Define Routes and Controllers](#define-routes-and-controllers)
    - [Handling GitHub CLI Commands](#handling-github-cli-commands)
-5. [Dockerizing the Vapor App](#dockerizing-the-vapor-app)
-6. [Conclusion](#conclusion)
+6. [Dockerizing the Vapor App](#dockerizing-the-vapor-app)
+7. [Running the Application with Docker Compose](#running-the-application-with-docker-compose)
+8. [Conclusion](#conclusion)
 
 ## Introduction
 
 In this episode, we will create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app will provide a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We will start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and secure it using JWT-based bearer authentication.
 
 > read also: [Enhancing Application Security with GitHub Secrets and Vapor's JWT Implementation](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode3/Enhancing%20Application%20Security%20with%20GitHub%20Secrets%20and%20Vapor's%20JWT%20Implementation.md) & [GitHub CLI Manual](https://cli.github.com/manual/)
-
-
 
 ## Why Create This App?
 
@@ -46,346 +51,67 @@ Imagine you are working on a project and need to quickly review the structure of
 
 ## OpenAPI Specification
 
-The OpenAPI specification serves as a blueprint for our API, detailing the endpoints, parameters, responses, and security. Here’s the OpenAPI specification we will use:
+The OpenAPI specification serves as a blueprint for our API, detailing the endpoints, parameters, responses, and security. You can find the detailed OpenAPI specification [here](https://github.com/Contexter/fountainAI/blob/editorial/openAPI/Tools%20openAPI/vapor_gl_wrapper.yaml).
 
-```yaml
-openapi: 3.1.0
-info:
-  title: GitHub CLI Wrapper
-  version: 1.0.0
-  description: A Vapor app that wraps GitHub CLI commands for repository management, including secrets management
-servers:
-  - url: https://gh.fountain.coach
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    RepositoryTree:
-      type: object
-      properties:
-        path:
-          type: string
-        type:
-          type: string
-    FileContent:
-      type: object
-      properties:
-        content:
-          type: string
-    RepositoryDetails:
-      type: object
-      properties:
-        full_name:
-          type: string
-        description:
-          type: string
-        owner:
-          type: object
-          properties:
-            login:
-              type: string
-        private:
-          type: boolean
-    Branch:
-      type: object
-      properties:
-        name:
-          type: string
-    Commit:
-      type: object
-      properties:
-        sha:
-          type: string
-        commit:
-          type: object
-          properties:
-            message:
-              type: string
-    Contributor:
-      type: object
-      properties:
-        login:
-          type: string
-    PullRequest:
-      type: object
-      properties:
-        number:
-          type: integer
-        title:
-          type: string
-    Issue:
-      type: object
-      properties:
-        number:
-          type: integer
-        title:
-          type: string
-paths:
-  /repo/tree:
-    get:
-      summary: Fetch repository tree
-      description: Fetches the tree structure of a repository.
-      operationId: fetchRepoTree
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: branch
-          in: query
-          required: false
-          schema:
-            type: string
-          description: The branch to fetch the tree from (default is "main")
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully fetched repository tree
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/contents:
-    get:
-      summary: List repository contents
-      description: Lists the contents of a repository directory.
-      operationId: listRepoContents
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: path
-          in: query
-          required: false
-          schema:
-            type: string
-          description: The directory path to list contents of (default is root)
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed contents
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/file:
-    get:
-      summary: Fetch file content
-      description: Fetches the content of a specific file in the repository.
-      operationId: fetchFileContent
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: path
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The path to the file to fetch content from
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully fetched file content
-          content:
-            text/plain:
-              schema:
-                type: string
-  /repo/details:
-    get:
-      summary: Get repository details
-      description: Fetches details about the repository.
-      operationId: getRepoDetails
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully fetched repository details
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/branches:
-    get:
-      summary: List repository branches
-      description: Lists the branches of a repository.
-      operationId: listRepoBranches
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed branches
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/commits:
-    get:
-      summary: List repository commits
-      description: Lists the commits of a repository.
-      operationId: listRepoCommits
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed commits
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/contributors:
-    get:
-      summary: List repository contributors
-      description: Lists the contributors of a repository.
-      operationId: listRepoContributors
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed contributors
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/pulls:
-    get:
-      summary: List repository pull requests
-      description: Lists the pull requests of a repository.
-      operationId: listRepoPullRequests
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed pull requests
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/issues:
-    get:
-      summary: List repository issues
-      description: Lists the issues of a repository.
-      operationId: listRepoIssues
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed issues
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/secrets:
-    get:
-      summary: List repository secrets
-      description: Lists the secrets of a repository.
-      operationId: listRepoSecrets
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully listed secrets
-          content:
-            application/json:
-              schema:
-                type: string
-  /repo/secrets:
-    post:
-      summary: Create or update a repository secret
-      description: Creates or updates a secret in a repository.
-      operationId: createOrUpdateRepoSecret
-      parameters:
-        - name: repo
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The repository in the format owner/repo
-        - name: secret_name
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The name of the secret
-        - name: secret_value
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The value of the secret
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successfully created or updated secret
-          content:
-            application/json:
-              schema:
-                type: string
-```
+## Security Requirements
+
+### Why Use a GitHub Token
+
+A GitHub token is required for authenticating requests made to the GitHub API. This token ensures that only authorized users can access and manipulate GitHub repositories. By using a GitHub token:
+
+- **Secure API Requests**: It ensures that the API requests are authenticated and authorized.
+- **Access Control**: It restricts access to the repositories based on the permissions granted to the token.
+- **Rate
+
+ Limiting**: It allows tracking and managing the rate limits imposed by GitHub for API requests.
+
+The GitHub token is essential for the `gh` CLI commands to interact with the GitHub API securely. Without the token, the app cannot perform actions like listing repository contents, fetching file data, or managing secrets.
+
+### Why Use JWT Authentication
+
+JWT (JSON Web Token) authentication is used to secure the Vapor app and ensure that only authorized users can access the API endpoints. By implementing JWT authentication:
+
+- **Stateless Authentication**: JWTs provide a stateless authentication mechanism, reducing the need for server-side sessions.
+- **Enhanced Security**: JWTs can be signed and optionally encrypted to ensure the integrity and confidentiality of the data.
+- **Scalability**: JWTs are self-contained, making them ideal for distributed systems and microservices.
+
+JWT authentication ensures that only users with a valid token can access the endpoints of the Vapor app, protecting the app from unauthorized access and potential misuse.
+
+### Generating JWT Secret
+
+To secure the JWT tokens, you need to generate a secret key. This key will be used to sign the tokens and ensure their integrity. Here’s how you can generate a JWT secret:
+
+1. **Generate a Secret Key**:
+   - You can generate a secure random key using various tools. For example, using OpenSSL:
+     ```bash
+     openssl rand -base64 32
+     ```
+   - Alternatively, you can use online tools like [JWT.io](https://jwt.io/) to generate a secret key.
+
+2. **Store the Secret Key Securely**:
+   - Save the generated key in a secure location, such as a password manager or a secure environment variable.
+
+### Using GitHub Secrets
+
+To securely manage the GitHub token and JWT secret, we will use GitHub Secrets. This allows us to store sensitive information securely and use it in our application without exposing it in the source code.
+
+#### Step 1: Store Secrets in GitHub
+
+1. **Navigate to Your Repository Settings**:
+   - Go to your GitHub repository in your web browser.
+   - Click on **Settings**.
+
+2. **Access Secrets and Variables**:
+   - In the left sidebar, click on **Secrets and variables**.
+   - Click on **Actions**.
+
+3. **Add New Repository Secrets**:
+   - Add a new secret for the GitHub token:
+     - **Name**: `GITHUB_TOKEN`
+     - **Value**: `your_generated_github_token`
+   - Add a new secret for the JWT secret:
+     - **Name**: `JWT_SECRET`
+     - **Value**: `your_generated_jwt_secret`
 
 ## Implementing the Vapor App
 
@@ -429,6 +155,71 @@ paths:
        ]
    )
    ```
+
+### Setting Up the CI/CD Pipeline
+
+To ensure continuous integration and deployment, we will set up a CI/CD pipeline using GitHub Actions. This pipeline will build, test, and push the Docker image to the GitHub Container Registry.
+
+#### Step 1: Create GitHub Actions Workflow
+
+1. **Create Workflow Directory**:
+   - In the root of your repository, create a directory named `.github/workflows`.
+
+2. **Create Workflow File**:
+   - Inside the `.github/workflows` directory, create a file named `ci-cd.yml`.
+
+3. **Add Workflow Configuration**:
+   - Add the following configuration to the `ci-cd.yml` file:
+
+```yaml
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Swift
+      uses: fwal/setup-swift@v1
+
+    - name: Build the app
+      run: swift build --disable-sandbox -c release
+
+    - name: Run tests
+      run: swift test
+
+    - name: Build and push Docker image
+      run: |
+        docker-compose build
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        docker-compose push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+```
+
+This configuration ensures that the secrets are securely passed to the Docker Compose process during the build and push stages.
 
 ### Writing Tests
 
@@ -533,7 +324,9 @@ final class GitHubControllerTests: XCTestCase {
         let token = try generateJWTToken()
 
         try app.test(.GET, "/repo/pulls?repo=owner/repo", headers: ["Authorization": "Bearer \(token)"], afterResponse: { response in
-            XCTAssertEqual(response.status, .ok)
+            XCTAssertEqual
+
+(response.status, .ok)
         })
     }
 
@@ -762,6 +555,8 @@ public func configure(_ app: Application) throws {
 ```swift
 import Vapor
 
+
+
 func routes(_ app: Application) throws {
     let gitHubController = GitHubController()
     try app.register(collection: gitHubController)
@@ -798,13 +593,88 @@ func routes(_ app: Application) throws {
     Tests/
     ```
 
-3. **Build and run the Docker container locally**:
+### Running the Application with Docker Compose
 
-    ```bash
-    docker build -t github-cli-wrapper .
-    docker run -p 8080:8080 -e GITHUB_TOKEN=your_github_token_here -e JWT_SECRET=your_jwt_secret_here github-cli-wrapper
+1. **Create a `docker-compose.yml` file** in the root directory of your project:
+
+    ```yaml
+    version: '3.8'
+
+    services:
+      vapor:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        ports:
+          - "8080:8080"
+        environment:
+          GITHUB_TOKEN: ${GITHUB_TOKEN}
+          JWT_SECRET: ${JWT_SECRET}
     ```
+
+2. **Run the application**:
+
+    To run the application using Docker Compose, ensure the environment variables are injected from GitHub Secrets during the pipeline execution.
+
+### Setting Up Dependency Injection in the CI/CD Pipeline
+
+To ensure the environment variables are securely managed, we'll use GitHub Secrets in our pipeline to pass them to the Docker Compose.
+
+#### Step 1: Modify GitHub Actions Workflow
+
+Update the `ci-cd.yml` file to use Docker Compose with GitHub Secrets:
+
+```yaml
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Swift
+      uses: fwal/setup-swift@v1
+
+    - name: Build the app
+      run: swift build --disable-sandbox -c release
+
+    - name: Run tests
+      run: swift test
+
+    - name: Build and push Docker image
+      run: |
+        docker-compose build
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        docker-compose push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+```
+
+This configuration ensures that the secrets are securely passed to the Docker Compose process during the build and push stages.
 
 ## Conclusion
 
-In this episode, we created a fully functional Vapor app that wraps GitHub CLI commands and interacts with the GitHub API. We followed TDD principles by writing tests first and then implementing the features to make the tests pass. We also dockerized the app and implemented JWT-based bearer authentication to secure the API. This setup ensures that only authorized users can access and perform operations on the API.
+In this episode, we created a fully functional Vapor app that wraps GitHub CLI commands and interacts with the GitHub API. We followed TDD principles by writing tests first and then implementing the features to make them pass. We also dockerized the app and implemented JWT-based bearer authentication to secure the API. This setup ensures that only authorized users can access and perform operations on the API. We also set up a CI/CD pipeline to automate the build and deployment process, ensuring continuous integration and delivery of our application. Additionally, we integrated Docker Compose to simplify the process of managing multi-container applications, enhancing the development workflow by providing a consistent environment for running the application both locally and in production. By using GitHub Secrets, we ensured that sensitive information is handled securely.
+
