@@ -4,6 +4,7 @@
 > also read: 
 > [The Ultimate Guide to GitHub Tokens](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode1/The%20Ultimate%20Guide%20to%20GitHub%20Tokens.md)
 > [The Ultimate Guide to GitHub Runners](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode1/The%20Ultimate%20Guide%20to%20GitHub%20Runners.md)
+> [The Ultimate Guide to CI/CD and GitHub Workflows](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode1/The%20Ultimate%20Guide%20to%20CI_CD%20and%20GitHub%20Workflows.md)
 
 ## Table of Contents
 
@@ -20,7 +21,7 @@
 
 ## Introduction
 
-In this episode, we will set up the foundational components required for developing and deploying FountainAI. This includes creating a GitHub repository, configuring environment variables, and establishing secure communication with a VPS.
+In this episode, we will set up the foundational components required for developing and deploying your application. This includes creating a GitHub repository, configuring environment variables, and establishing secure communication with a VPS.
 
 ## Prerequisites
 
@@ -34,77 +35,40 @@ Ensure you have:
 ### Create GitHub Repository and Configuration File
 
 1. **Create a new GitHub Repository**:
-   - Go to your GitHub account and create a new repository named `fountainAI`.
+   - Go to your GitHub account and create a new repository named `<your-repo-name>`.
    - Initialize the repository with a `README.md` file.
 
 2. **Clone the Repository Locally**:
    - Clone the repository to your local machine:
      ```sh
-     git clone https://github.com/Contexter/fountainAI.git
-     cd fountainAI
+     git clone https://github.com/<your-username>/<your-repo-name>.git
+     cd <your-repo-name>
      ```
 
 3. **Create Configuration File**:
-   - Create a file named `config.env` in your project directory. This file will store all the necessary configuration variables.
+   - Create a file named `config.env` in your project directory. This file will act as a temporary storage for the sensitive data generated during this setup process.
    - Add the following content to `config.env`:
 
 ```env
-# Name of your application
-APP_NAME=fountainAI
-
-# GitHub repository owner (your GitHub username or organization name)
-REPO_OWNER=Contexter
-
-# Name of your GitHub repository
-REPO_NAME=fountainAI
+# Placeholder for sensitive data
 
 # GitHub personal access token (generated in Step 2)
-G_TOKEN=your_generated_token
+G_TOKEN=
 
-# Private SSH key for accessing the VPS (will be generated in Step 3)
+# Private SSH key for accessing the VPS (generated in Step 3)
 VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
 ...
------END OPENSSH PRIVATE KEY-----'  # Placeholder, will update in Step 4
-
-# Username for accessing your VPS
-VPS_USERNAME=your_vps_username
-
-# IP address of your VPS
-VPS_IP=your_vps_ip
-
-# Domain name for your production environment
-DOMAIN=example.com
-
-# Domain name for your staging environment
-STAGING_DOMAIN=staging.example.com
-
-# Directory on VPS where the app will be deployed
-DEPLOY_DIR=/home/your_vps_username/deployment_directory
-
-# Email address for Let's Encrypt SSL certificate registration
-EMAIL=mail@benedikt-eickhoff.de
-
-# Name of your PostgreSQL database
-DB_NAME=fountainai_db
-
-# Username for your PostgreSQL database
-DB_USER=fountainai_user
-
-# Password for your PostgreSQL database
-DB_PASSWORD=your_db_password
-
-# Port for your Redis service
-REDIS_PORT=6379
-
-# Port for your RedisAI service
-REDISAI_PORT=6378
+-----END OPENSSH PRIVATE KEY-----'
 
 # Runner registration token (generated in Step 5)
-RUNNER_TOKEN=your_runner_registration_token  # Placeholder, will update in Step 5
-
-# Port for the NYDUS service
-NYDUS_PORT=2224
+RUNNER_TOKEN=
 ```
+
+This `config.env` file acts as a temporary paste board to keep track of the sensitive data that you generate during this setup process. It also serves as a backup for these secrets, allowing you to easily reference them when adding them to GitHub.
+
+**Security Implications:**
+- Ensure that `config.env` is added to `.gitignore` to prevent it from being tracked by git. This is crucial to avoid exposing sensitive information.
+- Handle this file with care. Do not share it or commit it to any public repository. 
 
 4. **Add `config.env` to `.gitignore`**:
    - Add the `config.env` file to `.gitignore` to ensure it is not tracked by git, preventing sensitive information from being exposed.
@@ -135,44 +99,13 @@ NYDUS_PORT=2224
    - Click on `Generate new token`.
 
 4. **Configure the Token**:
-   - Give your token a descriptive name, such as `FountainAI Project Token`.
+   - Give your token a descriptive name, such as `<your-project-name> Project Token`.
    - Set the expiration date as needed (e.g., 90 days).
-   - Select the scopes/permissions for the token. For a super powerful access token, select the following scopes:
-
-     #### Repository Permissions
-     - `repo` (Full control of private repositories)
-     - `workflow` (Update GitHub Action workflows)
-     - `write:packages` (Upload packages to GitHub Package Registry)
-     - `read:packages` (Download packages from GitHub Package Registry)
-     - `admin:repo_hook` (Full control of repository hooks)
-     - `admin:org` (Read and write org and team membership, read and write org projects)
-
-     #### Account Permissions
-     - `read:user` (Read all user profile data)
-     - `user:email` (Read user email addresses)
-     - `write:discussion` (Manage discussions)
-     - `admin:org_hook` (Full control of organization webhooks)
-
-     #### GPG Key Permissions
-     - `admin:gpg_key` (Full control of user GPG keys)
-
-     #### SSH Key Permissions
-     - `admin:ssh_key` (Full control of user public SSH keys)
-
-     #### Personal Access Token Permissions
-     - `admin:public_key` (Full control of user public keys)
-     - `admin:org` (Full control of orgs and teams)
-
-     #### Other Permissions
-     - `delete_repo` (Delete repositories)
-     - `admin:enterprise` (Manage enterprise accounts)
-     - `admin:org_project` (Manage org projects)
-     - `admin:repo` (Manage repositories)
-     - `admin:repo_hook` (Manage repository webhooks)
+   - Select the scopes/permissions for the token.
 
 5. **Generate and Copy the Token**:
    - Click on `Generate token`.
-   - Copy the generated token and store it **immediately & securely** in your `config.env` file.
+   - Copy the generated token and store it **immediately & securely** in your `config.env` file under `G_TOKEN`.
 
 ```env
 G_TOKEN=your_generated_token
@@ -187,14 +120,18 @@ G_TOKEN=your_generated_token
      ssh-keygen -t ed25519 -C "your_email@example.com"
      ```
    - Follow the prompts to save the key pair in the default location (`~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub`).
-     - When asked to "Enter a file in which to save the key," press Enter to accept the default location.
-     - You can choose to set a passphrase or leave it empty by pressing Enter.
 
-3. **Add the generated keys to the `config.env` file**:
-   - Add the following lines to your `config.env` file:
+3. **Add the generated private key to the `config.env` file**:
+   - Use the following command to get the private key and store it in the `config.env` file:
+     ```sh
+     cat ~/.ssh/id_ed25519
+     ```
+   - Copy the output and paste it into `config.env` under `VPS_SSH_KEY`.
 
 ```env
-VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
+VPS_SSH_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----'
 ```
 
 ### Add SSH Keys to Your VPS and GitHub
@@ -206,12 +143,12 @@ VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
      ```sh
      cat ~/.ssh/id_ed25519.pub
      ```
-   - Copy the output (your public key) to your clipboard.
+   - Copy the output to your clipboard.
 
 2. **Connect to Your VPS**:
-   - Use an SSH client to connect to your VPS. Replace `your_vps_username` and `your_vps_ip` with your actual VPS username and IP address:
+   - Use an SSH client to connect to your VPS:
      ```sh
-     ssh your_vps_username@your_vps_ip
+     ssh <your_vps_username>@<your_vps_ip>
      ```
 
 3. **Add the Public Key to the VPS**:
@@ -223,7 +160,6 @@ VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
      ```sh
      echo "<public_key>" >> ~/.ssh/authorized_keys
      ```
-   - Replace `<public_key>` with the public key you copied earlier.
 
 #### Part B: Add the Private Key to GitHub Secrets
 
@@ -232,7 +168,7 @@ VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
      ```sh
      cat ~/.ssh/id_ed25519
      ```
-   - Copy the output (your private key) to your clipboard.
+   - Copy the output to your clipboard.
 
 2. **Add the Private Key to GitHub Secrets**:
    - Go to your GitHub repository in your web browser.
@@ -249,60 +185,33 @@ VPS_SSH_KEY=$(cat ~/.ssh/id_ed25519)
    - Go to your GitHub repository.
    - Navigate to **Settings** -> **Actions** -> **Runners**.
    - Click on **New self-hosted runner**.
-   - Select the appropriate operating system for your VPS.
-   - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. You will use this token to register the runner.
-   - **Immediately add this token to the `config.env` file** under the `RUNNER_TOKEN` variable to keep track of it.
+   - Follow the instructions to download and configure the runner. Note the `RUNNER_TOKEN` generated in the process. 
+
+2. **Store the Runner Token**:
+   - Add this token to the `config.env` file under the `RUNNER_TOKEN` variable to keep track of it.
 
 ```env
 RUNNER_TOKEN=your_generated_runner_token
 ```
 
-2. **Set Up the Runner as a Systemd Service**:
+3. **Set Up the Runner as a Systemd Service**:
    - Follow the instructions provided by GitHub to configure and run the self-hosted runner.
-   - Then, create a systemd service file on your VPS to ensure the runner runs as a service:
+   - Create a systemd service file on your VPS to ensure the runner runs as a service:
      ```sh
      sudo nano /etc/systemd/system/github-runner.service
      ```
-   - Add the following content to the service file:
-     ```ini
-     [Unit]
-     Description=GitHub Actions Runner
-     After=network.target
-
-     [Service]
-     ExecStart=/home/your_vps_username/actions-runner/run.sh
-     User=your_vps_username
-     WorkingDirectory=/home/your_vps_username/actions-runner
-     Restart=always
-
-     [Install]
-     WantedBy=multi-user.target
+   - Add the relevant content to the service file.
+   - Reload the systemd daemon, enable the service to start on boot, and start the service:
+     ```sh
+     sudo systemctl daemon-reload
+     sudo systemctl enable github-runner
+     sudo systemctl start github-runner
+     sudo systemctl status github-runner
      ```
-   - Replace `your_vps_username` with your actual VPS username.
-
-3. **Reload the systemd daemon to recognize the new service**:
-   ```sh
-   sudo systemctl daemon-reload
-   ```
-
-4. **Enable the service to start on boot**:
-   ```sh
-   sudo systemctl enable github-runner
-   ```
-
-5. **Start the service**:
-   ```sh
-   sudo systemctl start github-runner
-   ```
-
-6. **Check the status of the service**:
-   ```sh
-   sudo systemctl status github-runner
-   ```
 
 ### Manually Add Secrets to GitHub
 
-For security reasons, sensitive information such as tokens, keys, and passwords should not be stored directly in the source code. Instead, GitHub Actions allows you to store these secrets securely. You need to replicate the contents of your `config.env` file as secrets in your GitHub repository.
+For security reasons, sensitive information such as tokens, keys, and passwords should not be stored directly in the source code. Instead, GitHub allows you to store these secrets securely. These secrets can then be used in GitHub Actions workflows to inject dependencies and other sensitive information.
 
 1. **Navigate to Your Repository Settings**:
    - Go to your GitHub repository in your web browser.
@@ -314,13 +223,10 @@ For security reasons, sensitive information such as tokens, keys, and passwords 
 
 3. **Add a New Repository Secret**:
    - Click on **New repository secret**.
-   - For each variable in your `config.env` file, add a new secret with the same name and value. For example:
-     - **Name**: `APP_NAME`
-     - **Value**: `fountainAI`
-   - Repeat this for all variables in the `config.env` file.
+   - For each variable in your `config.env` file, add a new secret with the same name and value.
 
 This ensures that your GitHub Actions workflows can access these sensitive values securely.
 
 ## Conclusion
 
-In this episode, we have set up the foundational components required for developing and deploying FountainAI. We created a GitHub repository, configured environment variables, generated necessary tokens, and established secure communication with a VPS. In the next episode, we will create and manage a CI/CD pipeline using GitHub Actions to automate the process of building, testing, and deploying the FountainAI application.
+In this episode, we have set up the foundational components required for developing and deploying your application. We created a GitHub repository, configured environment variables, generated necessary tokens, and established secure communication with a VPS. In the next episode, we will create and manage a CI/CD pipeline using GitHub Actions to automate the process of building, testing, and deploying your application.
