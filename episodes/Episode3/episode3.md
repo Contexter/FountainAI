@@ -608,9 +608,7 @@ struct GitHubController: RouteCollection {
         repoRoutes.get("commits", use: listCommits)
         repoRoutes.get("contributors", use: listContributors)
         repoRoutes.get("pulls", use: listPullRequests)
-        repoRoutes.get("issues", use
-
-: listIssues)
+        repoRoutes.get("issues", use: listIssues)
         repoRoutes.get("secrets", use: listSecrets)
         repoRoutes.post("secrets", use: createOrUpdateSecret)
     }
