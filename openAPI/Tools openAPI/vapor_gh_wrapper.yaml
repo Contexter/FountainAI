@@ -11,6 +11,9 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    basicAuth:
+      type: http
+      scheme: basic
   schemas:
     RepositoryTree:
       type: object
@@ -73,6 +76,20 @@ components:
         title:
           type: string
 paths:
+  /generate-token:
+    get:
+      summary: Generate JWT Token
+      description: Generates a JWT token for authenticated users. This endpoint is protected by Basic Authentication.
+      operationId: generateToken
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successfully generated JWT token
+          content:
+            text/plain:
+              schema:
+                type: string
   /repo/tree:
     get:
       summary: Fetch repository tree
