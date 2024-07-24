@@ -46,9 +46,6 @@
 
 In this episode, we will create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app will provide a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We will start by defining our API using the OpenAPI specification, implementing the Vapor app, dockerizing the app, and securing it using JWT-based bearer authentication.
 
-Sure, here is the "Read also" section in a code block:
-
-
 > Read also: 
 > - [GitHub CLI Manual](https://cli.github.com/manual/)
 > - [Secure Token Generation Using Basic Authentication: A Practical Guide](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode2/Secure%20Token%20Generation%20Using%20Basic%20Authentication_%20A%20Practical%20Guide.md)
