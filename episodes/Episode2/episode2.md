@@ -50,7 +50,6 @@ Sure, here is the "Read also" section in a code block:
 
 
 > Read also: 
-> - [Enhancing Application Security with GitHub Secrets and Vapor's JWT Implementation](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode3/Enhancing%20Application%20Security%20with%20GitHub%20Secrets%20and%20Vapor's%20JWT%20Implementation.md)
 > - [GitHub CLI Manual](https://cli.github.com/manual/)
 > - [Secure Token Generation Using Basic Authentication: A Practical Guide](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode2/Secure%20Token%20Generation%20Using%20Basic%20Authentication_%20A%20Practical%20Guide.md)
 
