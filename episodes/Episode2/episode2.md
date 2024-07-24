@@ -73,7 +73,7 @@ Imagine you are working on a project and need to quickly review the structure of
 
 ### 3. OpenAPI Specification
 
-The OpenAPI specification serves as a blueprint for our API, detailing the endpoints, parameters, responses, and security. You can find the detailed OpenAPI specification [here](https://github.com/Contexter/fountainAI/blob/editorial/openAPI/Tools%20openAPI/vapor_gl_wrapper.yaml).
+The OpenAPI specification serves as a blueprint for our API, detailing the endpoints, parameters, responses, and security. You can find the detailed OpenAPI specification [here](https://github.com/Contexter/fountainAI/blob/editorial/openAPI/Tools%20openAPI/vapor_gh_wrapper.yaml).
 
 ### 4. Security Requirements
 
