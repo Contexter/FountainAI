@@ -15,13 +15,16 @@
    - [Using GitHub Secrets](#using-github-secrets)
 5. [Implementing the Vapor App](#implementing-the-vapor-app)
    - [Project Setup](#project-setup)
-   - [Setting Up the CI/CD Pipeline](#setting-up-the-cicd-pipeline)
-   - [Writing Tests](#writing-tests)
    - [Define Routes and Controllers](#define-routes-and-controllers)
    - [Handling GitHub CLI Commands](#handling-github-cli-commands)
-6. [Dockerizing the Vapor App](#dockerizing-the-vapor-app)
-7. [Running the Application with Docker Compose](#running-the-application-with-docker-compose)
-8. [Conclusion](#conclusion)
+   - [Writing Tests](#writing-tests)
+   - [Implementing the Token Generation Route](#implementing-the-token-generation-route)
+     - [Securing the Token Generation Endpoint](#securing-the-token-generation-endpoint)
+6. [Setting Up the CI/CD Pipeline](#setting-up-the-cicd-pipeline)
+7. [Dockerizing the Vapor App](#dockerizing-the-vapor-app)
+8. [Running the Application with Docker Compose](#running-the-application-with-docker-compose)
+9. [Conclusion](#conclusion)
+10. [Addendum](#addendum)
 
 ## Introduction
 
@@ -110,6 +113,11 @@ To securely manage the GitHub token and JWT secret, we will use GitHub Secrets. 
    - Add a new secret for the JWT secret:
      - **Name**: `JWT_SECRET`
      - **Value**: `your_generated_jwt_secret`
+   - Add new secrets for basic auth credentials to protect the token generation route:
+     - **Name**: `BASIC_AUTH_USERNAME`
+     - **Value**: `your_username`
+     - **Name**: `BASIC_AUTH_PASSWORD`
+     - **Value**: `your_password`
 
 ## Implementing the Vapor App
 
@@ -154,74 +162,218 @@ To securely manage the GitHub token and JWT secret, we will use GitHub Secrets. 
    )
    ```
 
-### Setting Up the CI/CD Pipeline
+### Define Routes and Controllers
 
-To ensure continuous integration and deployment, we will set up a CI/CD pipeline using GitHub Actions. This pipeline will build, test, and push the Docker image to the GitHub Container Registry.
+**Create a `GitHubController.swift` file** in the `Sources/App/Controllers` directory:
 
-#### Step 1: Create GitHub Actions Workflow
+```swift
+import Vapor
+import JWT
 
-1. **Create Workflow Directory**:
-   - In the root of your repository, create a directory named `.github/workflows`.
+struct GitHubController: RouteCollection {
+    func boot(routes: RoutesBuilder) throws {
+        let repoRoutes = routes.grouped("repo").grouped(JWTMiddleware())
+        repoRoutes.get("tree", use: fetchRepoTree)
+        repoRoutes.get("contents", use: listContents)
+       
 
-2. **Create Workflow File**:
-   - Inside the `.github/workflows` directory, create a file named `ci-cd.yml`.
+ repoRoutes.get("file", use: fetchFileContent)
+        repoRoutes.get("details", use: getRepoDetails)
+        repoRoutes.get("branches", use: listBranches)
+        repoRoutes.get("commits", use: listCommits)
+        repoRoutes.get("contributors", use: listContributors)
+        repoRoutes.get("pulls", use: listPullRequests)
+        repoRoutes.get("issues", use: listIssues)
+        repoRoutes.get("secrets", use: listSecrets)
+        repoRoutes.post("secrets", use: createOrUpdateSecret)
+    }
 
-3. **Add Workflow Configuration**:
-   - Add the following configuration to the `ci-cd.yml` file:
+    func fetchRepoTree(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let branch = try req.query.get(String.self, at: "branch") ?? "main"
+        let url = URI(string: "https://api.github.com/repos/\(repo)/git/trees/\(branch)?recursive=1")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-```yaml
-name: CI/CD
+    func listContents(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path") ?? ""
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    func fetchFileContent(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    func getRepoDetails(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    func listBranches(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/branches")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+    func listCommits(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/commits")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    func listContributors(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contributors")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Set up Swift
-      uses: fwal/setup-swift@v1
+    func listPullRequests(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/pulls")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Build the app
-      run: swift build --disable-sandbox -c release
+    func listIssues(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/issues")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Run tests
-      run: swift test
+    func listSecrets(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets")
+        return try makeGHRequest(req: req, url: url)
+    }
 
-    - name: Build and push Docker image
-      run: |
-        docker-compose build
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-        docker-compose push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    func createOrUpdateSecret(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let secretName = try req.query.get(String.self, at: "secret_name")
+        let secretValue = try req.query.get(String.self, at: "secret_value")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets/\(secretName)")
+        return try makeGHRequest(req: req, url: url, method: .put, body: secretValue)
+    }
+
+    private func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
+        var headers = HTTPHeaders()
+        headers.add(name: .authorization, value: "Bearer \(Environment.get("GITHUB_TOKEN")!)")
+        headers.add(name: .userAgent, value: "VaporApp")
+        headers.add(name: .accept, value: "application/vnd.github.v3+json")
+
+        let clientReq = ClientRequest(
+            method: method,
+            url: url,
+            headers: headers,
+            body: body != nil ? .init(string: body!) : nil
+        )
+        return req.client.send(clientReq).flatMapThrowing { response in
+            guard response.status == .ok else {
+                throw Abort(.badRequest, reason: "GitHub API request failed with status \(response.status)")
+            }
+            return response
+        }
+    }
+}
 ```
 
-This configuration ensures that the secrets are securely passed to the Docker Compose process during the build and push stages.
+### Implementing the Token Generation Route
 
-### Writing Tests
+#### Securing the Token Generation Endpoint
 
-We'll start by writing tests to ensure our Vapor app works as expected, including tests for JWT authentication.
+To ensure the `/generate-token` endpoint is secure, we will use Basic Authentication. This ensures that only users with valid credentials can generate a JWT token.
+
+**Create a `BasicAuthMiddleware.swift` file** in the `Sources/App/Middleware` directory:
+
+```swift
+import Vapor
+
+struct BasicAuthMiddleware: Middleware {
+    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        guard let authHeader = request.headers.basicAuthorization else {
+            return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
+        }
+        
+        let expectedUsername = Environment.get("BASIC_AUTH_USERNAME") ?? "admin"
+        let expectedPassword = Environment.get("BASIC_AUTH_PASSWORD") ?? "password"
+        
+        if authHeader.username == expectedUsername && authHeader.password == expectedPassword {
+            return next.respond(to: request)
+        } else {
+            return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
+        }
+    }
+}
+```
+
+**Update your `routes.swift` to include the new route and secure it:**
+
+```swift
+import Vapor
+
+func routes(_ app: Application) throws {
+    let protected = app.grouped(JWTMiddleware())
+    let basicAuthProtected = app.grouped(BasicAuthMiddleware())
+
+    // Public route for token generation
+    basicAuthProtected.get("generate-token") { req -> String in
+        let payload = MyPayload(sub: .init(value: "custom-gpt"), exp: .init(value: .distantFuture))
+        let token = try req.jwt.sign(payload)
+        return token
+    }
+
+    // Protected routes
+    let gitHubController = GitHubController()
+    try app.register(collection: gitHubController)
+}
+```
+
+**Create a `MyPayload.swift` file** in the `Sources/App/Models` directory to define the JWT payload:
+
+```swift
+import Vapor
+import JWT
+
+struct MyPayload: JWTPayload {
+    var sub: SubjectClaim
+    var exp: ExpirationClaim
+    
+    func verify(using signer: JWTSigner) throws {
+        try exp.verifyNotExpired()
+    }
+}
+```
+
+### Writing Tests for Token Generation
+
+**Create a `TokenGenerationTests.swift` file** in the `Tests/AppTests` directory:
+
+```swift
+import XCTVapor
+@testable import App
+
+final class TokenGenerationTests: XCTestCase {
+    func testGenerateToken() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+        try configure(app)
+
+        let basicAuthHeader = HTTPHeaders.basicAuthorization(username: "admin", password: "password")!
+
+        try app.test(.GET, "/generate-token", headers: ["Authorization": basicAuthHeader], afterResponse: { response in
+            XCTAssertEqual(response.status, .ok)
+            let token = try response.content.decode(String.self)
+            XCTAssertFalse(token.isEmpty)
+        })
+    }
+}
+```
+
+### Writing Tests for Other Routes
 
 **Create a `GitHubControllerTests.swift` file** in the `Tests/AppTests` directory:
 
@@ -253,6 +405,8 @@ final class GitHubControllerTests: XCTestCase {
             XCTAssertEqual(response.status, .ok)
         })
     }
+
+
 
     func testFetchFileContent() throws {
         let app = Application(.testing)
@@ -371,254 +525,20 @@ final class GitHubControllerTests: XCTestCase {
 }
 ```
 
-Running these tests initially will result in failures since we haven't implemented the functionality yet. This aligns with the Test-Driven Development (TDD) approach, where tests are written first and then the functionality is implemented to make them pass.
+### Setting Up the CI/CD Pipeline
 
-To run these tests, use the following command:
+To ensure continuous integration and deployment, we will set up a CI/CD pipeline using GitHub Actions. This pipeline will build, test, and push the Docker image to the GitHub Container Registry.
 
-```bash
-swift test
-```
+#### Step 1: Create GitHub Actions Workflow
 
-### Define Routes and Controllers
+1. **Create Workflow Directory**:
+   - In the root of your repository, create a directory named `.github/workflows`.
 
-**Create a `GitHubController.swift` file** in the `Sources/App/Controllers` directory:
+2. **Create Workflow File**:
+   - Inside the `.github/workflows` directory, create a file named `ci-cd.yml`.
 
-```swift
-import Vapor
-import JWT
-
-struct GitHubController: RouteCollection {
-    func boot(routes: RoutesBuilder) throws {
-        let repoRoutes = routes.grouped("repo").grouped(JWTMiddleware())
-        repoRoutes.get("tree", use: fetchRepoTree)
-        repoRoutes.get("contents", use: listContents)
-        repoRoutes.get("file", use: fetchFileContent)
-        repoRoutes.get("details", use: getRepoDetails)
-        repoRoutes.get("branches", use: listBranches)
-        repoRoutes.get("commits", use: listCommits)
-        repoRoutes.get("contributors", use: listContributors)
-        repoRoutes.get("pulls", use: listPullRequests)
-        repoRoutes.get("issues", use: listIssues)
-        repoRoutes.get("secrets", use: listSecrets)
-        repoRoutes.post("secrets", use: createOrUpdateSecret)
-    }
-
-    func fetchRepoTree(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let branch = try req.query.get(String.self, at: "branch") ?? "main"
-        let url = URI(string: "https://api.github.com/repos/\(repo)/git/trees/\(branch)?recursive=1")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listContents(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let path = try req.query.get(String.self, at: "path") ?? ""
-        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func fetchFileContent(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let path = try req.query.get(String.self, at: "path")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func getRepoDetails(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listBranches(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/branches")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listCommits(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/commits")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listContributors(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/contributors")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listPullRequests(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/pulls")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listIssues(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/issues")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func listSecrets(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets")
-        return try makeGHRequest(req: req, url: url)
-    }
-
-    func createOrUpdateSecret(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        let repo = try req.query.get(String.self, at: "repo")
-        let secretName = try req.query.get(String.self, at: "secret_name")
-        let secretValue = try req.query.get(String.self, at: "secret_value")
-        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets/\(secretName)")
-        return try makeGHRequest(req: req, url: url, method: .put, body: secretValue)
-    }
-
-    private func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
-        var headers = HTTPHeaders()
-        headers.add(name: .authorization, value: "Bearer \(Environment.get("GITHUB_TOKEN")!)")
-        headers.add(name: .userAgent, value: "VaporApp")
-        headers.add(name: .accept, value: "application/vnd.github.v3+json")
-
-        let clientReq = ClientRequest(
-            method: method,
-            url: url,
-            headers: headers,
-            body: body != nil ? .init(string: body!) : nil
-        )
-        return req.client.send(clientReq)
-    }
-}
-```
-
-**Create a `JWTMiddleware.swift` file** in the `Sources/App/Middleware` directory:
-
-```swift
-import Vapor
-import JWT
-
-struct JWTMiddleware: Middleware {
-    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-        guard let token = request.headers.bearerAuthorization?.token else {
-            return request.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Missing Bearer Token"))
-        }
-        
-        do {
-            let jwt = try request.jwt.verify(token, as: MyPayload.self)
-            // Add verified JWT to request storage or context as needed
-            request.storage[JWTStorageKey.self] = jwt
-            return next.respond(to: request)
-        } catch {
-            return request.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Invalid or expired Bearer Token"))
-        }
-    }
-}
-
-struct MyPayload: JWTPayload {
-    var sub: SubjectClaim
-    var exp: ExpirationClaim
-    
-    func verify(using signer: JWTSigner) throws {
-        try exp.verifyNotExpired()
-    }
-}
-
-struct JWTStorageKey: StorageKey {
-    typealias Value = MyPayload
-}
-```
-
-**Update `configure.swift` to register the new controller and configure JWT**:
-
-```swift
-import Vapor
-import JWT
-
-public func configure(_ app: Application) throws {
-    // JWT Configuration
-    let signers = JWTSigners()
-    try signers.use(.hs256(key: Environment.get("JWT_SECRET")!))
-    app.jwt.signers = signers
-
-    // Register routes
-    let gitHubController = GitHubController()
-    try app.register(collection: gitHubController)
-}
-```
-
-**Update `routes.swift` to register the controller routes**:
-
-```swift
-import Vapor
-
-
-
-func routes(_ app: Application) throws {
-    let gitHubController = GitHubController()
-    try app.register(collection: gitHubController)
-}
-```
-
-### Dockerizing the Vapor App
-
-1. **Create a `Dockerfile`** in the root directory of your project:
-
-    ```dockerfile
-    # Stage 1 - Build
-    FROM swift:5.5-focal as builder
-    WORKDIR /app
-    COPY . .
-    RUN swift build --disable-sandbox -c release
-
-    # Stage 2 - Run
-    FROM swift:5.5-focal-slim
-    WORKDIR /app
-    COPY --from=builder /app/.build/release /app
-    ENV GITHUB_TOKEN=${GITHUB_TOKEN}
-    ENV JWT_SECRET=${JWT_SECRET}
-    ENTRYPOINT ["/app/Run"]
-    ```
-
-2. **Create a `.dockerignore`** file to exclude unnecessary files from the Docker image:
-
-    ```dockerignore
-    .build/
-    .swiftpm/
-    Packages/
-    Package.resolved
-    Tests/
-    ```
-
-### Running the Application with Docker Compose
-
-1. **Create a `docker-compose.yml` file** in the root directory of your project:
-
-    ```yaml
-    version: '3.8'
-
-    services:
-      vapor:
-        build:
-          context: .
-          dockerfile: Dockerfile
-        ports:
-          - "8080:8080"
-        environment:
-          GITHUB_TOKEN: ${GITHUB_TOKEN}
-          JWT_SECRET: ${JWT_SECRET}
-    ```
-
-2. **Run the application**:
-
-    To run the application using Docker Compose, ensure the environment variables are injected from GitHub Secrets during the pipeline execution.
-
-### Setting Up Runtime Injection in the CI/CD Pipeline
-
-To ensure the environment variables are securely managed, we'll use GitHub Secrets in our pipeline to pass them to the Docker Compose.
-
-#### Step 1: Modify GitHub Actions Workflow
-
-Update the `ci-cd.yml` file to use Docker Compose with GitHub Secrets:
+3. **Add Workflow Configuration**:
+   - Add the following configuration to the `ci-cd.yml` file:
 
 ```yaml
 name: CI/CD
@@ -666,11 +586,151 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        BASIC_AUTH_USERNAME: ${{ secrets.BASIC_AUTH_USERNAME }}
+        BASIC_AUTH_PASSWORD: ${{ secrets.BASIC_AUTH_PASSWORD }}
 ```
 
 This configuration ensures that the secrets are securely passed to the Docker Compose process during the build and push stages.
+
+## Dockerizing the Vapor App
+
+1. **Create a `Dockerfile`** in the root directory of your project:
+
+    ```dockerfile
+    # Stage 1 - Build
+    FROM swift:5.5-focal as builder
+    WORKDIR /app
+    COPY . .
+    RUN swift build --disable-sandbox -c release
+
+    # Stage 2 - Run
+    FROM swift:5.5-focal-slim
+    WORKDIR /app
+    COPY --from=builder /app/.build/release /app
+    ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+    ENV JWT_SECRET=${JWT_SECRET}
+    ENTRYPOINT ["/app/Run"]
+    ```
+
+2. **Create a `.dockerignore`** file to exclude unnecessary files from the Docker image:
+
+    ```dockerignore
+    .build/
+    .swiftpm/
+    Packages/
+    Package.resolved
+    Tests/
+    ```
+
+## Running the Application with Docker Compose
+
+1. **Create a `docker-compose.yml` file** in the root directory of your project:
+
+    ```yaml
+    version: '3.8'
+
+    services:
+      vapor:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        ports:
+          - "8080:8080"
+        environment:
+          GITHUB_TOKEN: ${GITHUB_TOKEN}
+          JWT_SECRET: ${JWT_SECRET}
+    ```
+
+2. **Run the application**:
+
+    To run the application using Docker Compose, ensure the environment variables are injected from GitHub Secrets during the pipeline execution.
 
 ## Conclusion
 
 In this episode, we created a fully functional Vapor app that wraps GitHub CLI commands and interacts with the GitHub API. We followed TDD principles by writing tests first and then implementing the features to make them pass. We also dockerized the app and implemented JWT-based bearer authentication to secure the API. This setup ensures that only authorized users can access and perform operations on the API. We also set up a CI/CD pipeline to automate the build and deployment process, ensuring continuous integration and delivery of our application. Additionally, we integrated Docker Compose to simplify the process of managing multi-container applications, enhancing the development workflow by providing a consistent environment for running the application both locally and in production. By using GitHub Secrets, we ensured that sensitive information is handled securely.
 
+## Addendum
+
+### Error Handling
+
+Implement proper error handling in your controllers to manage API failures gracefully.
+
+**File to Modify: `GitHubController.swift`**
+
+Add error handling to the `makeGHRequest` function:
+
+```swift
+private func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
+    var headers = HTTPHeaders()
+    headers.add(name: .authorization, value: "Bearer \(Environment.get("GITHUB_TOKEN")!)")
+    headers.add(name: .userAgent, value: "VaporApp")
+    headers.add(name: .accept, value: "application/vnd.github.v3+json")
+
+    let clientReq = ClientRequest(
+        method: method,
+        url: url,
+        headers: headers,
+        body: body != nil ? .init(string: body!) : nil
+    )
+    return req.client.send(clientReq).flatMapThrowing { response in
+        guard response.status == .ok else {
+            throw Abort(.badRequest, reason: "GitHub API request failed with status \(response.status)")
+        }
+        return response
+    }
+}
+```
+
+### Logging
+
+Add
+
+ logging to the application to track important events.
+
+**File to Modify: `configure.swift`**
+
+```swift
+public func configure(_ app: Application) throws {
+    // JWT Configuration
+    let signers = JWTSigners()
+    try signers.use(.hs256(key: Environment.get("JWT_SECRET")!))
+    app.jwt.signers = signers
+
+    // Logging
+    app.logger.logLevel = .debug
+
+    // Register routes
+    let gitHubController = GitHubController()
+    try app.register(collection: gitHubController)
+}
+```
+
+### Configuration
+
+Ensure all configuration values are properly loaded from the environment.
+
+**File to Modify: `configure.swift`**
+
+```swift
+public func configure(_ app: Application) throws {
+    // Ensure environment variables are loaded
+    guard let jwtSecret = Environment.get("JWT_SECRET"),
+          let githubToken = Environment.get("GITHUB_TOKEN"),
+          let basicAuthUsername = Environment.get("BASIC_AUTH_USERNAME"),
+          let basicAuthPassword = Environment.get("BASIC_AUTH_PASSWORD") else {
+        fatalError("Missing required environment variables")
+    }
+
+    // JWT Configuration
+    let signers = JWTSigners()
+    try signers.use(.hs256(key: jwtSecret))
+    app.jwt.signers = signers
+
+    // Logging
+    app.logger.logLevel = .debug
+
+    // Register routes
+    let gitHubController = GitHubController()
+    try app.register(collection: gitHubController)
+}
+```
