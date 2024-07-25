@@ -1,549 +1,708 @@
-### `episodes/episode2.md`
-# Episode 3: Creating and Managing the CI/CD Pipeline for The FountainAI with GitHub Actions
+### `episodes/episode3.md`
+
+# Episode 3: Enhancing Security for Your OpenAPI-based Vapor Wrapper App around "gh"
 
 ## Table of Contents
 
+**Part A: Introduction and Security Requirements**
+
 1. [Introduction](#introduction)
-2. [Pipeline Setup Script](#pipeline-setup-script)
-3. [Discussion](#discussion)
-   - [Branch Management](#branch-management)
-   - [Triggering Workflows](#triggering-workflows)
-   - [CI/CD Pipeline](#cicd-pipeline)
-4. [Conclusion](#conclusion)
-5. [Foreshadowing the Next Episode](#foreshadowing-the-next-episode)
+2. [Security Requirements](#security-requirements)
+   - [Avoid Hardcoding Credentials and Secrets](#avoid-hardcoding-credentials-and-secrets)
+   - [Secure JWT Secret Management](#secure-jwt-secret-management)
+   - [Implement Token Expiry and Scope](#implement-token-expiry-and-scope)
+   - [Use Strong Basic Authentication](#use-strong-basic-authentication)
 
-## Introduction
+**Part B: Implementing Security Enhancements**
 
-In this episode, we will create and manage a CI/CD pipeline for The FountainAI with GitHub Actions. This pipeline will automate the process of building, testing, and deploying The FountainAI application, ensuring continuous integration and continuous deployment.
+3. [Protect Routes with JWT Middleware](#protect-routes-with-jwt-middleware)
+4. [Comprehensive Error Handling and Logging](#comprehensive-error-handling-and-logging)
+5. [GitHub Actions Security](#github-actions-security)
+6. [Docker Security](#docker-security)
+7. [Network Security](#network-security)
+8. [Implementing Static Code Analysis](#implementing-static-code-analysis)
+9. [Setting Up GitHub Monitoring and Alerts](#setting-up-github-monitoring-and-alerts)
+10. [Patching the Project](#patching-the-project)
 
-For more details on CI/CD and GitHub workflows, please refer to the [Ultimate Guide to CI/CD and GitHub Workflows](https://github.com/Contexter/fountainAI/blob/editorial/episodes/Episode2/The%20Ultimate%20Guide%20to%20CI_CD%20and%20GitHub%20Workflows.md).
+**Conclusion**
 
-We will guide you through a single script that sets up the folder structure for the CI/CD pipeline, creates GitHub branches, and generates the necessary actions and workflows using Docker-based custom actions. We'll then discuss how committing to a branch triggers workflows and the overall reasoning behind the CI/CD pipeline.
+11. [Conclusion](#conclusion)
 
-For more details on the API endpoints and the Dockerized environment, you can refer to the [FountainAI API OpenAPI specification](https://github.com/Contexter/fountainAI/blob/editorial/openAPI/FountainAI-Admin-openAPI.yaml). This API integrates functionalities for managing scripts, including section headings, transitions, spoken words, orchestration, complete script management, characters, and actions, along with their paraphrases. The Dockerized environment includes Nginx for SSL termination, a Swift-based Vapor app, PostgreSQL for data persistence, Redis for caching, and RedisAI for recommendations and validations.
+## Part A: Introduction and Security Requirements
 
-### Putting Things into Perspective
+### 1. Introduction
 
-The FountainAI API operates within a highly integrated Dockerized environment, leveraging several containerized services to ensure performance, security, and scalability. Here’s why this CI/CD pipeline is particularly well-suited to this environment:
+In this episode, we will enhance the security of our Vapor app that wraps the GitHub CLI (`gh`). This app provides a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We'll focus on securing the app using best practices, including managing sensitive information, implementing robust authentication and authorization, improving error handling and logging, and securing the deployment pipeline.
 
-1. **Dockerized Custom Actions**: By using Docker-based custom actions in the CI/CD pipeline, we can ensure that each step in the workflow is executed in a consistent environment. This eliminates the "works on my machine" problem and ensures that the same versions of dependencies and tools are used in development, testing, and production environments.
+### 2. Security Requirements
 
-2. **Service Integration**: The FountainAI API relies on multiple services running in Docker containers, including Nginx for SSL termination, a Vapor application server, PostgreSQL for data persistence, Redis for caching, and RedisAI for advanced recommendations and validations. The CI/CD pipeline can be configured to start and test these services as part of the workflow, ensuring that any changes to the codebase are compatible with the entire system architecture.
+#### Avoid Hardcoding Credentials and Secrets
 
-3. **Automated Testing and Deployment**: Automated workflows ensure that every code change is tested in an environment that mirrors production as closely as possible. This includes running unit tests, integration tests, and end-to-end tests that interact with the Dockerized services. This rigorous testing helps catch issues early in the development process.
+Ensure all sensitive information such as GitHub tokens, JWT secrets, and basic authentication credentials are managed using environment variables and GitHub Secrets.
 
-4. **Scalability and Consistency**: With Docker, scaling services is straightforward. The CI/CD pipeline can be extended to deploy multiple instances of the Vapor app or other components as needed, ensuring that the system can handle increased load while maintaining consistent performance.
+#### Secure JWT Secret Management
 
-5. **Secrets Management**: Managing secrets such as API keys, SSH keys, and database credentials is critical in a Dockerized environment. The pipeline includes a custom action for managing secrets, ensuring that sensitive information is handled securely and is only accessible to authorized parts of the workflow.
-
-## Pipeline Setup Script
-
-### The Setup Script
-
-Create the following script to set up the folder structure, create GitHub branches, and generate actions and workflows for the CI/CD pipeline using Docker-based custom actions.
+Generate a secure random key for the JWT secret using tools like OpenSSL and store it using a secret management service.
 
 ```bash
-#!/bin/bash
+openssl rand -base64 32
+```
 
-# Function to run a step if it hasn't been run before
-run_once() {
-  step_name=$1
-  log_file=".pipeline_setup_log"
+#### Implement Token Expiry and Scope
 
-  # Check if the step has been run before
-  if grep -q "$step_name" "$log_file"; then
-    echo "$step_name has already been run. Skipping..."
-  else
-    echo "Running $step_name..."
-    $step_name
-    echo "$step_name" >> "$log_file"
-  fi
+Ensure JWT tokens have a defined expiry time to minimize risks associated with token theft. Assign minimal permissions required for the tokens to limit potential damage in case of compromise.
+
+#### Use Strong Basic Authentication
+
+Employ strong, randomly generated passwords for basic authentication and manage them securely using a secret manager.
+
+## Part B: Implementing Security Enhancements
+
+### 3. Protect Routes with JWT Middleware
+
+Ensure all routes that need to be secured are protected using JWT middleware to prevent unauthorized access.
+
+**File:** `Sources/App/routes.swift`
+
+```swift
+import Vapor
+
+func routes(_ app: Application) throws {
+    let protected = app.grouped(JWTMiddleware())
+    let gitHubController = GitHubController()
+    try protected.register(collection: gitHubController)
 }
+```
 
-# Create .pipeline_setup_log if it doesn't exist
-touch .pipeline_setup_log
+### 4. Comprehensive Error Handling and Logging
 
-# Step 1: Create the folder structure for the CI/CD pipeline
-create_folder_structure() {
-  echo "Creating folder structure..."
-  mkdir -p .github
-  mkdir -p .github/workflows
-  mkdir -p .github/actions/manage-secrets
-  mkdir -p .github/actions/setup
-  mkdir -p .github/actions/build
-  mkdir -p .github/actions/test
-  mkdir -p .github/actions/deploy
-  echo "Folder structure created successfully!"
+Implement proper error handling to ensure API failures are managed gracefully without exposing sensitive information. Avoid logging sensitive information such as tokens, passwords, or user data.
+
+**File:** `Sources/App/Controllers/GitHubController.swift`
+
+```swift
+import Vapor
+
+struct GitHubController: RouteCollection {
+    // This function registers all the routes for the GitHubController
+    func boot(routes: RoutesBuilder) throws {
+        // Group all routes under "repo" and protect them with JWT middleware
+        let repoRoutes = routes.grouped("repo").grouped(JWTMiddleware())
+        repoRoutes.get("tree", use: fetchRepoTree)
+        repoRoutes.get("contents", use: listContents)
+        repoRoutes.get("file", use: fetchFileContent)
+        repoRoutes.get("details", use: getRepoDetails)
+        repoRoutes.get("branches", use: listBranches)
+        repoRoutes.get("commits", use: listCommits)
+        repoRoutes.get("contributors", use: listContributors)
+        repoRoutes.get("pulls", use: listPullRequests)
+        repoRoutes.get("issues", use: listIssues)
+        repoRoutes.get("secrets", use: listSecrets)
+        repoRoutes.post("secrets", use: createOrUpdateSecret)
+    }
+
+    // Function to make a GitHub API request
+    func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
+        var headers = HTTPHeaders()
+        // Adding the GitHub token to the request headers for authentication
+        headers.add(name: .authorization, value: "Bearer \(Environment.get("GH_TOKEN")!)")
+        headers.add(name: .userAgent, value: "VaporApp")
+        headers.add(name: .accept, value: "application/vnd.github.v3+json")
+
+        // Creating the client request with the necessary headers and body
+        let clientReq = ClientRequest(
+            method: method,
+            url: url,
+            headers: headers,
+            body: body != nil ? .init(string: body!) : nil
+        )
+        return req.client.send(clientReq).flatMapThrowing { response in
+            // Check if the response status is OK, otherwise throw an error
+            guard response.status == .ok else {
+                // Log the error without exposing sensitive information
+                req.logger.error("GitHub API request failed with status \(response.status)")
+                throw Abort(.badRequest, reason: "GitHub API request failed with status \(response.status)")
+            }
+            return response
+        }
+    }
+    
+    // Function to fetch the repository tree
+    func fetchRepoTree(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        // Constructing the GitHub API URL to fetch the repository tree
+        let repo = try req.query.get(String.self, at: "repo")
+        let branch = try req.query.get(String.self, at: "branch") ?? "main"
+        let url = URI(string: "https://api.github.com/repos/\(repo)/git/trees/\(branch)?recursive=1")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list contents of a repository
+    func listContents(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path") ?? ""
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to fetch the content of a file
+    func fetchFileContent(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to get repository details
+    func getRepoDetails(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list branches of a repository
+    func listBranches(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/branches")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list commits of a repository
+    func listCommits(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/commits")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list contributors to a repository
+    func listContributors(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contributors")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list pull requests of a repository
+    func listPullRequests(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/pulls")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list issues of a repository
+    func listIssues(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/issues")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list secrets of a repository
+    func listSecrets(req: Request) throws ->
+
+ EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to create or update a secret in a repository
+    func createOrUpdateSecret(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let secretName = try req.query.get(String.self, at: "secret_name")
+        let secretValue = try req.query.get(String.self, at: "secret_value")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets/\(secretName)")
+        return try makeGHRequest(req: req, url: url, method: .put, body: secretValue)
+    }
 }
+```
 
-# Step 2: Create the GitHub branches for CI/CD
-create_github_branches() {
-  echo "Creating GitHub branches..."
-  git checkout -b development
-  git push origin development
-  git checkout -b testing
-  git push origin testing
-  git checkout -b staging
-  git push origin staging
-  git checkout main
-  echo "GitHub branches created and pushed successfully!"
-}
+### 5. GitHub Actions Security
 
-# Step 3: Create the Manage Secrets action
-create_manage_secrets_action() {
-  echo "Creating Manage Secrets action..."
-  mkdir -p .github/actions/manage-secrets
-  cat <<EOL > .github/actions/manage-secrets/action.yml
-name: 'Manage Secrets'
-description: 'Action to manage and validate secrets'
-inputs:
-  github_token:
-    description: 'GitHub Token'
-    required: true
-    type: string
-runs:
-  using: 'docker'
-  image: 'alpine:3.12'
-  args:
-    - /bin/sh
-    - -c
-    - |
-      # Check if the github_token is set
-      # Placeholder for actual action content
-      if [ -z "\${{ inputs.github_token }}" ]; then
-        echo "GITHUB_TOKEN is not set"
-        exit 1
-      else
-        echo "GITHUB_TOKEN is set"
-        # Add actual management and validation commands here
-      fi
-EOL
-  echo "Manage Secrets action created successfully!"
-}
+Limit permissions of the `GH_TOKEN` used in GitHub Actions. Use GitHub Secrets for securely storing sensitive information and ensure these secrets are not exposed in logs.
 
-# Step 4: Create the Setup Environment action
-create_setup_environment_action() {
-  echo "Creating Setup Environment action..."
-  mkdir -p .github/actions/setup
-  cat <<EOL > .github/actions/setup/action.yml
-name: 'Setup Environment'
-description: 'Action to setup the environment'
-inputs:
-  vps_ssh_key:
-    description: 'VPS SSH Key'
-    required: true
-    type: string
-runs:
-  using: 'docker'
-  image: 'alpine:3.12'
-  args:
-    - /bin/sh
-    - -c
-    - |
-      # Check if the vps_ssh_key is set
-      # Placeholder for actual action content
-      if [ -z "\${{ inputs.vps_ssh_key }}" ]; then
-        echo "VPS_SSH_KEY is not set"
-        exit 1
-      else
-        echo "VPS_SSH_KEY is set"
-        # Add actual environment setup commands here
-      fi
-EOL
-  echo "Setup Environment action created successfully!"
-}
+**File:** `.github/workflows/ci-cd.yml`
 
-# Step 5: Create the Build Project action
-create_build_project_action() {
-  echo "Creating Build Project action..."
-  mkdir -p .github/actions/build
-  cat <<EOL > .github/actions/build/action.yml
-name: 'Build Project'
-description: 'Action to build the project'
-runs:
-  using: 'docker'
-  image: 'node:14'
-  args:
-    - /bin/sh
-    - -c
-    - |
-      # Placeholder for actual action content
-      echo "Building project..."
-      # Add actual build commands here
-EOL
-  echo "Build Project action created successfully!"
-}
+```yaml
+name: CI/CD
 
-# Step 6: Create the Test Project action
-create_test_project_action() {
-  echo "Creating Test Project action..."
-  mkdir -p .github/actions/test
-  cat <<EOL > .github/actions/test/action.yml
-name: 'Test Project'
-description: 'Action to test the project'
-runs:
-  using: 'docker'
-  image: 'node:14'
-  args:
-    - /bin/sh
-    - -c
-    - |
-      # Placeholder for actual action content
-      echo "Running tests..."
-      # Add actual test commands here
-EOL
-  echo "Test Project action created successfully!"
-}
-
-# Step 7: Create the Deploy Project action
-create_deploy_project_action() {
-  echo "Creating Deploy Project action..."
-  mkdir -p .github/actions/deploy
-  cat <<EOL > .github/actions/deploy/action.yml
-name: 'Deploy Project'
-description: 'Action to deploy the project'
-runs:
-  using: 'docker'
-  image: 'alpine:3.12'
-  args:
-    - /bin/sh
-    - -c
-    - |
-      # Placeholder for actual action content
-      echo "Deploying to environment..."
-      # Add actual deployment commands here
-EOL
-  echo "Deploy Project action created successfully!"
-}
-
-# Step 8: Create the Development Workflow
-create_development
-
-_workflow() {
-  echo "Creating Development Workflow..."
-  cat <<EOL > .github/workflows/development.yml
-name: Development Workflow
-on:
-  push:
-    branches:
-      - development
-jobs:
-  verify-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Manage Secrets
-        uses: ./.github/actions/manage-secrets
-        with:
-          github_token: \${{ secrets.GITHUB_TOKEN }}
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          vps_ssh_key: \${{ secrets.VPS_SSH_KEY }}
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Project
-        uses: ./.github/actions/build
-EOL
-  echo "Development Workflow created successfully!"
-}
-
-# Step 9: Create the Testing Workflow
-create_testing_workflow() {
-  echo "Creating Testing Workflow..."
-  cat <<EOL > .github/workflows/testing.yml
-name: Testing Workflow
-on:
-  push:
-    branches:
-      - testing
-jobs:
-  verify-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Manage Secrets
-        uses: ./.github/actions/manage-secrets
-        with:
-          github_token: \${{ secrets.GITHUB_TOKEN }}
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          vps_ssh_key: \${{ secrets.VPS_SSH_KEY }}
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Project
-        uses: ./.github/actions/build
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test Project
-        uses: ./.github/actions/test
-EOL
-  echo "Testing Workflow created successfully!"
-}
-
-# Step 10: Create the Staging Workflow
-create_staging_workflow() {
-  echo "Creating Staging Workflow..."
-  cat <<EOL > .github/workflows/staging.yml
-name: Staging Workflow
-on:
-  push:
-    branches:
-      - staging
-jobs:
-  verify-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Manage Secrets
-        uses: ./.github/actions/manage-secrets
-        with:
-          github_token: \${{ secrets.GITHUB_TOKEN }}
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          vps_ssh_key: \${{ secrets.VPS_SSH_KEY }}
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Project
-        uses: ./.github/actions/build
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test Project
-        uses: ./.github/actions/test
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Project
-        uses: ./.github/actions/deploy
-EOL
-  echo "Staging Workflow created successfully!"
-}
-
-# Step 11: Create the Production Workflow
-create_production_workflow() {
-  echo "Creating Production Workflow..."
-  cat <<EOL > .github/workflows/production.yml
-name: Production Workflow
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  verify-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Manage Secrets
-        uses: ./.github/actions/manage-secrets
-        with:
-          github_token: \${{ secrets.GITHUB_TOKEN }}
-  setup:
-    needs: verify-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          vps_ssh_key: \${{ secrets.VPS_SSH_KEY }}
   build:
-    needs: setup
     runs-on: ubuntu-latest
+
     steps:
-      - name: Build Project
-        uses: ./.github/actions/build
-  test:
-    needs: build
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GH_TOKEN }}
+
+    - name: Set up Swift
+      uses: fwal/setup-swift@v1
+
+    - name: Build the app
+      run: swift build --disable-sandbox -c release
+
+    - name: Run tests
+      run: swift test
+
+    - name: Build and push Docker image
+      run: |
+        docker-compose build
+        echo "${{ secrets.GH_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        docker-compose push
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        BASIC_AUTH_USERNAME: ${{ secrets.BASIC_AUTH_USERNAME }}
+        BASIC_AUTH_PASSWORD: ${{ secrets.BASIC_AUTH_PASSWORD }}
+```
+
+### 6. Docker Security
+
+Use the smallest possible base image to minimize the attack surface. Run the application as a non-root user inside the Docker container.
+
+**File:** `Dockerfile`
+
+```dockerfile
+FROM swift:5.5-focal-slim
+WORKDIR /app
+COPY --from=builder /app/.build/release /app
+USER appuser
+ENTRYPOINT ["/app/Run"]
+```
+
+### 7. Network Security
+
+Protect API endpoints behind a firewall or use network policies to restrict access to trusted sources. Use HTTPS to encrypt data in transit.
+
+### 8. Implementing Static Code Analysis
+
+Use static code analysis tools to automatically detect and address security issues in the codebase.
+
+1. **SwiftLint**: A tool to enforce Swift style and conventions, helping to avoid common coding issues.
+
+**File:** `.github/workflows/swiftlint.yml`
+
+```yaml
+name: SwiftLint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install SwiftLint
+      run: brew install swiftlint
+
+    - name: Run SwiftLint
+      run: swiftlint
+```
+
+2. **SonarQube**: A tool to analyze code quality and security for multiple programming languages.
+
+```bash
+# Example command for running SonarQube analysis
+sonar-scanner
+```
+
+### 9. Setting Up GitHub Monitoring and Alerts
+
+Implement logging and monitoring to detect and respond to security incidents promptly using GitHub's built-in monitoring tools and services like GitHub Actions and GitHub Advanced Security.
+
+1. **GitHub Advanced Security**:
+   - Use GitHub Advanced Security features to monitor and scan your repositories for security vulnerabilities and issues.
+   - Set up alerts and notifications for potential security incidents.
+
+**File:** `.github/dependabot.yml`
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+```
+
+2. **GitHub Actions for Monitoring**:
+   - Set up GitHub Actions workflows to run regular security scans and checks on your codebase.
+
+**File:** `.github/workflows/security.yml`
+
+```yaml
+name: Security Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Test Project
-        uses: ./.github/actions/test
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Project
-        uses: ./.github/actions/deploy
-EOL
-  echo "Production Workflow created successfully!"
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Run npm audit
+      run: npm audit --audit-level=high
+
+    - name: Set up Snyk
+      uses: snyk/actions/setup@v2
+      with:
+        token: ${{ secrets.SNYK_TOKEN }}
+
+    - name: Run Snyk test
+      run: snyk test
+```
+
+### 10. Patching the Project
+
+The following shell script will patch the project to match the security scan suggestions and create the necessary additional files while ensuring the controller remains functional.
+
+```bash
+#!/bin/bash
+
+# Ensure the script stops on the first error encountered
+set -e
+
+# Function to patch existing files
+patch_files() {
+    echo "Patching existing files..."
+
+    # Patch routes.swift to include JWT middleware
+    if ! grep -q "let protected = app.grouped(JWTMiddleware())" Sources/App/routes.swift; then
+        cat <<EOF > Sources/App/routes.swift
+import Vapor
+
+func routes(_ app: Application) throws {
+    let protected = app.grouped(JWTMiddleware())
+    let gitHubController = GitHubController()
+    try protected.register(collection: gitHubController)
+}
+EOF
+        echo "Patched Sources/App/routes.swift to include JWT middleware."
+    else
+        echo "JWT middleware already included in Sources/App/routes.swift."
+    fi
+
+    # Patch GitHubController.swift to enhance error handling and logging
+    cat <<EOF > Sources/App/Controllers/GitHubController.swift
+import Vapor
+
+struct GitHubController: RouteCollection {
+    // This function registers all the routes for the GitHubController
+    func boot(routes: RoutesBuilder) throws {
+        // Group all routes under "repo" and protect them with JWT middleware
+        let repoRoutes = routes.grouped("repo").grouped(JWTMiddleware())
+        repoRoutes.get("tree", use: fetchRepoTree)
+        repoRoutes.get("contents", use: listContents)
+        repoRoutes.get("file", use: fetchFileContent)
+        repoRoutes.get("details", use: getRepoDetails)
+        repoRoutes.get("branches", use: listBranches)
+        repoRoutes.get("commits", use: listCommits)
+        repoRoutes.get("contributors", use: listContributors)
+        repoRoutes.get("pulls", use: listPullRequests)
+        repoRoutes.get("issues", use: listIssues)
+        repoRoutes.get("secrets", use: listSecrets)
+        repoRoutes.post("secrets", use: createOrUpdateSecret)
+    }
+
+    // Function to make a GitHub API request
+    func makeGHRequest(req: Request, url: URI, method: HTTPMethod = .get, body: String? = nil) throws -> EventLoopFuture<ClientResponse> {
+        var headers = HTTPHeaders()
+        // Adding the GitHub token to the request headers for authentication
+        headers.add(name: .authorization, value: "Bearer \(Environment.get("GH_TOKEN")!)")
+        headers.add(name: .userAgent, value: "VaporApp")
+        headers.add(name: .accept, value: "application/vnd.github.v3+json")
+
+        // Creating the client request with the necessary headers and body
+        let clientReq = ClientRequest(
+            method: method,
+            url: url,
+            headers: headers,
+            body: body != nil ? .init(string: body!) : nil
+        )
+        return req.client.send(clientReq).flatMapThrowing { response in
+            // Check if the response status is OK, otherwise throw an error
+            guard response.status == .ok else {
+                // Log the error without exposing sensitive information
+                req.logger.error("GitHub API request failed with status \(response.status)")
+                throw Abort(.badRequest, reason: "GitHub API request failed with status \(response.status)")
+            }
+            return response
+        }
+    }
+    
+    // Function to fetch the repository tree
+    func fetchRepoTree(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        // Constructing the GitHub API URL to fetch the repository tree
+        let repo = try req.query.get(String.self, at: "repo")
+        let branch = try req.query.get(String.self, at: "branch") ?? "main"
+        let url = URI(string: "https://api.github.com/repos/\(repo)/git/trees/\(branch)?recursive=1")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list contents of a repository
+    func listContents(req: Request) throws -> EventLoopFuture<ClientResponse
+
+> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path") ?? ""
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to fetch the content of a file
+    func fetchFileContent(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let path = try req.query.get(String.self, at: "path")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contents/\(path)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to get repository details
+    func getRepoDetails(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list branches of a repository
+    func listBranches(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/branches")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list commits of a repository
+    func listCommits(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/commits")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list contributors to a repository
+    func listContributors(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/contributors")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list pull requests of a repository
+    func listPullRequests(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/pulls")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list issues of a repository
+    func listIssues(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/issues")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to list secrets of a repository
+    func listSecrets(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets")
+        return try makeGHRequest(req: req, url: url)
+    }
+
+    // Function to create or update a secret in a repository
+    func createOrUpdateSecret(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        let repo = try req.query.get(String.self, at: "repo")
+        let secretName = try req.query.get(String.self, at: "secret_name")
+        let secretValue = try req.query.get(String.self, at: "secret_value")
+        let url = URI(string: "https://api.github.com/repos/\(repo)/actions/secrets/\(secretName)")
+        return try makeGHRequest(req: req, url: url, method: .put, body: secretValue)
+    }
+}
+EOF
+
+    echo "Patched Sources/App/Controllers/GitHubController.swift to enhance error handling and logging."
 }
 
-# Execute the pipeline setup steps
-run_once "create_folder_structure"
-run_once "create_github_branches"
-run_once "create_manage_secrets_action"
-run_once "create_setup_environment_action"
-run_once "create_build_project_action"
-run_once "create_test_project_action"
-run_once "create_deploy_project_action"
-run_once "create_development_workflow"
-run_once "create_testing_workflow"
-run_once "create_staging_workflow"
-run_once "create_production_workflow"
+# Function to create new files
+create_files() {
+    echo "Creating new files..."
 
-echo "CI/CD pipeline setup script has been executed successfully."
+    # Create .github/workflows/ci-cd.yml
+    mkdir -p .github/workflows
+    cat <<EOF > .github/workflows/ci-cd.yml
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: \${{ github.repository_owner }}
+        password: \${{ secrets.GH_TOKEN }}
+
+    - name: Set up Swift
+      uses: fwal/setup-swift@v1
+
+    - name: Build the app
+      run: swift build --disable-sandbox -c release
+
+    - name: Run tests
+      run: swift test
+
+    - name: Build and push Docker image
+      run: |
+        docker-compose build
+        echo "\${{ secrets.GH_TOKEN }}" | docker login ghcr.io -u \${{ github.repository_owner }} --password-stdin
+        docker-compose push
+      env:
+        GH_TOKEN: \${{ secrets.GH_TOKEN }}
+        JWT_SECRET: \${{ secrets.JWT_SECRET }}
+        BASIC_AUTH_USERNAME: \${{ secrets.BASIC_AUTH_USERNAME }}
+        BASIC_AUTH_PASSWORD: \${{ secrets.BASIC_AUTH_PASSWORD }}
+EOF
+
+    echo "Created .github/workflows/ci-cd.yml."
+
+    # Create .github/workflows/security.yml
+    cat <<EOF > .github/workflows/security.yml
+name: Security Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Run npm audit
+      run: npm audit --audit-level=high
+
+    - name: Set up Snyk
+      uses: snyk/actions/setup@v2
+      with:
+        token: \${{ secrets.SNYK_TOKEN }}
+
+    - name: Run Snyk test
+      run: snyk test
+EOF
+
+    echo "Created .github/workflows/security.yml."
+
+    # Create .github/workflows/swiftlint.yml
+    cat <<EOF > .github/workflows/swiftlint.yml
+name: SwiftLint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install SwiftLint
+      run: brew install swiftlint
+
+    - name: Run SwiftLint
+      run: swiftlint
+EOF
+
+    echo "Created .github/workflows/swiftlint.yml."
+
+    # Create .github/dependabot.yml
+    cat <<EOF > .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+EOF
+
+    echo "Created .github/dependabot.yml."
+}
+
+# Main function to execute all steps
+main() {
+    patch_files
+    create_files
+
+    # Commit the changes with a comprehensive message
+    git add .
+    git commit -m "Enhance security for the Vapor app:
+- Add JWT middleware to routes
+- Improve error handling and logging in GitHubController
+- Set up GitHub Actions workflows for CI/CD, security scans, and SwiftLint
+- Configure Dependabot for dependency updates"
+}
+
+main
 ```
-
-Save this script as `pipeline_setup.sh` in the `episodes/Episode2` directory:
-
-```sh
-touch episodes/Episode2/pipeline_setup.sh
-```
-
-Open the file with your preferred text editor and paste the above script content into it. Then make the script executable and run it:
-
-```sh
-chmod +x episodes/Episode2/pipeline_setup.sh
-./episodes/Episode2/pipeline_setup.sh
-```
-
-## Discussion
-
-### Branch Management
-
-GitHub branches are essential for managing and developing different aspects of your project concurrently. They allow you to work on new features, fixes, or experiments in isolation from your main codebase. Once the work on a branch is complete, it can be merged back into the main branch.
-
-### Triggering Workflows
-
-Each branch is associated with specific workflows that are triggered upon events like pushes and pull requests. For instance, a push to the development branch can trigger a build and test workflow, while a push to the staging branch can trigger a deployment workflow.
-
-### CI/CD Pipeline
-
-The CI/CD pipeline automates the process of building, testing, and deploying The FountainAI application. Here's how it works:
-
-1. **Setup Folder Structure**: The first step of the script creates the necessary directory structure for GitHub Actions workflows and custom actions.
-2. **Custom Actions Creation**: Each custom action script sets up specific actions used in the workflows, such as managing secrets, setting up the environment, building the project, testing, and deploying.
-3. **Workflows Definition**: Workflow scripts define the sequences of actions that run on specific events (e.g., push to a branch).
-
-### Action Placeholders
-
-The scripts include placeholders for actual commands that need to be executed for managing secrets, setting up the environment, building, testing, and deploying the project. These placeholders need to be replaced with actual commands specific to The FountainAI application. For example:
-
-- **Manage Secrets Action**:
-  ```yaml
-  runs:
-    using: 'docker'
-    image: 'alpine:3.12'
-    args:
-      - /bin/sh
-      - -c
-      - |
-        # Check if the github_token is set
-        if [ -z "${{ inputs.github_token }}" ]; then
-          echo "GITHUB_TOKEN is not set"
-          exit 1
-        else
-          echo "GITHUB_TOKEN is set"
-          # Add actual management and validation commands here
-        fi
-  ```
-
-- **Setup Environment Action**:
-  ```yaml
-  runs:
-    using: 'docker'
-    image: 'alpine:3.12'
-    args:
-      - /bin/sh
-      - -c
-      - |
-        # Check if the vps_ssh_key is set
-        if [ -z "${{ inputs.vps_ssh_key }}" ]; then
-          echo "VPS_SSH_KEY is not set"
-          exit 1
-        else
-          echo "VPS_SSH_KEY is set"
-          # Add actual environment setup commands here
-        fi
-  ```
-
-- **Build Project Action**:
-  ```yaml
-  runs:
-    using: 'docker'
-    image: 'node:14'
-    args:
-      - /bin/sh
-      - -c
-      - |
-        # Placeholder for actual action content
-        echo "Building project..."
-        # Add actual build commands here
-  ```
-
-- **Test Project Action**:
-  ```yaml
-  runs:
-    using: 'docker'
-    image: 'node:14'
-    args:
-      - /bin/sh
-      - -c
-      - |
-        # Placeholder for actual action content
-        echo "Running tests..."
-        # Add actual test commands here
-  ```
-
-- **Deploy Project Action**:
-  ```yaml
-  runs:
-    using: 'docker'
-    image: 'alpine:3.12'
-    args:
-      - /bin/sh
-      - -c
-      - |
-        # Placeholder for actual action content
-        echo "Deploying to environment..."
-        # Add actual deployment commands here
-  ```
-
-### Benefits Realized
-
-By implementing this CI/CD pipeline, we've achieved several benefits:
-- **Automated Setup**: The single script ensures that all setup steps are completed correctly and only once, reducing the risk of errors.
-- **Modular Actions**: Custom actions are reusable and maintainable, allowing for easier updates and extensions.
-- **Branch Management**: Structured branching strategy ensures stable and deployable code in the main branch while enabling concurrent development and testing.
-
-### Future Outlook
-
-In future episodes, we will build upon this foundation to further enhance the CI/CD pipeline. This will include:
-- **Advanced Testing**: Implementing more comprehensive testing strategies.
-- **Continuous Deployment**: Automating deployments to production environments with zero downtime.
-- **Monitoring and Alerts**: Adding monitoring and alerting capabilities to ensure the health of deployments.
 
 ## Conclusion
 
-By following this guide, you have set up a comprehensive CI/CD pipeline using GitHub Actions with robust secrets management. The custom actions created are modular, maintainable, and reusable across different workflows. You can further extend this setup to include additional workflows and actions as per your project’s requirements.
-
-
----
+Using GitHub Secrets as a security manager is a valid and secure approach for managing sensitive information in GitHub repositories. By managing sensitive information securely, implementing robust authentication and authorization mechanisms, following secure coding practices, and ensuring secure deployment and CI/CD processes, the app can be protected from unauthorized access and potential misuse. Continuous monitoring and static analysis further enhance the security posture of the application, providing an additional layer of defense against emerging threats. This approach provides a secure, integrated solution for managing secrets in CI/CD workflows and enhancing overall security posture.
