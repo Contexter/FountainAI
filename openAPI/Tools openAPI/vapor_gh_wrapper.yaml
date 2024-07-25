@@ -12,6 +12,31 @@ info:
     - Implement proper error handling and logging without exposing sensitive information.
     - Use the smallest possible base image for Docker and run the app as a non-root user.
     - Regularly update the system and dependencies to mitigate vulnerabilities.
+    ## Required GitHub Secrets
+    ### Manual Secrets (Prohibited from being set or updated by the app)
+    - `AUTH_USERNAME`: The username for authenticating the `/generate-token` endpoint. (default: "admin")
+    - `AUTH_PASSWORD`: The password for authenticating the `/generate-token` endpoint. (default: "password")
+    - `JWT_SECRET`: The secret key used to sign JWT tokens. (default: "your_jwt_secret")
+    - `GITHUB_PERSONAL_ACCESS_TOKEN`: The token used to authenticate GitHub CLI commands. (default: "your_github_token")
+    - `RUNNER_TOKEN`: The token used for authenticating the GitHub Actions runner. (default: "your_runner_token")
+    - `VPS_SSH_KEY`: The SSH private key for accessing the VPS. (default: "your_ssh_private_key")
+    - `VPS_USERNAME`: The username for accessing the VPS. (default: "vps_user")
+    - `VPS_IP`: The IP address of the VPS. (default: "192.168.1.1")
+    - `DATABASE_URL`: Connection string for the Postgres database. (default: "postgres://user:password@localhost:5432/db_name")
+    - `DB_NAME`: The name of the Postgres database. (default: "my_database")
+    - `DB_USER`: Postgres database username. (default: "db_user")
+    - `DB_PASSWORD`: Postgres database password. (default: "db_password")
+    - `SSL_CERT_PATH`: Path to the SSL certificate (default: "/etc/letsencrypt/live/example.com/fullchain.pem").
+    - `SSL_CERT_KEY_PATH`: Path to the SSL certificate key (default: "/etc/letsencrypt/live/example.com/privkey.pem").
+    - `EMAIL`: Contact email address for SSL certificate management and notifications. (default: "admin@example.com")
+    ### Other Secrets
+    - `APP_NAME`: The name of the application. (default: "my_app")
+    - `DOMAIN`: The domain name for the production environment. (default: "example.com")
+    - `STAGING_DOMAIN`: The domain name for the staging environment. (default: "staging.example.com")
+    - `DEPLOY_DIR`: The directory on the VPS where the app will be deployed. (default: "/home/vps_user/deploy")
+    - `REDIS_PORT`: The port for the Redis service. (default: "6379")
+    - `REDISAI_PORT`: The port for the RedisAI service. (default: "6378")
+    - `NYDUS_PORT`: The port for the Nydus service. (default: "2224")
 
 servers:
   - url: https://gh.fountain.coach
@@ -20,7 +45,7 @@ paths:
     get:
       summary: Generate JWT Token
       description: >
-        Generates a JWT token for authenticated users. Uses custom auth with `AUTH_USERNAME` and `AUTH_PASSWORD` environment variables, set via GitHub Secrets. The GitHub token is not used for this.
+        Generates a JWT token for authenticated users. This endpoint uses custom authentication with credentials stored in `AUTH_USERNAME` and `AUTH_PASSWORD` GitHub Secrets. Upon successful authentication, a JWT token is generated and returned.
       operationId: generateToken
       security: [] # No bearerAuth required for this endpoint
       parameters:
@@ -309,6 +334,390 @@ paths:
                   value:
                     code: 500
                     message: "Internal Server Error"
+  /repo/branches:
+    get:
+      summary: List repository branches
+      description: >
+        Lists the branches of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoBranches
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Branch'
+              examples:
+                example-1:
+                  value:
+                    - name: "main"
+                    - name: "dev"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/commits:
+    get:
+      summary: List repository commits
+      description: >
+        Lists the commits of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoCommits
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed commits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Commit'
+              examples:
+                example-1:
+                  value:
+                    - sha: "d3b07384d113edec49eaa6238ad5ff00"
+                      commit:
+                        message: "Initial commit"
+                    - sha: "8d3b07384d113edec49eaa6238ad5ff00"
+                      commit:
+                        message: "Added new feature"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/contributors:
+    get:
+      summary: List repository contributors
+      description: >
+        Lists the contributors of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoContributors
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed contributors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contributor'
+              examples:
+                example-1:
+                  value:
+                    - login: "contributor1"
+                    - login: "contributor2"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/pulls:
+    get:
+      summary: List repository pull requests
+      description: >
+        Lists the pull requests of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoPullRequests
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed pull requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PullRequest'
+              examples:
+                example-1:
+                  value:
+                    - number: 1
+                      title: "Fix bug"
+                    - number: 2
+                      title: "Add feature"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/issues:
+    get:
+      summary: List repository issues
+      description: >
+        Lists the issues of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoIssues
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+              examples:
+                example-1:
+                  value:
+                    - number: 1
+                      title: "Bug in code"
+                    - number: 2
+                      title: "Feature request"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/secrets:
+    get:
+      summary: List repository secrets
+      description: >
+        Lists the secrets of a repository. Requires a valid JWT token for authentication.
+      operationId: listRepoSecrets
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully listed secrets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Secret'
+              examples:
+                example-1:
+                  value:
+                    - name: "SECRET_KEY"
+                      created_at: "2021-01-01T00:00:00Z"
+                      updated_at: "2021-01-01T00:00:00Z"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+  /repo/secrets:
+    post:
+      summary: Create or update a repository secret
+      description: >
+        Creates or updates a secret in a repository. Requires a valid JWT token for authentication.
+      operationId: createOrUpdateRepoSecret
+      parameters:
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The repository in the format owner/repository
+          example: "owner/repository"
+        - name: secret_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the secret
+          example: "SECRET_KEY"
+        - name: secret_value
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The value of the secret
+          example: "supersecretvalue"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully created or updated secret
+          content:
+            application/json:
+              schema:
+                type: string
+              examples:
+                example-1:
+                  value: "Successfully created or updated secret"
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 401
+                    message: "Unauthorized - Invalid token"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                example-1:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+
 components:
   securitySchemes:
     bearerAuth:
