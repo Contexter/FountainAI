@@ -4,6 +4,8 @@ info:
   version: 1.0.0
   description: >
     A Vapor app that wraps GitHub CLI commands for repository management, including secrets management.
+    ## Implementation Plan
+    We will use Test-Driven Development (TDD) to create the application, providing shell scripts for each step, including appropriate git commit messages. At the end, we will provide a main script that runs all the individual scripts in order.
     ## Security Requirements
     - Deployed on an Ubuntu 20.04 VPS with UFW, Nginx SSL proxy, and Let's Encrypt Certbot.
     - Use GitHub Actions for CI/CD to automate building, testing, and deploying the app with security scans.
