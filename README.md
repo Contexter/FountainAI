@@ -18,25 +18,27 @@ The OpenAPI specification serves as the detailed blueprint for FountainAI, trans
 
 ## Episode Overviews
 
-### [Episode 1: Setting Up a General-Purpose Development and Deployment Environment Using GitHub and a VPS](episodes/Episode1/episode1.md)
+### [Episode 1: Initial Setup and Manual GitHub Secrets Creation](episodes/Episode1/episode1.md)
 
-In this episode, we set up the foundational components required for developing and deploying applications. This includes creating a GitHub repository for version control, configuring environment variables for secure management of application settings, and establishing secure communication with a Virtual Private Server (VPS). We guide you through setting up SSH keys for secure access, linking your local development environment with GitHub, and ensuring a secure connection to your VPS.
+In this episode, we set up the foundational components required for developing and deploying your application. This includes creating a GitHub repository, configuring environment variables, generating necessary tokens, and establishing secure communication with a VPS. Key steps involve generating a GitHub personal access token, creating SSH keys, and manually adding secrets to GitHub.
 
 ### [Episode 2: Creating an OpenAPI-based Vapor Wrapper App around "gh"](episodes/Episode2/episode2.md)
 
-In this episode, we create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app provides a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We start by defining our API using the OpenAPI specification, implement the Vapor app, dockerize the app, and push it to the GitHub Docker registry.
+In this episode, we create a Vapor app that acts as a wrapper around the GitHub CLI (`gh`). This app provides a web interface for interacting with GitHub repositories, including listing contents, fetching file contents, and managing GitHub secrets. We start by defining our API using the OpenAPI specification, implementing the Vapor app, dockerizing the app, and securing it using JWT-based bearer authentication. The episode also covers writing tests, setting up routes and controllers, handling GitHub CLI commands, and deploying the app with Docker and GitHub Actions.
 
-### [Episode 3: Creating and Managing a General Purpose CI/CD Pipeline with GitHub Actions](episodes/Episode3/episode3.md)
+This wrapper utility is crucial for implementing the FountainAI OpenAPI when being recomposed into smaller, modular APIs, allowing for more scalable and maintainable architecture.
 
-In this episode, we create and manage a general-purpose CI/CD pipeline using GitHub Actions. This pipeline automates the process of building, testing, and deploying applications, ensuring continuous integration and continuous deployment. The pipeline is designed to be adaptable to various applications, allowing you to adjust the configuration and scripts to suit different project requirements.
+### [Episode 3: Enhancing Security for Your OpenAPI-based Vapor Wrapper App around "gh"](episodes/Episode3/episode3.md)
 
-### [Episode 4: The FountainAI Pipeline](episodes/Episode4/episode4.md)
+In this episode, we enhance the security of our Vapor app by implementing best practices for managing sensitive information, robust authentication and authorization, error handling, and logging. Key topics include securing JWT secret management, protecting routes with JWT middleware, implementing static code analysis, setting up GitHub monitoring and alerts, and patching the project to meet security requirements. We also cover Docker and network security, as well as comprehensive error handling.
 
-This episode covers the integration of the Vapor app created in Episode 2 into the CI/CD pipeline created in Episode 3. We explore how to automate the deployment process, manage environment variables, and ensure secure and efficient continuous delivery of the application.
+### [Episode 4: Placeholder Title](episodes/Episode4/episode4.md)
 
-### [Episode 5: Try or Die - Forcing the Monolith](episodes/Episode5/episode5.md)
+Content to be added.
 
-In this turning point episode, we leverage GPT-4 to generate a full-stack Vapor application and an accompanying CI/CD pipeline. The GPT-4 model uses the provided OpenAPI specification to produce all necessary code components, streamlining our development workflow and enhancing productivity. Based on the test results, this episode marks a significant shift in our approach, highlighting both the potential and the limitations of using AI-driven code generation for complex applications.
+### [Episode 5: Placeholder Title](episodes/Episode5/episode5.md)
+
+Content to be added.
 
 ### [Episode 6: Placeholder Title](episodes/Episode6/episode6.md)
 
@@ -57,3 +59,7 @@ Content to be added.
 ### [Episode 10: Placeholder Title](episodes/Episode10/episode10.md)
 
 Content to be added.
+
+---
+
+Feel free to provide more episodes or additional details to be included in the README.
