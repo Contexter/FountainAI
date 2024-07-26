@@ -1,12 +1,12 @@
-## Book Structure: "FountainAI - Interact with GitHub's API using Webhooks"
+(book project)
+## "FountainAI - Interact with GitHub's API using Webhooks" 
 ---
----
+
 > This following structure aims to ensure that the learning path stays in sync with the FountainAI implementation, providing a seamless and integrated approach to understanding and applying GitHub Apps, webhooks, and the REST API. Each chapter builds on the previous one, guiding readers through the entire process of developing, deploying, and maintaining FountainAI.
 
 ### Introduction
+ " Welcome to "FountainAI - Interact with GitHub's API using Webhooks," a comprehensive guide that combines theoretical knowledge with practical application. Throughout this book, you'll learn how to harness the power of GitHub Apps, webhooks, and the REST API to create robust, event-driven applications, focusing on building FountainAI, an AI-driven model for analyzing and processing theatrical and screenplay scripts." 
 
-> " Welcome to "FountainAI - Interact with GitHub's API using Webhooks," a comprehensive guide that combines theoretical knowledge with practical application. Throughout this book, you'll learn how to harness the power of GitHub Apps, webhooks, and the REST API to create robust, event-driven applications, focusing on building FountainAI, an AI-driven model for analyzing and processing theatrical and screenplay scripts." 
----
 
 ### FountainAI Network Graph
 
