@@ -1,0 +1,310 @@
+openapi: 3.1.0
+info:
+  title: FountainAI Core Script Management API
+  description: >
+    This API manages scripts, section headings, and transitions. It integrates with the Central Sequence Service to ensure all elements follow a logical order and supports reordering and versioning.
+  version: 2.0.0
+servers:
+  - url: https://scriptmanagement.fountain.coach
+    description: Production server for Core Script Management API
+  - url: http://localhost:8080
+    description: Development server
+paths:
+  /scripts:
+    post:
+      summary: Create Script
+      operationId: createScript
+      description: Creates a new script, obtaining a sequence number from the Central Sequence Service.
+      requestBody:
+        required: true
+        description: Details of the script to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptRequest'
+            examples:
+              example:
+                value:
+                  title: "Romeo and Juliet"
+                  author: "William Shakespeare"
+                  description: "A tale of two star-crossed lovers."
+      responses:
+        '201':
+          description: Script created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptResponse'
+              examples:
+                example:
+                  value:
+                    scriptId: 1
+                    sequenceNumber: 1
+    get:
+      summary: List Scripts
+      operationId: listScripts
+      description: Retrieves all scripts.
+      responses:
+        '200':
+          description: List of scripts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Script'
+  /scripts/{scriptId}:
+    put:
+      summary: Update Script
+      operationId: updateScript
+      description: Updates an existing script.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script to update.
+      requestBody:
+        required: true
+        description: Details of the script to be updated.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptUpdateRequest'
+            examples:
+              example:
+                value:
+                  title: "Romeo and Juliet - Updated"
+                  author: "William Shakespeare"
+                  description: "An updated tale of two star-crossed lovers."
+      responses:
+        '200':
+          description: Script updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptResponse'
+              examples:
+                example:
+                  value:
+                    scriptId: 1
+                    sequenceNumber: 1
+  /scripts/{scriptId}/sections:
+    post:
+      summary: Add Section Heading
+      operationId: addSectionHeading
+      description: Adds a new section heading to a script, obtaining a sequence number from the Central Sequence Service.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script to add the section heading to.
+      requestBody:
+        required: true
+        description: Details of the section heading to be added.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionHeadingRequest'
+            examples:
+              example:
+                value:
+                  title: "Act 1, Scene 1"
+      responses:
+        '201':
+          description: Section heading added successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionHeadingResponse'
+              examples:
+                example:
+                  value:
+                    headingId: 1
+                    scriptId: 1
+                    sequenceNumber: 2
+    put:
+      summary: Update Section Heading
+      operationId: updateSectionHeading
+      description: Updates an existing section heading.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script the section heading belongs to.
+        - name: headingId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the section heading to update.
+      requestBody:
+        required: true
+        description: Details of the section heading to be updated.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionHeadingUpdateRequest'
+            examples:
+              example:
+                value:
+                  title: "Act 1, Scene 1 - Updated"
+      responses:
+        '200':
+          description: Section heading updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionHeadingResponse'
+              examples:
+                example:
+                  value:
+                    headingId: 1
+                    scriptId: 1
+                    sequenceNumber: 2
+  /scripts/{scriptId}/sections/reorder:
+    post:
+      summary: Reorder Section Headings
+      operationId: reorderSectionHeadings
+      description: Reorders section headings within a script by updating their sequence numbers.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script to reorder section headings for.
+      requestBody:
+        required: true
+        description: Details of the reordering request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+            examples:
+              example:
+                value:
+                  elements:
+                    - headingId: 1
+                      newSequence: 2
+                    - headingId: 2
+                      newSequence: 1
+      responses:
+        '200':
+          description: Section headings reordered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              examples:
+                example:
+                  value:
+                    message: "Reorder successful."
+components:
+  schemas:
+    ScriptRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+      required:
+        - title
+    ScriptResponse:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+          description: Unique identifier of the script.
+        sequenceNumber:
+          type: integer
+          description: Sequence number assigned to the script.
+    Script:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+          description: Unique identifier of the script.
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+        sequenceNumber:
+          type: integer
+          description: Sequence number assigned to the script.
+    ScriptUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+    SectionHeadingRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the section heading.
+      required:
+        - title
+    SectionHeadingResponse:
+      type: object
+      properties:
+        headingId:
+          type: integer
+          description: Unique identifier of the section heading.
+        scriptId:
+          type: integer
+          description: Unique identifier of the script.
+        sequenceNumber:
+          type: integer
+          description: Sequence number assigned to the section heading.
+    SectionHeadingUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the section heading.
+    ReorderRequest:
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              headingId:
+                type: integer
+                description: Unique identifier of the section heading.
+              newSequence:
+                type: integer
+                description: New sequence number for the section heading.
+      required:
+        - elements
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message.

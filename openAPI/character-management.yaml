@@ -1,0 +1,475 @@
+openapi: 3.1.0
+info:
+  title: Character Management API
+  description: >
+    This API handles characters within stories, including their creation, management, actions, and spoken words. It integrates with the Central Sequence Service to ensure logical sequence numbers for each element, allowing a coherent flow within the story.
+  version: 1.0.0
+servers:
+  - url: https://character.fountain.coach
+    description: Production server for Character Management API
+  - url: http://localhost:8080
+    description: Development server
+paths:
+  /characters:
+    get:
+      summary: Retrieve All Characters
+      operationId: listCharacters
+      description: Lists all characters stored within the application.
+      responses:
+        '200':
+          description: A JSON array of character entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Character'
+        '500':
+          description: Internal server error indicating a failure to process the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Character
+      operationId: createCharacter
+      description: Allows for the creation of a new character.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterCreateRequest'
+      responses:
+        '201':
+          description: Character successfully created, returning the new character entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the character.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /characters/{characterId}/paraphrases:
+    get:
+      summary: Retrieve All Paraphrases for a Character
+      operationId: listCharacterParaphrases
+      description: Retrieves all paraphrases linked to a specific character, including a commentary on why each paraphrase is connected to the original character.
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON array of paraphrases for the specified character.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Paraphrase'
+        '404':
+          description: The specified character was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure to retrieve the paraphrases.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Paraphrase for a Character
+      operationId: createCharacterParaphrase
+      description: Allows for the creation of a new paraphrase linked to a character.
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaphraseCreateRequest'
+      responses:
+        '201':
+          description: The paraphrase has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The specified character was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the paraphrase.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /actions:
+    get:
+      summary: Retrieve All Actions
+      operationId: listActions
+      description: Lists all actions currently stored within the system.
+      responses:
+        '200':
+          description: A JSON array of action entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Action'
+        '500':
+          description: Internal server error indicating a failure to process the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Action
+      operationId: createAction
+      description: Allows for the creation of a new action entity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionCreateRequest'
+      responses:
+        '201':
+          description: The action has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /actions/{actionId}/paraphrases:
+    get:
+      summary: Retrieve All Paraphrases for an Action
+      operationId: listActionParaphrases
+      description: Retrieves all paraphrases linked to a specific action.
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON array of paraphrases for the specified action.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Paraphrase'
+        '404':
+          description: The specified action was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure to retrieve the paraphrases.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Paraphrase for an Action
+      operationId: createActionParaphrase
+      description: Allows for the creation of a new paraphrase linked to an action.
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaphraseCreateRequest'
+      responses:
+        '201':
+          description: The paraphrase has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The specified action was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the paraphrase.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /spokenWords:
+    get:
+      summary: Retrieve All Spoken Words
+      operationId: listSpokenWords
+      description: Lists all spoken words currently stored within the system.
+      responses:
+        '200':
+          description: A JSON array of spoken word entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpokenWord'
+        '500':
+          description: Internal server error indicating a failure to process the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Spoken Word
+      operationId: createSpokenWord
+      description: Allows for the creation of a new spoken word entity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpokenWordCreateRequest'
+      responses:
+        '201':
+          description: The spoken word has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpokenWord'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the spoken word.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /spokenWords/{spokenWordId}/paraphrases:
+    get:
+      summary: Retrieve All Paraphrases for a Spoken Word
+      operationId: listSpokenWordParaphrases
+      description: Retrieves all paraphrases linked to a specific spoken word.
+      parameters:
+        - name: spokenWordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON array of paraphrases for the specified spoken word.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Paraphrase'
+        '404':
+          description: The specified spoken word was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure to retrieve the paraphrases.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a New Paraphrase for a Spoken Word
+      operationId: createSpokenWordParaphrase
+      description: Allows for the creation of a new paraphrase linked to a spoken word.
+      parameters:
+        - name: spokenWordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaphraseCreateRequest'
+      responses:
+        '201':
+          description: The paraphrase has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+        '400':
+          description: Bad request due to invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The specified spoken word was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error indicating a failure in creating the paraphrase.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Character:
+      type: object
+      properties:
+        characterId:
+          type: integer
+          description: Unique identifier for the character.
+        name:
+          type: string
+          description: Name of the character.
+        description:
+          type: string
+          description: A brief description of the character and their role within the story.
+    CharacterCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the character.
+        description:
+          type: string
+          description: A brief description of the character and their role within the story.
+      required:
+        - name
+        - description
+    Paraphrase:
+      type: object
+      properties:
+        paraphraseId:
+          type: integer
+          description: Unique identifier for the paraphrase.
+        originalId:
+          type: integer
+          description: Identifier of the original entity this paraphrase is linked to.
+        text:
+          type: string
+          description: The text of the paraphrase.
+        commentary:
+          type: string
+          description: Commentary on why the paraphrase is linked to the original entity.
+    ParaphraseCreateRequest:
+      type: object
+      properties:
+        originalId:
+          type: integer
+          description: Identifier of the original entity this paraphrase is linked to.
+        text:
+          type: string
+          description: The text of the paraphrase.
+        commentary:
+          type: string
+          description: Commentary on why the paraphrase is linked to the original entity.
+      required:
+        - originalId
+        - text
+        - commentary
+    Action:
+      type: object
+      properties:
+        actionId:
+          type: integer
+          description: Unique identifier for the action.
+        description:
+          type: string
+          description: A textual description outlining what happens in this action.
+    ActionCreateRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: A textual description outlining what happens in this action.
+      required:
+        - description
+    SpokenWord:
+      type: object
+      properties:
+        dialogueId:
+          type: integer
+          description: Unique identifier for the spoken word entity.
+        text:
+          type: string
+          description: The dialogue text of the spoken word entity.
+    SpokenWordCreateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The dialogue text of the spoken word entity.
+      required:
+        - text
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Description of the error encountered.
