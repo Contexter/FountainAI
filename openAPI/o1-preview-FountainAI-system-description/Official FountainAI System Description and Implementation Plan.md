@@ -32,7 +32,7 @@ The goal is to build a modular, scalable, and maintainable system where each mic
 
 ## System Overview
 
-**FountainAI** is designed to manage screenplay elements such as scripts, characters, actions, spoken words, sessions, context, and the logical flow of stories. The system comprises several components:
+**FountainAI** is designed to manage story elements such as scripts, characters, actions, spoken words, sessions, context, and the logical flow of stories. The system comprises several components:
 
 1. **Independent Microservices**: Five FastAPI applications, each handling specific aspects of screenplay management.
 2. **Kong API Gateway**: Routes requests to the appropriate microservices and manages API features like authentication and rate limiting.
