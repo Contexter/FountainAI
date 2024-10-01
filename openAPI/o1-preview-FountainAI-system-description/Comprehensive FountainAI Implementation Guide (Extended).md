@@ -40,7 +40,7 @@ The **FountainAI Implementation Guide** serves as the definitive blueprint for d
 
 **FountainAI** is architected to manage story elements such as scripts, characters, actions, spoken words, sessions, context, and the logical flow of stories. The system is composed of several key components:
 
-1. **Independent Microservices:** Five FastAPI applications, each responsible for specific aspects of screenplay management.
+1. **Independent Microservices:** Five FastAPI applications, each responsible for specific aspects of story management.
 2. **Kong API Gateway:** Serves as the single entry point for all API requests, handling routing, authentication, rate limiting, and other cross-cutting concerns.
 3. **Docker Compose:** Orchestrates the deployment of microservices, Kong, and the PostgreSQL database.
 4. **Amazon Route 53:** Manages DNS records, mapping domain names to services.
