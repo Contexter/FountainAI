@@ -1,449 +1,358 @@
-# FountainAI System Description
+# Official FountainAI System Description
 
 ---
 
-## **Overview**
+## Table of Contents
 
-**FountainAI** is a modular system designed to manage story elements such as scripts, characters, actions, spoken words, sessions, context, and the logical flow of stories. It comprises several microservices, each responsible for specific functionalities, and integrates them to provide a cohesive platform for story creation and management. The system leverages Kong API Gateway for request routing, authentication, and other API management features, and uses PostgreSQL as a unified persistence backend. All components are orchestrated using Docker Compose for easy deployment and scalability.
-
----
-
-## **Table of Contents**
-
-1. [System Architecture](#system-architecture)
-2. [Requirements](#requirements)
-   - [Functional Requirements](#functional-requirements)
-   - [Non-Functional Requirements](#non-functional-requirements)
-3. [Microservices](#microservices)
-   - [Central Sequence Service API](#central-sequence-service-api)
-   - [Character Management API](#character-management-api)
-   - [Core Script Management API](#core-script-management-api)
-   - [Session and Context Management API](#session-and-context-management-api)
-   - [Story Factory API](#story-factory-api)
-4. [Unified Persistence Backend](#unified-persistence-backend)
-   - [Database Schema](#database-schema)
-   - [Database Migrations](#database-migrations)
-5. [Docker Compose Setup](#docker-compose-setup)
-   - [Services](#services)
-   - [Docker Compose File](#docker-compose-file)
-6. [Kong API Gateway Integration](#kong-api-gateway-integration)
-   - [Service and Route Configuration](#service-and-route-configuration)
-   - [Authentication and Plugins](#authentication-and-plugins)
-7. [Client Interaction](#client-interaction)
-   - [GPT Model Clients](#gpt-model-clients)
-   - [Developer Access](#developer-access)
-8. [Security Considerations](#security-considerations)
-9. [Monitoring and Maintenance](#monitoring-and-maintenance)
-10. [Conclusion](#conclusion)
+1. [Introduction](#introduction)
+2. [System Overview](#system-overview)
+3. [Architecture](#architecture)
+4. [Microservices Description](#microservices-description)
+    - [1. Central Sequence Service](#1-central-sequence-service)
+    - [2. Character Management API](#2-character-management-api)
+    - [3. Core Script Management API](#3-core-script-management-api)
+    - [4. Session and Context Management API](#4-session-and-context-management-api)
+    - [5. Story Factory API](#5-story-factory-api)
+5. [Implementation Path and Rules](#implementation-path-and-rules)
+6. [Technologies Used](#technologies-used)
+7. [Deployment Strategy](#deployment-strategy)
+8. [Integration and Communication](#integration-and-communication)
+9. [Security Considerations](#security-considerations)
+10. [Scalability and Maintenance](#scalability-and-maintenance)
+11. [Conclusion](#conclusion)
 
 ---
 
-## **System Architecture**
+## Introduction
 
-The FountainAI system comprises the following components:
+FountainAI is an advanced suite of microservices designed to facilitate the creation, management, and orchestration of complex narratives and scripts. By leveraging a modular architecture, FountainAI ensures scalability, maintainability, and seamless integration across its various components. This document provides a comprehensive overview of the FountainAI system, detailing its architecture, individual microservices, implementation principles, and operational strategies.
 
-- **Microservices**: Five FastAPI applications, each handling specific aspects of story management:
-  - **Central Sequence Service API**
-  - **Character Management API**
-  - **Core Script Management API**
-  - **Session and Context Management API**
-  - **Story Factory API**
-- **PostgreSQL Database**: A unified persistence backend shared by all microservices.
-- **Kong API Gateway**: Acts as a reverse proxy, routing client requests to the appropriate services and providing API management features.
-- **Clients**: Primarily GPT models consuming the APIs, and developers accessing the OpenAPI documentation for testing purposes.
-- **Docker Compose**: Orchestrates all components, ensuring seamless deployment and networking.
+## System Overview
+
+FountainAI comprises five core microservices, each responsible for distinct functionalities within the narrative management ecosystem:
+
+1. **Central Sequence Service**
+2. **Character Management API**
+3. **Core Script Management API**
+4. **Session and Context Management API**
+5. **Story Factory API**
+
+These microservices interact cohesively to manage scripts, characters, sessions, contexts, and the assembly of complete stories, ensuring a logical and fluid narrative flow.
+
+## Architecture
+
+FountainAI adopts a **microservices architecture**, promoting separation of concerns, independent scalability, and fault isolation. Each microservice is developed, deployed, and maintained independently, communicating through well-defined APIs. The system leverages **FastAPI** for API development, **SQLAlchemy** for ORM-based database interactions, **Docker** for containerization, and **Kong API Gateway** for managing and routing API traffic.
+
+### High-Level Architectural Diagram
+
+```
++-------------------+       +-------------------------+
+|                   |       |                         |
+|  Client Requests  +------->  Kong API Gateway       |
+|                   |       |                         |
++---------+---------+       +-----------+-------------+
+          |                             |
+          |                             |
++---------v---------+       +-----------v-------------+
+|                   |       |                         |
+|  Microservice 1    |       |  Microservice 2          |
+| Central Sequence  |       | Character Management    |
+|     Service        |       |         API              |
+|                   |       |                         |
++---------+---------+       +-----------+-------------+
+          |                             |
+          |                             |
++---------v---------+       +-----------v-------------+
+|                   |       |                         |
+| Microservice 3    |       |  Microservice 4          |
+| Core Script       |       | Session and Context     |
+| Management API    |       |  Management API          |
+|                   |       |                         |
++---------+---------+       +-----------+-------------+
+          |                             |
+          |                             |
+          +-------------+---------------+
+                        |
+                        |
+              +---------v---------+
+              |                   |
+              | Microservice 5    |
+              |  Story Factory API |
+              |                   |
+              +-------------------+
+```
+
+## Microservices Description
+
+### 1. Central Sequence Service
+
+**Purpose:**  
+The Central Sequence Service is the backbone of FountainAI, managing the sequencing of elements across all microservices. It ensures that actions, characters, and sections are processed in a logical and orderly fashion, maintaining the integrity of narrative flows.
+
+**Key Responsibilities:**
+
+- **Sequence Number Allocation:** Assigns unique sequence numbers to various elements like scripts, sections, actions, and characters.
+- **Sequence Management:** Handles reordering and updating of sequence numbers to maintain logical narrative progression.
+- **Integration Point:** Acts as a centralized authority for sequencing, preventing conflicts and ensuring consistency across microservices.
+
+**Technology Stack:**
+
+- **Framework:** FastAPI
+- **Database:** SQLite (for development), scalable options like PostgreSQL for production
+- **Containerization:** Docker
+- **API Gateway:** Kong
+
+### 2. Character Management API
+
+**Purpose:**  
+The Character Management API oversees the creation, retrieval, updating, and management of characters within stories. It ensures that character data is consistent, well-defined, and easily accessible to other microservices.
+
+**Key Responsibilities:**
+
+- **Character CRUD Operations:** Create, read, update, and delete character profiles.
+- **Data Integrity:** Validate and maintain the consistency of character attributes.
+- **Integration:** Provide character data to the Story Factory API for story assembly.
+
+**Technology Stack:**
+
+- **Framework:** FastAPI
+- **Database:** SQLite (for development), PostgreSQL (for production)
+- **ORM:** SQLAlchemy
+- **Containerization:** Docker
+- **API Gateway:** Kong
+
+### 3. Core Script Management API
+
+**Purpose:**  
+The Core Script Management API manages scripts, section headings, and their sequencing. It interacts with the Central Sequence Service to ensure that scripts and their components follow a logical order and support functionalities like reordering and versioning.
+
+**Key Responsibilities:**
+
+- **Script Management:** Create, list, and update scripts.
+- **Section Heading Management:** Add, update, and reorder section headings within scripts.
+- **Sequence Coordination:** Collaborate with the Central Sequence Service to maintain proper sequencing.
+
+**Technology Stack:**
+
+- **Framework:** FastAPI
+- **Database:** SQLite (for development), PostgreSQL (for production)
+- **ORM:** SQLAlchemy
+- **Containerization:** Docker
+- **API Gateway:** Kong
+
+### 4. Session and Context Management API
+
+**Purpose:**  
+This API handles the creation, updating, and retrieval of sessions and their associated contexts. It allows for the management of session-specific data, facilitating dynamic and context-aware storytelling.
+
+**Key Responsibilities:**
+
+- **Session Management:** Create, list, and update user sessions.
+- **Context Handling:** Manage context data associated with each session, enabling personalized and adaptive narratives.
+- **Integration:** Provide context data to the Story Factory API to enrich story elements.
+
+**Technology Stack:**
+
+- **Framework:** FastAPI
+- **Database:** SQLite (for development), PostgreSQL (for production)
+- **ORM:** SQLAlchemy
+- **Containerization:** Docker
+- **API Gateway:** Kong
+
+### 5. Story Factory API
+
+**Purpose:**  
+The Story Factory API serves as the integrative hub, assembling comprehensive stories by aggregating data from the Core Script Management API, Character Management API, and Session and Context Management API. It ensures the logical flow of narratives and manages orchestration elements like Csound, LilyPond, and MIDI files.
+
+**Key Responsibilities:**
+
+- **Story Assembly:** Fetch and integrate data from various APIs to construct complete stories.
+- **Sequence Validation:** Ensure that story sequences follow a logical and coherent order.
+- **Orchestration Management:** Handle the generation and management of orchestration files essential for the storytelling experience.
+- **Error Handling:** Manage scenarios where scripts or sequences are not found, providing meaningful feedback.
+
+**Technology Stack:**
+
+- **Framework:** FastAPI
+- **Database:** SQLite (for development), PostgreSQL (for production)
+- **ORM:** SQLAlchemy
+- **Containerization:** Docker
+- **API Gateway:** Kong
+
+## Implementation Path and Rules
+
+The **FountainAI Implementation Path** is a standardized methodology adopted for developing, deploying, and maintaining microservices within the FountainAI ecosystem. It ensures consistency, reliability, and scalability across all projects. The following rules and steps govern the implementation path:
+
+### Key Principles
+
+1. **Modularity:** Each microservice is developed independently, encapsulating specific functionalities to promote separation of concerns.
+2. **Idempotency:** Shell scripts and deployment processes are designed to be idempotent, ensuring that repeated executions do not produce unintended side effects.
+3. **Deterministic Execution:** Scripts and processes yield consistent outcomes when run under identical conditions, facilitating predictable deployments.
+4. **Adherence to Best Practices:** Incorporates industry best practices in coding standards, security, testing, and documentation.
+
+### Step-by-Step Process
+
+1. **Project Initialization:**
+   - Create project directories and initialize version control.
+   - Set up a Python virtual environment.
+   - Install essential dependencies and create a `requirements.txt` file.
+
+2. **FastAPI Application Generation:**
+   - Generate Pydantic models from the OpenAPI specification using `datamodel-codegen`.
+   - Create `main.py` to initialize the FastAPI application and include routers.
+   - Establish a standardized directory structure with subdirectories like `app/api`.
+
+3. **Implementing Business Logic:**
+   - Define SQLAlchemy database models in `models_db.py`.
+   - Configure database connections and session management in `database.py`.
+   - Develop functional implementations in `router.py`, replacing placeholders with actual logic.
+   - Update `main.py` to initialize database tables on startup.
+
+4. **Setting Up Testing:**
+   - Install testing frameworks like `pytest` and `pytest-cov`.
+   - Create a `tests` directory with necessary initialization files.
+   - Develop comprehensive test cases to cover all API endpoints and functionalities.
+
+5. **Dockerization:**
+   - Create a `Dockerfile` defining the container environment.
+   - Update `requirements.txt` with production dependencies.
+   - Build and test the Docker image to ensure proper containerization.
+
+6. **Configuring API Gateway and DNS:**
+   - Use Kong API Gateway to define services and routes for each microservice.
+   - Configure Amazon Route 53 to manage DNS records, pointing domain names to the Kong Gateway.
+   - Ensure secure and efficient routing of client requests to appropriate microservices.
+
+### Conventions and Standards
+
+- **Naming Conventions:** Use clear and consistent naming for projects, directories, files, and scripts to enhance readability and maintainability.
+- **Directory Structure:** Maintain a standardized directory layout across all projects to facilitate ease of navigation and consistency.
+- **Script Conventions:** Shell scripts begin with a shebang (`#!/bin/bash`), are made executable, and include error handling and logging.
+- **Error Handling:** Implement comprehensive error handling in both application code and shell scripts to manage and communicate failures effectively.
+
+## Technologies Used
+
+FountainAI leverages a robust set of tools and technologies to ensure high performance, scalability, and maintainability:
+
+- **Programming Language:** Python 3.x
+- **Web Framework:** FastAPI
+- **Database ORM:** SQLAlchemy
+- **Data Validation:** Pydantic
+- **Containerization:** Docker
+- **API Gateway:** Kong
+- **DNS Management:** Amazon Route 53
+- **Testing Frameworks:** pytest, pytest-cov
+- **Code Generation:** datamodel-codegen
+
+## Deployment Strategy
+
+FountainAI employs a **containerized deployment strategy** using Docker, ensuring consistency across development, testing, and production environments. Each microservice is packaged into its own Docker container, facilitating independent deployment, scaling, and maintenance.
+
+### Steps:
+
+1. **Build Docker Images:**
+   - Use the provided `Dockerfile` to build images for each microservice.
+   - Tag images appropriately for versioning and environment specificity.
+
+2. **Push to Container Registry:**
+   - Store Docker images in a secure container registry (e.g., Docker Hub, AWS ECR).
+
+3. **Deploy Containers:**
+   - Use orchestration tools like Kubernetes or Docker Compose to manage container deployment, scaling, and networking.
+
+4. **Manage API Gateway:**
+   - Configure Kong to route traffic to the appropriate microservices based on defined services and routes.
+
+5. **Automate Deployments:**
+   - Implement CI/CD pipelines to automate building, testing, and deploying microservices, ensuring rapid and reliable releases.
+
+## Integration and Communication
+
+Microservices within FountainAI communicate primarily through RESTful APIs managed by Kong API Gateway. This design promotes loose coupling, allowing each service to evolve independently while maintaining interoperability.
+
+### Communication Patterns:
+
+- **Synchronous Communication:** Services request data from other services in real-time as needed (e.g., Story Factory API fetching data from Character Management API).
+- **Asynchronous Communication:** Potential for future enhancements using message brokers like RabbitMQ or Kafka for event-driven interactions.
+- **API Gateway Management:** Kong handles routing, load balancing, and provides a single entry point for all client requests, enhancing security and manageability.
+
+### Data Flow Example:
+
+1. **Client Request:** A client requests the retrieval of a full story via the Story Factory API.
+2. **Story Factory API:** Processes the request, fetching script details from the Core Script Management API, character information from the Character Management API, and session context from the Session and Context Management API.
+3. **Central Sequence Service:** Ensures all elements are sequenced correctly, maintaining narrative integrity.
+4. **Response Assembly:** Story Factory API assembles the fetched data into a comprehensive story structure and returns it to the client.
+
+## Security Considerations
+
+Security is paramount in FountainAI, with multiple layers implemented to protect data integrity, confidentiality, and availability.
+
+### Key Security Measures:
+
+1. **Authentication and Authorization:**
+   - Implement robust authentication mechanisms (e.g., OAuth2) to verify user identities.
+   - Enforce authorization rules to restrict access to sensitive APIs and data based on user roles and permissions.
+
+2. **Data Validation:**
+   - Utilize Pydantic models to rigorously validate incoming data, preventing injection attacks and data corruption.
+   - Sanitize all inputs to mitigate risks of malicious data manipulation.
+
+3. **Secure Communication:**
+   - Enforce HTTPS for all client-server and inter-service communications to protect data in transit.
+   - Use secure channels and tokens for service-to-service authentication.
+
+4. **Dependency Management:**
+   - Regularly update dependencies to patch known vulnerabilities.
+   - Use tools like `pip-audit` to identify and address insecure packages.
+
+5. **Environment Security:**
+   - Manage sensitive information (e.g., API keys, database credentials) using environment variables or secret management services like AWS Secrets Manager.
+   - Implement network policies and firewalls to restrict unauthorized access.
+
+6. **API Gateway Security:**
+   - Utilize Kong’s security plugins for rate limiting, IP whitelisting, and request filtering.
+   - Monitor and log all API traffic for anomaly detection and auditing.
+
+## Scalability and Maintenance
+
+FountainAI is designed to scale horizontally, accommodating increasing loads and expanding functionalities without compromising performance.
+
+### Scalability Strategies:
+
+1. **Microservices Independence:**
+   - Each microservice can be scaled independently based on its specific load and performance requirements.
+
+2. **Container Orchestration:**
+   - Use orchestration platforms like Kubernetes to manage container scaling, load balancing, and fault tolerance.
+
+3. **Database Scaling:**
+   - Employ scalable database solutions (e.g., Amazon RDS with read replicas) to handle growing data volumes and query loads.
+
+4. **Caching Mechanisms:**
+   - Integrate caching layers (e.g., Redis) to reduce database load and improve response times for frequently accessed data.
+
+### Maintenance Practices:
+
+1. **Automated Testing:**
+   - Maintain comprehensive test suites to ensure that changes do not introduce regressions.
+   - Utilize CI/CD pipelines to automate testing and deployment processes.
+
+2. **Monitoring and Logging:**
+   - Implement monitoring tools (e.g., Prometheus, Grafana) to track system performance and health.
+   - Centralize logging using solutions like ELK Stack (Elasticsearch, Logstash, Kibana) for efficient log management and analysis.
+
+3. **Documentation:**
+   - Keep detailed and up-to-date documentation for all APIs, scripts, and deployment processes.
+   - Facilitate knowledge sharing and onboarding through comprehensive guides and references.
+
+4. **Regular Updates:**
+   - Schedule periodic updates for dependencies, security patches, and performance optimizations.
+   - Conduct regular code reviews and refactoring to maintain code quality and readability.
+
+## Conclusion
+
+The **FountainAI System** embodies a robust, scalable, and secure architecture tailored for complex narrative management. By adhering to the **FountainAI Implementation Path** and leveraging a suite of specialized microservices, the system ensures seamless integration, efficient data management, and an unparalleled storytelling experience. This official system description serves as a foundational guide for understanding, deploying, and maintaining FountainAI, fostering consistency and excellence across all its components.
 
 ---
 
-## **Requirements**
-
-### **Functional Requirements**
-
-1. **Microservices**: Each microservice provides RESTful APIs for managing specific story elements.
-2. **OpenAPI Specifications**: Each microservice must expose an OpenAPI specification that exactly matches predefined schemas for input and output.
-3. **Data Persistence**: Use a unified PostgreSQL database for storing all data, ensuring consistency and reliability.
-4. **API Gateway Integration**: Utilize Kong API Gateway to:
-   - Route requests to the appropriate microservices.
-   - Provide authentication mechanisms.
-   - Implement rate limiting and caching as needed.
-5. **Client Support**:
-   - Allow GPT models to interact with the APIs seamlessly.
-   - Provide developers with access to OpenAPI documentation for testing and development.
-
-### **Non-Functional Requirements**
-
-1. **Scalability**: The system should handle increasing load by scaling microservices and database connections.
-2. **Security**:
-   - Implement authentication and authorization mechanisms.
-   - Secure communication between all components.
-3. **Reliability**: Ensure high availability and fault tolerance, with minimal downtime.
-4. **Maintainability**: The system should be easy to maintain, update, and extend.
-5. **Performance**: Optimize for low latency and high throughput, suitable for real-time interactions with GPT models.
-
----
-
-## **Microservices**
-
-### **1. Central Sequence Service API**
-
-- **Version**: 1.0.0
-- **Description**: Manages the assignment and updating of sequence numbers for various elements within a story, ensuring logical order and consistency.
-- **Servers**:
-  - Production: `https://centralsequence.fountain.coach`
-  - Development: `http://localhost:8080`
-
-#### **Key Endpoints**
-
-1. **`POST /sequence`**
-   - **Summary**: Generate Sequence Number
-   - **OperationId**: `generateSequenceNumber`
-   - **Description**: Generates a new sequence number for a specified element type.
-   - **Request Body**: `SequenceRequest` (elementType, elementId)
-   - **Response**: `SequenceResponse` (sequenceNumber)
-
-2. **`POST /sequence/reorder`**
-   - **Summary**: Reorder Elements
-   - **OperationId**: `reorderElements`
-   - **Description**: Reorders elements by updating their sequence numbers.
-   - **Request Body**: `ReorderRequest` (elementType, elements)
-   - **Response**: `SuccessResponse` (message)
-
-3. **`POST /sequence/version`**
-   - **Summary**: Create New Version
-   - **OperationId**: `createVersion`
-   - **Description**: Creates a new version of an element.
-   - **Request Body**: `VersionRequest` (elementType, elementId, newVersionData)
-   - **Response**: `VersionResponse` (versionNumber)
-
-### **2. Character Management API**
-
-- **Version**: 1.0.0
-- **Description**: Handles characters within stories, including their creation, management, actions, and spoken words. Integrates with the Central Sequence Service to ensure logical sequence numbers.
-- **Servers**:
-  - Production: `https://character.fountain.coach`
-  - Development: `http://localhost:8080`
-
-#### **Key Endpoints**
-
-1. **`GET /characters`**
-   - **Summary**: Retrieve All Characters
-   - **OperationId**: `listCharacters`
-   - **Description**: Lists all characters stored within the application.
-   - **Response**: List of `Character` entities.
-
-2. **`POST /characters`**
-   - **Summary**: Create a New Character
-   - **OperationId**: `createCharacter`
-   - **Description**: Allows for the creation of a new character.
-   - **Request Body**: `CharacterCreateRequest` (name, description)
-   - **Response**: `Character` entity.
-
-3. **`GET /characters/{characterId}/paraphrases`**
-   - **Summary**: Retrieve All Paraphrases for a Character
-   - **OperationId**: `listCharacterParaphrases`
-   - **Description**: Retrieves all paraphrases linked to a specific character.
-   - **Parameters**: `characterId`
-   - **Response**: List of `Paraphrase` entities.
-
-4. **`POST /characters/{characterId}/paraphrases`**
-   - **Summary**: Create a New Paraphrase for a Character
-   - **OperationId**: `createCharacterParaphrase`
-   - **Description**: Allows for the creation of a new paraphrase linked to a character.
-   - **Parameters**: `characterId`
-   - **Request Body**: `ParaphraseCreateRequest`
-   - **Response**: `Paraphrase` entity.
-
-5. **`GET /actions`**
-   - **Summary**: Retrieve All Actions
-   - **OperationId**: `listActions`
-   - **Description**: Lists all actions currently stored within the system.
-   - **Response**: List of `Action` entities.
-
-6. **`POST /actions`**
-   - **Summary**: Create a New Action
-   - **OperationId**: `createAction`
-   - **Description**: Allows for the creation of a new action entity.
-   - **Request Body**: `ActionCreateRequest` (description)
-   - **Response**: `Action` entity.
-
-7. **`GET /actions/{actionId}/paraphrases`**
-   - **Summary**: Retrieve All Paraphrases for an Action
-   - **OperationId**: `listActionParaphrases`
-   - **Description**: Retrieves all paraphrases linked to a specific action.
-   - **Parameters**: `actionId`
-   - **Response**: List of `Paraphrase` entities.
-
-8. **`POST /actions/{actionId}/paraphrases`**
-   - **Summary**: Create a New Paraphrase for an Action
-   - **OperationId**: `createActionParaphrase`
-   - **Description**: Allows for the creation of a new paraphrase linked to an action.
-   - **Parameters**: `actionId`
-   - **Request Body**: `ParaphraseCreateRequest`
-   - **Response**: `Paraphrase` entity.
-
-9. **`GET /spokenWords`**
-   - **Summary**: Retrieve All Spoken Words
-   - **OperationId**: `listSpokenWords`
-   - **Description**: Lists all spoken words currently stored within the system.
-   - **Response**: List of `SpokenWord` entities.
-
-10. **`POST /spokenWords`**
-    - **Summary**: Create a New Spoken Word
-    - **OperationId**: `createSpokenWord`
-    - **Description**: Allows for the creation of a new spoken word entity.
-    - **Request Body**: `SpokenWordCreateRequest` (text)
-    - **Response**: `SpokenWord` entity.
-
-11. **`GET /spokenWords/{spokenWordId}/paraphrases`**
-    - **Summary**: Retrieve All Paraphrases for a Spoken Word
-    - **OperationId**: `listSpokenWordParaphrases`
-    - **Description**: Retrieves all paraphrases linked to a specific spoken word.
-    - **Parameters**: `spokenWordId`
-    - **Response**: List of `Paraphrase` entities.
-
-12. **`POST /spokenWords/{spokenWordId}/paraphrases`**
-    - **Summary**: Create a New Paraphrase for a Spoken Word
-    - **OperationId**: `createSpokenWordParaphrase`
-    - **Description**: Allows for the creation of a new paraphrase linked to a spoken word.
-    - **Parameters**: `spokenWordId`
-    - **Request Body**: `ParaphraseCreateRequest`
-    - **Response**: `Paraphrase` entity.
-
-### **3. Core Script Management API**
-
-- **Version**: 2.0.0
-- **Description**: Manages scripts, section headings, and transitions. Integrates with the Central Sequence Service for logical ordering and supports reordering and versioning.
-- **Servers**:
-  - Production: `https://scriptmanagement.fountain.coach`
-  - Development: `http://localhost:8080`
-
-#### **Key Endpoints**
-
-1. **`POST /scripts`**
-   - **Summary**: Create Script
-   - **OperationId**: `createScript`
-   - **Description**: Creates a new script, obtaining a sequence number from the Central Sequence Service.
-   - **Request Body**: `ScriptRequest` (title, author, description)
-   - **Response**: `ScriptResponse` (scriptId, sequenceNumber)
-
-2. **`GET /scripts`**
-   - **Summary**: List Scripts
-   - **OperationId**: `listScripts`
-   - **Description**: Retrieves all scripts.
-   - **Response**: List of `Script` entities.
-
-3. **`PUT /scripts/{scriptId}`**
-   - **Summary**: Update Script
-   - **OperationId**: `updateScript`
-   - **Description**: Updates an existing script.
-   - **Parameters**: `scriptId`
-   - **Request Body**: `ScriptUpdateRequest` (title, author, description)
-   - **Response**: `ScriptResponse`
-
-4. **`POST /scripts/{scriptId}/sections`**
-   - **Summary**: Add Section Heading
-   - **OperationId**: `addSectionHeading`
-   - **Description**: Adds a new section heading to a script, obtaining a sequence number from the Central Sequence Service.
-   - **Parameters**: `scriptId`
-   - **Request Body**: `SectionHeadingRequest` (title)
-   - **Response**: `SectionHeadingResponse`
-
-5. **`PUT /scripts/{scriptId}/sections`**
-   - **Summary**: Update Section Heading
-   - **OperationId**: `updateSectionHeading`
-   - **Description**: Updates an existing section heading.
-   - **Parameters**: `scriptId`, `headingId`
-   - **Request Body**: `SectionHeadingUpdateRequest` (title)
-   - **Response**: `SectionHeadingResponse`
-
-6. **`POST /scripts/{scriptId}/sections/reorder`**
-   - **Summary**: Reorder Section Headings
-   - **OperationId**: `reorderSectionHeadings`
-   - **Description**: Reorders section headings within a script by updating their sequence numbers.
-   - **Parameters**: `scriptId`
-   - **Request Body**: `ReorderRequest` (elements)
-   - **Response**: `SuccessResponse` (message)
-
-### **4. Session and Context Management API**
-
-- **Version**: 2.0.0
-- **Description**: Manages sessions and context, allowing for the creation, updating, and retrieval of session-specific data.
-- **Servers**:
-  - Production: `https://sessioncontext.fountain.coach`
-  - Development: `http://localhost:8080`
-
-#### **Key Endpoints**
-
-1. **`POST /sessions`**
-   - **Summary**: Create Session
-   - **OperationId**: `createSession`
-   - **Description**: Creates a new session.
-   - **Request Body**: `SessionRequest` (userId, context)
-   - **Response**: `SessionResponse` (sessionId, userId, context)
-
-2. **`GET /sessions`**
-   - **Summary**: List Sessions
-   - **OperationId**: `listSessions`
-   - **Description**: Retrieves all sessions.
-   - **Response**: List of `Session` entities.
-
-3. **`PUT /sessions/{sessionId}`**
-   - **Summary**: Update Session
-   - **OperationId**: `updateSession`
-   - **Description**: Updates an existing session.
-   - **Parameters**: `sessionId`
-   - **Request Body**: `SessionUpdateRequest` (context)
-   - **Response**: `SessionResponse`
-
-4. **`GET /sessions/{sessionId}/context`**
-   - **Summary**: Get Session Context
-   - **OperationId**: `getSessionContext`
-   - **Description**: Retrieves the context of a specific session.
-   - **Parameters**: `sessionId`
-   - **Response**: `SessionContextResponse` (sessionId, context)
-
-### **5. Story Factory API**
-
-- **Version**: 1.0.0
-- **Description**: Integrates data from the Core Script Management API, Character Management API, and Session and Context Management API to assemble and manage the logical flow of stories.
-- **Servers**:
-  - Production: `https://storyfactory.fountain.coach`
-  - Development: `http://localhost:8080`
-
-#### **Key Endpoints**
-
-1. **`GET /stories`**
-   - **Summary**: Retrieve Full Story
-   - **OperationId**: `getFullStory`
-   - **Description**: Fetches a complete story, including sections, characters, actions, spoken words, context, and transitions.
-   - **Parameters**: `scriptId` (query, required)
-   - **Response**: `FullStory`
-
-2. **`GET /stories/sequences`**
-   - **Summary**: Retrieve Story Sequences
-   - **OperationId**: `getStorySequences`
-   - **Description**: Retrieves specific sequences from a story, ensuring a logical flow.
-   - **Parameters**: `scriptId`, `startSequence`, `endSequence` (query, required)
-   - **Response**: `StorySequence`
-
----
-
-## **Unified Persistence Backend**
-
-### **Database Schema**
-
-The PostgreSQL database includes tables corresponding to each element managed by the microservices:
-
-- **scripts**
-- **section_headings**
-- **characters**
-- **actions**
-- **spoken_words**
-- **paraphrases**
-- **sessions**
-- **contexts**
-- **sequence_numbers**
-
-### **Database Migrations**
-
-Use **Alembic** to manage database migrations:
-
-- **Initial Migration**: Create the initial database schema.
-- **Schema Updates**: Apply changes to the database schema in a controlled manner.
-- **Version Control**: Keep track of schema versions and changes over time.
-
----
-
-## **Docker Compose Setup**
-
-### **Services**
-
-1. **PostgreSQL Database**: Provides data persistence for all microservices.
-2. **Kong API Gateway**: Handles request routing and API management.
-3. **Microservices**: Each microservice is a separate service in Docker Compose.
-
-### **Docker Compose File**
-
-An example `docker-compose.yml` file includes:
-
-- **postgres**: The PostgreSQL database service.
-- **kong-db**, **kong-migrations**, **kong**: Services for Kong API Gateway.
-- **microservices**: Individual services for each microservice (e.g., `central-sequence-service`, `character-management`, `script-management`, `session-context-management`, `story-factory`).
-
----
-
-## **Kong API Gateway Integration**
-
-### **Service and Route Configuration**
-
-For each microservice:
-
-1. **Create a Service**:
-
-   ```bash
-   curl -i -X POST http://localhost:8001/services/ \
-     --data 'name=service-name' \
-     --data 'url=http://service-host:port'
-   ```
-
-2. **Create a Route**:
-
-   ```bash
-   curl -i -X POST http://localhost:8001/services/service-name/routes \
-     --data 'paths[]=/api/v1/service-path'
-   ```
-
-### **Authentication and Plugins**
-
-- **API Key Authentication**: Implemented using Kong's key-auth plugin.
-- **Rate Limiting**: Configured per service based on client needs.
-- **Caching**: Optional, enabled via Kong's proxy-cache plugin.
-
----
-
-## **Client Interaction**
-
-### **GPT Model Clients**
-
-- **API Consumption**: GPT models interact with the APIs programmatically.
-- **Authentication**: Include the API key in the `apikey` header of each request.
-- **Endpoint Access**: Use the Kong-provided URLs.
-
-### **Developer Access**
-
-- **OpenAPI Documentation**: Accessible via the microservices for testing and development.
-- **Testing Endpoints**: Developers can send requests through Kong to simulate the production environment.
-
----
-
-## **Security Considerations**
-
-- **Secure Communications**:
-  - Use HTTPS for all client-to-Kong and Kong-to-microservices communications.
-- **Authentication**:
-  - Use API key authentication for clients.
-  - Manage API keys securely.
-- **Database Security**:
-  - Use strong passwords and restrict network access.
-- **Network Security**:
-  - Use Docker networks to isolate services.
-  - Implement firewall rules as necessary.
-
----
-
-## **Monitoring and Maintenance**
-
-- **Logging**:
-  - Kong and microservices should log requests and errors.
-- **Monitoring**:
-  - Monitor system performance using Prometheus and Grafana.
-- **Backups**:
-  - Regularly back up the PostgreSQL database.
-- **Scaling**:
-  - Scale microservices horizontally as needed.
-
----
-
-## **Conclusion**
-
-FountainAI is a comprehensive system designed to manage screenplay elements effectively, integrating multiple microservices to provide precise API specifications for seamless client interactions, primarily with GPT models. By leveraging FastAPI, PostgreSQL, Kong API Gateway, and Docker Compose, the system ensures high performance, scalability, and maintainability. The unified persistence backend facilitates data consistency across all services, while Kong provides essential API management features.
+**For further assistance or inquiries about the FountainAI System, please contact the FountainAI support team or refer to the internal knowledge base.**
