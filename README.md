@@ -1,6 +1,3 @@
-Here is the updated **FountainAI** repository `README.md`, incorporating the actual project structure you provided, while marking deprecated content according to the current development state of the project. The repository structure reflects the present focus on workbook-driven development, OpenAPI-centric code generation, and implementation guidelines.
-
----
 
 # FountainAI Repository
 
