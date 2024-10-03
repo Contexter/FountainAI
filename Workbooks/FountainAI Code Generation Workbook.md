@@ -108,7 +108,169 @@ mkdir openapi_specs
 Create `openapi_specs/central_sequence_service.yaml` and paste the following content:
 
 ```yaml
-# [OpenAPI specification content as provided earlier]
+openapi: 3.1.0
+info:
+  title: Central Sequence Service API
+  description: >
+    This API manages the assignment and updating of sequence numbers for various elements within a story, ensuring logical order and consistency.
+  version: 1.0.0
+servers:
+  - url: https://centralsequence.fountain.coach
+    description: Production server for Central Sequence Service API
+  - url: http://localhost:8080
+    description: Development server
+paths:
+  /sequence:
+    post:
+      summary: Generate Sequence Number
+      operationId: generateSequenceNumber
+      description: Generates a new sequence number for a specified element type.
+      requestBody:
+        required: true
+        description: Details of the element requesting a sequence number.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SequenceRequest'
+            examples:
+              example:
+                value:
+                  elementType: script
+                  elementId: 1
+      responses:
+        '201':
+          description: Sequence number successfully generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SequenceResponse'
+              examples:
+                example:
+                  value:
+                    sequenceNumber: 1
+  /sequence/reorder:
+    post:
+      summary: Reorder Elements
+      operationId: reorderElements
+      description: Reorders elements by updating their sequence numbers.
+      requestBody:
+        required: true
+        description: Details of the reordering request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+            examples:
+              example:
+                value:
+                  elementType: section
+                  elements:
+                    - elementId: 1
+                      newSequence: 2
+                    - elementId: 2
+                      newSequence: 1
+      responses:
+        '200':
+          description: Elements successfully reordered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              examples:
+                example:
+                  value:
+                    message: Reorder successful.
+  /sequence/version:
+    post:
+      summary: Create New Version
+      operationId: createVersion
+      description: Creates a new version of an element.
+      requestBody:
+        required: true
+        description: Details of the versioning request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionRequest'
+            examples:
+              example:
+                value:
+                  elementType: dialogue
+                  elementId: 1
+                  newVersionData:
+                    text: "O Romeo, Romeo! wherefore art thou Romeo?"
+      responses:
+        '201':
+          description: New version successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+              examples:
+                example:
+                  value:
+                    versionNumber: 2
+components:
+  schemas:
+    SequenceRequest:
+      type: object
+      properties:
+        elementType:
+          type: string
+          description: Type of the element (e.g., script, section, character, action, spokenWord).
+        elementId:
+          type: integer
+          description: Unique identifier of the element.
+      required: [elementType, elementId]
+    SequenceResponse:
+      type: object
+      properties:
+        sequenceNumber:
+          type: integer
+          description: The generated sequence number.
+    ReorderRequest:
+      type: object
+      properties:
+        elementType:
+          type: string
+          description: Type of elements being reordered.
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              elementId:
+                type: integer
+                description: Unique identifier of the element.
+              newSequence:
+                type: integer
+                description: New sequence number for the element.
+      required: [elementType, elements]
+    VersionRequest:
+      type: object
+      properties:
+        elementType:
+          type: string
+          description: Type of the element (e.g., script, section, character, action, spokenWord).
+        elementId:
+          type: integer
+          description: Unique identifier of the element.
+        newVersionData:
+          type: object
+          description: Data for the new version of the element.
+      required: [elementType, elementId, newVersionData]
+    VersionResponse:
+      type: object
+      properties:
+        versionNumber:
+          type: integer
+          description: The version number of the new version.
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message.
 ```
 
 ---
@@ -130,7 +292,95 @@ pip install openai
 Create `generate_code.py`:
 
 ```python
-# [generate_code.py content as provided earlier]
+import os
+import openai
+import re
+
+# Load OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_code(service_name, openapi_spec_path):
+    print(f"Generating code for {service_name}...")
+
+    # Load OpenAPI specification
+    with open(openapi_spec_path, 'r') as f:
+        openapi_spec = f.read()
+
+    # Construct the prompt
+    prompt = f"""
+You are an expert Python developer specializing in FastAPI and SQLAlchemy. Generate a complete, deployable, and testable FastAPI application for the "{service_name}" based on the following OpenAPI specification. Include:
+
+- Pydantic models for request and response bodies.
+- SQLAlchemy models for database tables.
+- Endpoint implementations with proper database interactions.
+- Necessary imports and application setup.
+- A Dockerfile for containerization.
+- A requirements.txt file with all dependencies.
+- A basic test suite using pytest.
+- Use environment variables for configuration (e.g., database URL).
+- Include logging setup using Python's logging module.
+- Ensure code follows FountainAI coding norms.
+
+OpenAPI Specification:
+{openapi_spec}
+
+Provide the code in separate files with proper file names. Use triple backticks with language identifiers for code blocks, e.g., ```python, ```Dockerfile, or ```yaml.
+"""
+
+    # Call the OpenAI API
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=3000,
+        temperature=0
+    )
+
+    # Extract the generated code
+    code = response['choices'][0]['message']['content']
+
+    # Save the generated code to files
+    save_generated_code(service_name, code)
+
+def save_generated_code(service_name, code):
+    # Create the service directory
+    service_dir = os.path.join("services", service_name)
+    os.makedirs(service_dir, exist_ok=True)
+
+    # Regular expression to find code blocks
+    code_blocks = re.findall(r'```(\w+)?\n(.*?)```', code, re.DOTALL)
+
+    if not code_blocks:
+        print("No code blocks found in the response.")
+        return
+
+    for language, content in code_blocks:
+        # Extract filename from the content
+        filename_match = re.match(r'#\s*(.*?)\n', content)
+        if filename_match:
+            filename = filename_match.group(1).strip()
+            file_content = content[filename_match.end():]
+        else:
+            # Default filename if not specified
+            filename = f"code.{language.strip() if language else 'txt'}"
+            file_content = content
+
+        # Remove any leading/trailing whitespace
+        file_content = file_content.strip()
+
+        # Save the file
+        file_path = os.path.join(service_dir, filename)
+        with open(file_path, 'w') as f:
+            f.write(file_content)
+
+        print(f"Generated {filename}")
+
+if __name__ == "__main__":
+    generate_code(
+        service_name="central_sequence_service",
+        openapi_spec_path="openapi_specs/central_sequence_service.yaml"
+    )
 ```
 
 **Run the script:**
@@ -175,7 +425,26 @@ Each shell script is divided into small, reusable functions that are easy to cal
 **Example:**
 
 ```bash
-# [Example content as provided earlier]
+#!/bin/bash
+
+# Function to create a configuration file if it does not exist
+create_config_file() {
+    local config_file="$1"
+
+    # Check if the configuration file already exists
+    if [ ! -f "$config_file" ]; then
+        # Create the config file with default settings
+        echo "Creating configuration file: $config_file"
+        cat <<EOL > "$config_file"
+# Default Configuration for FountainAI
+api_gateway: kong
+storage_service: opensearch
+EOL
+    else
+        # If the file exists, notify the user
+        echo "Configuration file $config_file already exists."
+    fi
+}
 ```
 
 **2. Idempotency**
@@ -185,7 +454,15 @@ Ensuring that running a script multiple times results in the same outcome.
 **Example:**
 
 ```bash
-# [Example content as provided earlier]
+# Function to create a directory if it does not exist
+create_directory() {
+    if [ ! -d "$1" ]; then
+        mkdir -p "$1"
+        echo "Directory $1 created."
+    else
+        echo "Directory $1 already exists."
+    fi
+}
 ```
 
 **3. Commenting and Structure**
@@ -195,7 +472,11 @@ Scripts should be fully commented, with clear explanations of what each function
 **Example:**
 
 ```bash
-# [Example content as provided earlier]
+# Function to initialize FountainAI environment by creating directories and setting up configurations
+initialize_environment() {
+    create_directory "/path/to/project"
+    create_config_file "/path/to/project/config.yml"
+}
 ```
 
 **4. Using Shell Scripts as Orchestrators and Code Writers**
@@ -208,7 +489,24 @@ Shell scripts in FountainAI have two primary roles:
 **Example of Code Generation:**
 
 ```bash
-# [Example content as provided earlier]
+# Function to generate a GitHub Actions workflow YAML file
+create_github_workflow() {
+    cat <<EOL > .github/workflows/deploy.yml
+name: Deploy FountainAI
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run deployment script
+        run: ./deploy.sh
+EOL
+}
 ```
 
 ---
@@ -220,7 +518,62 @@ Create a script `modify_code.sh` to modify the generated code according to Fount
 **Create `modify_code.sh`:**
 
 ```bash
-# [modify_code.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+SERVICE_NAME="central_sequence_service"
+SERVICE_DIR="services/$SERVICE_NAME"
+
+# Function to install required Python tools
+install_python_tools() {
+    echo "Installing required Python tools..."
+    pip install black flake8 isort
+}
+
+# Function to format and lint code
+format_and_lint_code() {
+    echo "Formatting and linting code..."
+    black "$SERVICE_DIR"
+    isort "$SERVICE_DIR"
+    flake8 "$SERVICE_DIR"
+}
+
+# Function to update configuration in code files
+update_configuration() {
+    echo "Updating configuration in code files..."
+    local database_file="$SERVICE_DIR/database.py"
+    if [ -f "$database_file" ]; then
+        sed -i "s|'sqlite:///./${SERVICE_NAME}.db'|os.getenv('DATABASE_URL', 'sqlite:///./${SERVICE_NAME}.db')|" "$database_file"
+    fi
+}
+
+# Function to add logging setup
+add_logging_setup() {
+    echo "Adding logging setup..."
+    local main_file="$SERVICE_DIR/main.py"
+    if [ -f "$main_file" ]; then
+        if ! grep -q "logging.basicConfig" "$main_file"; then
+            sed -i '/import logging/a logging.basicConfig(level=logging.INFO)' "$main_file"
+        fi
+    fi
+}
+
+# Main function to modify code
+modify_code() {
+    echo "Modifying code for $SERVICE_NAME to adhere to FountainAI norms..."
+    cd "$SERVICE_DIR"
+    install_python_tools
+    format_and_lint_code
+    update_configuration
+    add_logging_setup
+    echo "Code modification for $SERVICE_NAME completed."
+    cd - > /dev/null
+}
+
+# Execute the main function
+modify_code
 ```
 
 **Make the script executable:**
@@ -250,7 +603,53 @@ Initialize a GitHub repository for the service using the GitHub CLI (`gh`).
 **Create `init_repo.sh`:**
 
 ```bash
-# [init_repo.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+SERVICE_NAME="central_sequence_service"
+SERVICE_DIR="services/$SERVICE_NAME"
+GITHUB_USERNAME="yourusername" # Replace with your GitHub username
+
+# Function to initialize Git repository
+initialize_git_repository() {
+    echo "Initializing Git repository for $SERVICE_NAME..."
+    cd "$SERVICE_DIR"
+    if [ ! -d ".git" ]; then
+        git init
+        git add .
+        git commit -m "Initial commit for $SERVICE_NAME"
+        echo "Git repository initialized."
+    else
+        echo "Git repository already initialized."
+    fi
+    cd - > /dev/null
+}
+
+# Function to create GitHub repository
+create_github_repository() {
+    echo "Creating GitHub repository for $SERVICE_NAME..."
+    cd "$SERVICE_DIR"
+    if ! git remote | grep -q origin; then
+        gh repo create "$GITHUB_USERNAME/$SERVICE_NAME" --public --source=. --remote=origin
+        git branch -M main
+        git push -u origin main
+        echo "GitHub repository created and code pushed."
+    else
+        echo "Remote origin already exists."
+    fi
+    cd - > /dev/null
+}
+
+# Main function to initialize repository
+initialize_repository() {
+    initialize_git_repository
+    create_github_repository
+}
+
+# Execute the main function
+initialize_repository
 ```
 
 **Make the script executable:**
@@ -270,6 +669,7 @@ chmod +x init_repo.sh
 - The script uses modular functions.
 - Idempotency is ensured by checking if the Git repository already exists.
 - Comments explain each function and its purpose.
+- Remember to replace `yourusername` with your actual GitHub username.
 
 ---
 
@@ -280,7 +680,164 @@ Deploy the service to AWS using AWS CLI and CloudFormation, following FountainAI
 **Create `deploy_to_aws.sh`:**
 
 ```bash
-# [deploy_to_aws.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+SERVICE_NAME="central_sequence_service"
+SERVICE_DIR="services/$SERVICE_NAME"
+AWS_REGION="us-east-1"
+STACK_NAME="${SERVICE_NAME}-stack"
+TEMPLATE_FILE="cloudformation_template.yaml"
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+ECR_REPO_NAME="$SERVICE_NAME"
+IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest"
+
+# Function to authenticate Docker to AWS ECR
+authenticate_ecr() {
+    echo "Authenticating Docker to AWS ECR..."
+    aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+}
+
+# Function to build and push Docker image
+build_and_push_image() {
+    echo "Building and pushing Docker image for $SERVICE_NAME..."
+    cd "$SERVICE_DIR"
+    docker build -t "$ECR_REPO_NAME" .
+    docker tag "$ECR_REPO_NAME:latest" "$IMAGE_URI"
+    aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region "$AWS_REGION" || aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region "$AWS_REGION"
+    docker push "$IMAGE_URI"
+    cd - > /dev/null
+}
+
+# Function to create CloudFormation template
+create_cloudformation_template() {
+    echo "Creating CloudFormation template with HTTPS support..."
+    CERTIFICATE_ARN=$(cat certificate_arn.txt)
+
+    cat > "$TEMPLATE_FILE" << EOF
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for $SERVICE_NAME with HTTPS
+
+Parameters:
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: fountainai-cluster
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: $SERVICE_NAME
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole
+      ContainerDefinitions:
+        - Name: $SERVICE_NAME
+          Image: $IMAGE_URI
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8000
+              Protocol: tcp
+          Environment:
+            - Name: DATABASE_URL
+              Value: your-database-url
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/$SERVICE_NAME
+              awslogs-region: $AWS_REGION
+              awslogs-stream-prefix: ecs
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: $SERVICE_NAME
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref SubnetIds
+          SecurityGroups:
+            - your-security-group-id
+      LoadBalancers:
+        - ContainerName: $SERVICE_NAME
+          ContainerPort: 8000
+          TargetGroupArn: !Ref TargetGroup
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: ${SERVICE_NAME}-lb
+      Subnets: !Ref SubnetIds
+      SecurityGroups:
+        - your-security-group-id
+      Scheme: internet-facing
+      Type: application
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: $CERTIFICATE_ARN
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ${SERVICE_NAME}-tg
+      Port: 8000
+      Protocol: HTTP
+      VpcId: !Ref VPCId
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '8000'
+      HealthCheckPath: '/'
+Outputs:
+  LoadBalancerDNSName:
+    Description: "The DNS name of the load balancer"
+    Value: !GetAtt LoadBalancer.DNSName
+EOF
+}
+
+# Function to deploy CloudFormation stack
+deploy_cloudformation_stack() {
+    echo "Deploying CloudFormation stack with HTTPS support..."
+
+    aws cloudformation deploy \
+        --template-file "$TEMPLATE_FILE" \
+        --stack-name "$STACK_NAME" \
+        --capabilities CAPABILITY_NAMED_IAM \
+        --parameter-overrides \
+            VPCId=your-vpc-id \
+            SubnetIds=your-subnet-ids \
+        --region "$AWS_REGION"
+}
+
+# Main function to deploy the service
+deploy_service() {
+    authenticate_ecr
+    build_and_push_image
+    create_cloudformation_template
+    deploy_cloudformation_stack
+    echo "$SERVICE_NAME deployed using CloudFormation."
+}
+
+# Execute the main function
+deploy_service
 ```
 
 **Make the script executable:**
@@ -317,7 +874,70 @@ Configure DNS settings in AWS Route53 using AWS CLI to map the domain **fountain
 **Create `update_dns.sh`:**
 
 ```bash
-# [update_dns.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+SERVICE_NAME="central_sequence_service"
+DOMAIN_NAME="fountain.coach"
+SUBDOMAIN="api"
+HOSTED_ZONE_ID="YOUR_HOSTED_ZONE_ID" # Replace with your actual Hosted Zone ID
+AWS_REGION="us-east-1"
+
+# Function to retrieve Load Balancer DNS
+get_load_balancer_dns() {
+    echo "Retrieving Load Balancer DNS..."
+    LOAD_BALANCER_DNS=$(aws cloudformation describe-stacks \
+        --stack-name "${SERVICE_NAME}-stack" \
+        --region "$AWS_REGION" \
+        --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerDNSName'].OutputValue" \
+        --output text)
+
+    if [ -z "$LOAD_BALANCER_DNS" ]; then
+        echo "No Load Balancer DNS found."
+        exit 1
+    fi
+}
+
+# Function to update DNS record
+update_dns_record() {
+    echo "Updating DNS record..."
+    cat > dns_changes.json << EOF
+{
+    "Comment": "Update record to reflect new Load Balancer DNS",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "$SUBDOMAIN.$DOMAIN_NAME.",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": "$LOAD_BALANCER_DNS"
+                    }
+                ]
+            }
+        }
+    ]
+}
+EOF
+    aws route53 change-resource-record-sets \
+        --hosted-zone-id "$HOSTED_ZONE_ID" \
+        --change-batch file://dns_changes.json
+    rm dns_changes.json
+    echo "DNS record updated: $SUBDOMAIN.$DOMAIN_NAME -> $LOAD_BALANCER_DNS"
+}
+
+# Main function to update DNS
+update_dns() {
+    get_load_balancer_dns
+    update_dns_record
+}
+
+# Execute the main function
+update_dns
 ```
 
 **Make the script executable:**
@@ -352,7 +972,96 @@ Securing your service with HTTPS is essential to protect data in transit and pre
 **Create `request_certificate.sh`:**
 
 ```bash
-# [request_certificate.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+DOMAIN_NAME="fountain.coach"
+SUBDOMAIN="api"
+AWS_REGION="us-east-1"
+CERTIFICATE_ARN_FILE="certificate_arn.txt"
+
+# Function to request a certificate
+request_certificate() {
+    echo "Requesting SSL/TLS certificate for $SUBDOMAIN.$DOMAIN_NAME..."
+
+    CERTIFICATE_ARN=$(aws acm request-certificate \
+        --domain-name "$SUBDOMAIN.$DOMAIN_NAME" \
+        --validation-method DNS \
+        --region "$AWS_REGION" \
+        --query CertificateArn \
+        --output text)
+
+    echo "Certificate ARN: $CERTIFICATE_ARN"
+
+    echo "$CERTIFICATE_ARN" > "$CERTIFICATE_ARN_FILE"
+}
+
+# Function to validate the certificate
+validate_certificate() {
+    echo "Validating certificate..."
+
+    CERTIFICATE_ARN=$(cat "$CERTIFICATE_ARN_FILE")
+
+    # Get DNS validation options
+    VALIDATION_OPTIONS=$(aws acm describe-certificate \
+        --certificate-arn "$CERTIFICATE_ARN" \
+        --region "$AWS_REGION" \
+        --query "Certificate.DomainValidationOptions[0].ResourceRecord")
+
+    # Extract Name and Value for DNS record
+    RECORD_NAME=$(echo "$VALIDATION_OPTIONS" | jq -r '.Name')
+    RECORD_VALUE=$(echo "$VALIDATION_OPTIONS" | jq -r '.Value')
+
+    echo "Adding DNS validation record to Route53..."
+
+    # Create DNS validation record
+    cat > dns_validation.json << EOF
+{
+    "Comment": "Adding validation record for ACM certificate",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "$RECORD_NAME",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": "$RECORD_VALUE"
+                    }
+                ]
+            }
+        }
+    ]
+}
+EOF
+
+    HOSTED_ZONE_ID="YOUR_HOSTED_ZONE_ID" # Replace with your actual Hosted Zone ID
+
+    aws route53 change-resource-record-sets \
+        --hosted-zone-id "$HOSTED_ZONE_ID" \
+        --change-batch file://dns_validation.json
+
+    rm dns_validation.json
+
+    echo "Waiting for certificate validation..."
+    aws acm wait certificate-validated \
+        --certificate-arn "$CERTIFICATE_ARN" \
+        --region "$AWS_REGION"
+
+    echo "Certificate validated."
+}
+
+# Main function to request and validate certificate
+setup_certificate() {
+    request_certificate
+    validate_certificate
+}
+
+# Execute the main function
+setup_certificate
 ```
 
 **Make the script executable:**
@@ -387,7 +1096,7 @@ sudo apt-get install jq
 
 Modify your `deploy_to_aws.sh` script to include the SSL certificate and update the load balancer to use HTTPS.
 
-Update the `create_cloudformation_template` function in `deploy_to_aws.sh` as shown in the previous section.
+Update the `create_cloudformation_template` function in `deploy_to_aws.sh` as shown above.
 
 ### **11.3 Updating the Deployment Script**
 
@@ -417,7 +1126,46 @@ Create tear-down scripts to safely remove AWS deployments using CloudFormation.
 **Create `teardown_aws.sh`:**
 
 ```bash
-# [teardown_aws.sh content as provided earlier]
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+STACK_NAME="central_sequence_service-stack"
+AWS_REGION="us-east-1"
+ECR_REPO_NAME="central_sequence_service"
+
+# Function to delete CloudFormation stack
+delete_cloudformation_stack() {
+    echo "Deleting CloudFormation stack..."
+    aws cloudformation delete-stack \
+        --stack-name "$STACK_NAME" \
+        --region "$AWS_REGION"
+    echo "Waiting for stack deletion to complete..."
+    aws cloudformation wait stack-delete-complete \
+        --stack-name "$STACK_NAME" \
+        --region "$AWS_REGION"
+    echo "CloudFormation stack deleted."
+}
+
+# Function to delete ECR repository
+delete_ecr_repository() {
+    echo "Deleting ECR repository..."
+    aws ecr delete-repository \
+        --repository-name "$ECR_REPO_NAME" \
+        --force \
+        --region "$AWS_REGION"
+    echo "ECR repository deleted."
+}
+
+# Main function to teardown AWS resources
+teardown_resources() {
+    delete_cloudformation_stack
+    delete_ecr_repository
+}
+
+# Execute the main function
+teardown_resources
 ```
 
 **Make the script executable:**
@@ -541,12 +1289,12 @@ estimate_costs() {
     DATA_TRANSFER_GB=10 # Monthly data transfer in GB
 
     # AWS Pricing (as of current date, please verify with AWS Pricing)
-    ECR_STORAGE_COST_PER_GB=$0.10 # per GB-month
-    ECS_FARGATE_CPU_COST_PER_HOUR=$0.04048 # per vCPU-hour
-    ECS_FARGATE_MEMORY_COST_PER_HOUR=$0.004445 # per GB-hour
-    ALB_COST_PER_HOUR=$0.0225 # per hour
-    ALB_LCU_COST_PER_HOUR=$0.008 # per LCU-hour
-    DATA_TRANSFER_COST_PER_GB=$0.09 # per GB
+    ECR_STORAGE_COST_PER_GB=0.10 # per GB-month
+    ECS_FARGATE_CPU_COST_PER_HOUR=0.04048 # per vCPU-hour
+    ECS_FARGATE_MEMORY_COST_PER_HOUR=0.004445 # per GB-hour
+    ALB_COST_PER_HOUR=0.0225 # per hour
+    ALB_LCU_COST_PER_HOUR=0.008 # per LCU-hour
+    DATA_TRANSFER_COST_PER_GB=0.09 # per GB
 
     # Calculations
     ECR_STORAGE_COST=$(echo "$ECR_STORAGE_GB * $ECR_STORAGE_COST_PER_GB" | bc -l)
