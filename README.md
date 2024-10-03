@@ -207,7 +207,7 @@ The **FountainAI Workbook Format** is central to development, ensuring consisten
 For questions or support:
 
 - **GitHub Issues**: [Submit an Issue](https://github.com/Contexter/FountainAI/issues)
-- **Email**: [support@fountainai.coach](mailto:support@fountainai.coach)
+- **Email**: [mail@benedikt-eickhoff.de](mailto:mail@benedikt-eickhoff.de)
 
 ---
 
