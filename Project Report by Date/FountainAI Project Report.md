@@ -1,6 +1,4 @@
-Thanks for pointing that out! I'll remove the mention of **AWS Shield** and focus on what has already been implemented and what's upcoming in terms of security and deployment without overreaching. Here's the updated version of the **FountainAI Project Report** without AWS Shield:
 
----
 
 # FountainAI Project Report
 
