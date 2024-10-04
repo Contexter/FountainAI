@@ -38,7 +38,7 @@ The second prompt focuses on setting up the FastAPI app in `app/main.py`. This i
 The next prompt instructs ChatGPT to generate all Pydantic models for request and response validation. This ensures data integrity, with all fields, types, and required properties matching the OpenAPI specification.
 
 ### 4. Implement API Routes Using OpenAPI Details
-API endpoints are created using a prompt that strictly adheres to the OpenAPI spec. Summaries, descriptions, operation IDs, and response models are all implemented based on the given OpenAPI. This guarantees that the final API will match the documentation precisely.
+API endpoints are created using a prompt that strictly adheres to the OpenAPI spec. Summaries, descriptions, operation IDs, response models, and even custom extensions are all implemented based on the given OpenAPI. This guarantees that the final API will match the documentation precisely, including maintaining any custom fields (`x-*`) needed for GPT-4 to understand the context and workflow.
 
 ### 5. Define SQLAlchemy Models for Database Interaction
 The database model prompt focuses on creating entities as defined in the specification. This ensures proper mapping between the data structure used in API requests and what is stored persistently.
@@ -71,42 +71,42 @@ This approach is not just about generating code but about transforming how we wo
 
 ## Specific Prompt Sequence for a True Creation Session
 
-To ensure that the application is built fully in accordance with the OpenAPI specification, here is a detailed series of prompts that can be used in a true creation session. This sequence is designed for you to take control of the development process, expressing your intent and guiding the AI at each stage. Take your time with each prompt, and use the AI's assistance to build a robust application. Remember, each step is intended to fully leverage the OpenAPI specification as the source of truth, ensuring accuracy and consistency throughout the development.
+To ensure that the application is built fully in accordance with the OpenAPI specification and maintains a 1-to-1 match with the provided spec (including custom extensions), here is a detailed series of prompts that can be used in a true creation session. This sequence is designed for you to take control of the development process, expressing your intent and guiding the AI at each stage. Take your time with each prompt, and use the AI's assistance to build a robust application. Remember, each step is intended to fully leverage the OpenAPI specification as the source of truth, ensuring accuracy, consistency, and inclusion of all custom fields.
 
 ### Initial Prompt: Set the Context
-- **Prompt**: "I want to build a FastAPI application based on the OpenAPI specification I will provide. This specification should serve as the source of truth for the entire development process. Once pasted, I'd like to proceed step-by-step, generating each component of the application in alignment with the provided spec, ensuring full compliance and consistency throughout."
-- **Goal**: Establish a clear intention for the development session and ensure the AI understands that the OpenAPI specification is the foundation for all subsequent prompts.
+- **Prompt**: "I want to build a FastAPI application based on the OpenAPI specification I will provide. This specification should serve as the source of truth for the entire development process, including all custom extensions (`x-*`). Once pasted, I'd like to proceed step-by-step, generating each component of the application in alignment with the provided spec, ensuring full compliance and consistency throughout."
+- **Goal**: Establish a clear intention for the development session and ensure the AI understands that the OpenAPI specification, including custom extensions, is the foundation for all subsequent prompts.
 
 ### 1. Define Project Structure
 - **Prompt**: "Generate the complete project directory structure for a FastAPI application based on an OpenAPI specification. Include folders such as `app`, `routers`, `models`, `schemas`, `utils`, `tests`, as well as essential files like `Dockerfile`, `docker-compose.yaml`, and `requirements.txt`."
 - **Goal**: Set up the entire file structure needed for further development.
 
 ### Step 2: Create API Entry Point and Metadata
-- **Prompt**: "Create a FastAPI application entry point in `app/main.py` that uses the OpenAPI specification for metadata. Include the `title`, `description`, and `version` as described in the OpenAPI spec."
-- **Goal**: Ensure that the API has accurate metadata, laying the foundation for correct documentation.
+- **Prompt**: "Create a FastAPI application entry point in `app/main.py` that uses the OpenAPI specification for metadata. Include the `title`, `description`, `version`, and any custom extensions (`x-*`) as described in the OpenAPI spec."
+- **Goal**: Ensure that the API has accurate metadata, including any custom fields, laying the foundation for correct documentation.
 
 ### Step 3: Generate Pydantic Models for Schema Validation
-- **Prompt**: "Generate all Pydantic models in `schemas/sequence.py` that correspond to the request and response schemas described in the OpenAPI specification. Include every field, type, and required property."
-- **Goal**: Ensure that request and response validation matches the OpenAPI specification exactly.
+- **Prompt**: "Generate all Pydantic models in `schemas/sequence.py` that correspond to the request and response schemas described in the OpenAPI specification. Include every field, type, and required property. Ensure that custom extensions (`x-*`) are included as comments or metadata."
+- **Goal**: Ensure that request and response validation matches the OpenAPI specification exactly, including any extensions.
 
 ### Step 4: Implement API Routes Using OpenAPI Specifications
-- **Prompt**: "In `routers/sequence.py`, implement the API routes (`/sequence`, `/sequence/reorder`, `/sequence/version`) with correct `operationId`, `summary`, `description`, and response models as described in the OpenAPI spec. Ensure the logic adheres to the requirements for sequence number generation, reordering, and version creation."
-- **Goal**: Implement each route comprehensively, making sure all aspects (summaries, descriptions, etc.) match the OpenAPI.
+- **Prompt**: "In `routers/sequence.py`, implement the API routes (`/sequence`, `/sequence/reorder`, `/sequence/version`) with correct `operationId`, `summary`, `description`, response models, and custom extensions (`x-*`) as described in the OpenAPI spec. Ensure the logic adheres to the requirements for sequence number generation, reordering, and version creation."
+- **Goal**: Implement each route comprehensively, making sure all aspects (summaries, descriptions, custom fields, etc.) match the OpenAPI.
 
 ### Step 5: Create SQLAlchemy Models for Database Representation
-- **Prompt**: "Create a SQLAlchemy model named `Sequence` in `models/sequence.py` that represents the entities defined in the OpenAPI specification. Include fields such as `elementType`, `elementId`, and `sequenceNumber`."
-- **Goal**: Persist the application data in a structured way that corresponds to the OpenAPI requirements.
+- **Prompt**: "Create a SQLAlchemy model named `Sequence` in `models/sequence.py` that represents the entities defined in the OpenAPI specification. Include fields such as `elementType`, `elementId`, and `sequenceNumber`. Ensure any relevant extensions (`x-*`) are documented."
+- **Goal**: Persist the application data in a structured way that corresponds to the OpenAPI requirements, including custom extensions.
 
 ### Step 6: Define Utility Functions for Database Access
 - **Prompt**: "Set up the database connection utilities in `utils/db.py` using SQLAlchemy. Create a `get_db()` function that can be used as a dependency for accessing the database in API routes."
 - **Goal**: Facilitate database access, ensuring consistency and ease of reuse.
 
 ### Step 7: Write Deployment Shell Script
-- **Prompt**: "Write a deployment shell script (`deployment.sh`) that automates the creation of the necessary project files and directories. The script should be idempotent and should fill in all boilerplate code for initial setup."
+- **Prompt**: "Write a deployment shell script (`deployment.sh`) that automates the creation of the necessary project files and directories. The script should be idempotent and should fill in all boilerplate code for initial setup. Ensure that any metadata or extensions defined in the OpenAPI spec are respected in the generated files."
 - **Goal**: Make deployment easy, consistent, and repeatable, ensuring that re-running the script does not lead to issues.
 
 ### Step 8: Generate Dockerfile for Containerization
-- **Prompt**: "Create a `Dockerfile` that builds the FastAPI application using Python 3.11. Set it up to run the application using Uvicorn."
+- **Prompt**: "Create a `Dockerfile` that builds the FastAPI application using Python 3.11. Set it up to run the application using Uvicorn. Ensure compatibility with the OpenAPI specification."
 - **Goal**: Enable easy containerization of the application, readying it for deployment.
 
 ### Step 9: Create Docker Compose Configuration
@@ -114,18 +114,18 @@ To ensure that the application is built fully in accordance with the OpenAPI spe
 - **Goal**: Simplify the deployment of the entire stack, including any dependencies.
 
 ### Step 10: Add Detailed Logging and Error Handling
-- **Prompt**: "Add detailed logging to all endpoints in `routers/sequence.py` using Python's `logging` module. Implement error handling to match the responses described in the OpenAPI specification."
+- **Prompt**: "Add detailed logging to all endpoints in `routers/sequence.py` using Python's `logging` module. Implement error handling to match the responses described in the OpenAPI specification. Ensure any custom extensions related to error handling are included."
 - **Goal**: Make the application easy to monitor and debug, ensuring errors are reported in a clear and informative way.
 
 ### Step 11: Write Unit Tests for Endpoints
-- **Prompt**: "Create unit tests in `tests/test_sequence.py` for each endpoint, using `pytest`. Make sure to test all expected scenarios, including edge cases and potential errors, as outlined in the OpenAPI specification."
-- **Goal**: Validate that each endpoint works correctly and that all functionalities align with the specifications.
+- **Prompt**: "Create unit tests in `tests/test_sequence.py` for each endpoint, using `pytest`. Make sure to test all expected scenarios, including edge cases and potential errors, as outlined in the OpenAPI specification. Ensure that any custom extensions (`x-*`) that affect endpoint behavior are tested."
+- **Goal**: Validate that each endpoint works correctly and that all functionalities align with the specifications, including custom fields.
 
 ### Step 12: Execute End-to-End Testing and Refinement
-- **Prompt**: "Perform end-to-end testing of the entire application, ensuring that all functionalities, including logging, database interactions, and API responses, align with the OpenAPI specification. Refine as necessary based on testing results."
+- **Prompt**: "Perform end-to-end testing of the entire application, ensuring that all functionalities, including logging, database interactions, and API responses, align with the OpenAPI specification. Refine as necessary based on testing results, ensuring the output matches the input spec 1-to-1, including custom extensions."
 - **Goal**: Ensure that the entire application functions as expected, providing the intended features with no errors or inconsistencies.
 
 ## Next Steps
 - **Define Specific Prompts**: Use the detailed prompt sequence provided above to begin building each component of your application, starting with the project structure.
-- **Iterate and Refine**: Use the Canvas to iteratively refine each component, ensuring all aspects of the OpenAPI specification are implemented correctly.
-- **Test and Deploy**: Use the generated Docker and test configurations to deploy and validate the application.
+- **Iterate and Refine**: Use the Canvas to iteratively refine each component, ensuring all aspects of the OpenAPI specification, including custom extensions, are implemented correctly.
+- **Test and Deploy**: Use the generated Docker and test configurations to deploy and validate the application, ensuring that the output OpenAPI schema matches the original input specification 1-to-1, including all extensions.
