@@ -1,0 +1,331 @@
+openapi: 3.1.0
+info:
+  title: Core Script Management API
+  description: >
+    This API manages scripts, section headings, and transitions. It integrates with the Central Sequence Service to ensure all elements follow a logical order and supports reordering and versioning.
+  version: 2.1.0
+servers:
+  - url: https://scriptmanagement.fountain.coach
+    description: Production server for Core Script Management API
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://staging.scriptmanagement.fountain.coach
+    description: Staging server
+paths:
+  /scripts:
+    post:
+      summary: Create Script
+      operationId: createScript
+      description: Creates a new script, obtaining a sequence number from the Central Sequence Service.
+      requestBody:
+        required: true
+        description: Details of the script to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptRequest'
+            examples:
+              example:
+                value:
+                  title: "Romeo and Juliet"
+                  author: "William Shakespeare"
+                  description: "A tale of two star-crossed lovers."
+      responses:
+        '201':
+          description: Script created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptResponse'
+              examples:
+                example:
+                  value:
+                    scriptId: 1
+                    sequenceNumber: 1
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: List Scripts
+      operationId: listScripts
+      description: Retrieves all scripts with pagination support.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: Maximum number of scripts to return.
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of scripts to skip before starting to collect the result set.
+      responses:
+        '200':
+          description: List of scripts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scripts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Script'
+                  totalCount:
+                    type: integer
+                    description: Total number of scripts available.
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /scripts/{scriptId}:
+    patch:
+      summary: Update Script
+      operationId: updateScript
+      description: Updates an existing script partially.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script to update.
+      requestBody:
+        required: true
+        description: Details of the script to be updated.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptUpdateRequest'
+            examples:
+              example:
+                value:
+                  title: "Romeo and Juliet - Updated"
+                  description: "An updated tale of two star-crossed lovers."
+      responses:
+        '200':
+          description: Script updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptResponse'
+              examples:
+                example:
+                  value:
+                    scriptId: 1
+                    sequenceNumber: 1
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Script not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /scripts/{scriptId}/sections/reorder:
+    put:
+      summary: Reorder Section Headings
+      operationId: reorderSectionHeadings
+      description: Reorders section headings within a script by updating their sequence numbers.
+      parameters:
+        - name: scriptId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the script to reorder section headings for.
+      requestBody:
+        required: true
+        description: Details of the reordering request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+            examples:
+              example:
+                value:
+                  elements:
+                    - headingId: 1
+                      newSequence: 2
+                    - headingId: 2
+                      newSequence: 1
+      responses:
+        '200':
+          description: Section headings reordered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderResponse'
+              examples:
+                example:
+                  value:
+                    updatedElements:
+                      - headingId: 1
+                        newSequence: 2
+                      - headingId: 2
+                        newSequence: 1
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Script not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ScriptRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+      required:
+        - title
+    ScriptResponse:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+          description: Unique identifier of the script.
+        sequenceNumber:
+          type: integer
+          description: Sequence number assigned to the script.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the script was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the script was last updated.
+    Script:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+          description: Unique identifier of the script.
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+        sequenceNumber:
+          type: integer
+          description: Sequence number assigned to the script.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the script was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the script was last updated.
+    ScriptUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the script.
+        author:
+          type: string
+          description: Author of the script.
+        description:
+          type: string
+          description: Brief description of the script.
+    ReorderRequest:
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              headingId:
+                type: integer
+                description: Unique identifier of the section heading.
+              newSequence:
+                type: integer
+                description: New sequence number for the section heading.
+      required:
+        - elements
+    ReorderResponse:
+      type: object
+      properties:
+        updatedElements:
+          type: array
+          items:
+            type: object
+            properties:
+              headingId:
+                type: integer
+                description: Unique identifier of the section heading.
+              newSequence:
+                type: integer
+                description: Updated sequence number.
+    ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Application-specific error code.
+        message:
+          type: string
+          description: Human-readable error message.
+        details:
+          type: string
+          description: Additional information about the error, if available.
