@@ -1,4 +1,4 @@
-# Documentation: Intent First - A Productive Approach to Application Development in ChatGPT-4 with Canvas
+# Documentation: Prompt First - A Productive Approach to Application Development in ChatGPT-4 with Canvas
 
 >No text without context
 Say "I want (...) " first in time
@@ -76,9 +76,6 @@ To ensure that the application is built fully in accordance with the OpenAPI spe
 ### Initial Prompt: Set the Context
 - **Prompt**: "I want to build a FastAPI application based on the OpenAPI specification I will provide. This specification should serve as the source of truth for the entire development process. Once pasted, I'd like to proceed step-by-step, generating each component of the application in alignment with the provided spec, ensuring full compliance and consistency throughout."
 - **Goal**: Establish a clear intention for the development session and ensure the AI understands that the OpenAPI specification is the foundation for all subsequent prompts.
-
-
-
 
 ### 1. Define Project Structure
 - **Prompt**: "Generate the complete project directory structure for a FastAPI application based on an OpenAPI specification. Include folders such as `app`, `routers`, `models`, `schemas`, `utils`, `tests`, as well as essential files like `Dockerfile`, `docker-compose.yaml`, and `requirements.txt`."
