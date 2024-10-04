@@ -1,0 +1,401 @@
+openapi: 3.1.0
+info:
+  title: Character Management API
+  description: >
+    This API handles characters within stories, including their creation, management, actions, and spoken words. It integrates with the Central Sequence Service to ensure logical sequence numbers for each element, allowing a coherent flow within the story.
+  version: 1.1.0
+servers:
+  - url: https://character.fountain.coach
+    description: Production server for Character Management API
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://staging.character.fountain.coach
+    description: Staging server for testing
+security:
+  - oauth2: []
+paths:
+  /characters:
+    get:
+      summary: Retrieve All Characters
+      operationId: listCharacters
+      description: Lists all characters stored within the application.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return.
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            description: The number of items to skip before starting to collect the result set.
+      responses:
+        '200':
+          description: A JSON array of character entities with pagination metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                    description: Total number of characters available.
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Character'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a New Character
+      operationId: createCharacter
+      description: Allows for the creation of a new character.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterCreateRequest'
+      responses:
+        '201':
+          description: Character successfully created, returning the new character entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /characters/{characterId}/paraphrases:
+    put:
+      summary: Update Paraphrases for a Character
+      operationId: updateCharacterParaphrases
+      description: Updates paraphrases linked to a specific character.
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            description: Unique identifier for the character.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaphraseUpdateRequest'
+      responses:
+        '200':
+          description: The paraphrase has been successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Partially Update Paraphrases for a Character
+      operationId: patchCharacterParaphrases
+      description: Partially updates paraphrases linked to a specific character.
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            description: Unique identifier for the character.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaphrasePatchRequest'
+      responses:
+        '200':
+          description: The paraphrase has been successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paraphrase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /actions:
+    get:
+      summary: Retrieve All Actions
+      operationId: listActions
+      description: Lists all actions currently stored within the system.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return.
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            description: The number of items to skip before starting to collect the result set.
+      responses:
+        '200':
+          description: A JSON array of action entities with pagination metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                    description: Total number of actions available.
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Action'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /spokenWords:
+    get:
+      summary: Retrieve All Spoken Words
+      operationId: listSpokenWords
+      description: Lists all spoken words currently stored within the system.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return.
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            description: The number of items to skip before starting to collect the result set.
+      responses:
+        '200':
+          description: A JSON array of spoken word entities with pagination metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                    description: Total number of spoken words available.
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SpokenWord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://character.fountain.coach/oauth/token
+  responses:
+    BadRequest:
+      description: Bad request due to invalid input.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized request due to missing or invalid authentication.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Application-specific error code.
+        message:
+          type: string
+          description: Human-readable error message.
+        details:
+          type: array
+          items:
+            type: string
+          description: Additional details about the error, if available.
+    Character:
+      type: object
+      properties:
+        characterId:
+          type: integer
+          description: Unique identifier for the character.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Name of the character.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: A brief description of the character and their role within the story.
+    CharacterCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Name of the character.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: A brief description of the character and their role within the story.
+      required:
+        - name
+        - description
+    Paraphrase:
+      type: object
+      properties:
+        paraphraseId:
+          type: integer
+          description: Unique identifier for the paraphrase.
+        originalId:
+          type: integer
+          description: Identifier of the original entity this paraphrase is linked to.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The text of the paraphrase.
+        commentary:
+          type: string
+          description: Commentary on why the paraphrase is linked to the original entity.
+    ParaphraseCreateRequest:
+      type: object
+      properties:
+        originalId:
+          type: integer
+          description: Identifier of the original entity this paraphrase is linked to.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The text of the paraphrase.
+        commentary:
+          type: string
+          description: Commentary on why the paraphrase is linked to the original entity.
+      required:
+        - originalId
+        - text
+        - commentary
+    ParaphraseUpdateRequest:
+      type: object
+      properties:
+        originalId:
+          type: integer
+          description: Identifier of the original entity this paraphrase is linked to.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The updated text of the paraphrase.
+        commentary:
+          type: string
+          description: Updated commentary on why the paraphrase is linked to the original entity.
+      required:
+        - originalId
+        - text
+    ParaphrasePatchRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The updated text of the paraphrase (optional).
+        commentary:
+          type: string
+          description: Updated commentary on why the paraphrase is linked to the original entity (optional).
+    Action:
+      type: object
+      properties:
+        actionId:
+          type: integer
+          description: Unique identifier for the action.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: A textual description outlining what happens in this action.
+    ActionCreateRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: A textual description outlining what happens in this action.
+      required:
+        - description
+    SpokenWord:
+      type: object
+      properties:
+        dialogueId:
+          type: integer
+          description: Unique identifier for the spoken word entity.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The dialogue text of the spoken word entity.
+    SpokenWordCreateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: The dialogue text of the spoken word entity.
+      required:
+        - text
