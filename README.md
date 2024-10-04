@@ -1,168 +1,124 @@
 
-# FountainAI Repository
+# FountainAI
+>Managing Story
+## Overview
 
-Welcome to the **FountainAI** project repository! This document serves as the central guide for understanding the project's vision, architecture, and implementation plan. Whether you're a new contributor or familiarizing yourself with the project, this README provides the necessary information to get started.
-
----
-
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Project Overview](#project-overview)
-3. [Repository Structure](#repository-structure)
-4. [Implementation Plan](#implementation-plan)
-5. [Development Standards](#development-standards)
-    - [Workbook Format](#workbook-format)
-    - [Visualization Standards](#visualization-standards)
-    - [Shell Scripting Guidelines](#shell-scripting-guidelines)
-    - [Security Practices](#security-practices)
-6. [Getting Started](#getting-started)
-7. [Contributing](#contributing)
-8. [Additional Resources](#additional-resources)
-9. [Contact and Support](#contact-and-support)
-10. [License](#license)
+**FountainAI** is a platform designed to manage and orchestrate storytelling components such as sequences, characters, actions, dialogues, and contexts. Built upon a robust and scalable **OpenAPI** framework, FountainAI supports the development and management of narrative elements across five core services.
 
 ---
 
-## Introduction
+## Prompt-First Development Approach
 
-**FountainAI** is an advanced project aimed at revolutionizing narrative development through a microservices architecture that automates storytelling processes such as sequence management, character management, and session context orchestration. The core technologies include OpenAI's GPT-4, FastAPI, Docker, and AWS infrastructure. The primary goal is to create a modular, scalable, and secure system that helps manage dynamic narratives with efficiency.
+The **Prompt-First Development Approach** is used to break down the complexities of API creation into specific tasks, leveraging **ChatGPT-4 Canvas** for continuous, iterative refinement. This approach ensures that each development phase is structured and consistent with the overall narrative framework.
 
----
+**Key Benefits**:
+- **Granular Control**: Focused phases on API components.
+- **OpenAPI-Driven**: Ensures strict adherence to OpenAPI standards.
+- **Iterative Refinement**: Continuous improvements throughout development.
 
-## Project Overview
-
-The repository is structured to support the **development, deployment, and maintenance** of FountainAI services through:
-
-- **Microservices Architecture**: Modular services that interact to provide narrative functionalities.
-- **OpenAPI Specifications**: Centralized OpenAPI definitions for all services, enabling consistent API generation and validation.
-- **Workbooks**: Step-by-step guides to generate, modify, and deploy components of FountainAI.
-
-### Current Development Focus
-
-The current development focus is on **automating code generation using OpenAPI** definitions, following the FountainAI workbook format for consistency and scalability. The system heavily relies on GPT-4 and shell scripting to facilitate this process. We are transitioning from earlier general guidance documents to a more focused, action-driven workbook format, meaning some older documentation is now marked as **deprecated**.
+For more details, see the [Prompt-First Development Documentation](Workbooks/Documentation_%20Prompt%20First%20-%20Productive%20Approach%20to%20Application%20Development%20in%20ChatGPT-4%20with%20Canvas.md).
 
 ---
 
-## Repository Structure
+## Comprehensive OpenAPI Service Group
+
+FountainAI is built on five core services, each playing a crucial role in managing different aspects of storytelling:
+
+1. **Central Sequence Service**:
+   - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Central%20Sequence%20Service%20API%20OpenAPI%20Specification.md)
+   
+2. **Character Management Service**:
+   - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Character%20Management%20API%20OpenAPI%20Specification.md)
+   
+3. **Core Script Management Service**:
+   - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Core%20Script%20Management%20API%20OpenAPI%20Specification.md)
+   
+4. **Session and Context Management Service**:
+   - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Session%20and%20Context%20Management%20API%20OpenAPI%20Specification.md)
+   
+5. **Story Factory Service**:
+   - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Story%20Factory%20API%20OpenAPI%20Specification.md)
+
+These services work together to manage sequences, characters, scripts, and other elements that form the building blocks of dynamic stories. Each service is aligned with OpenAPI standards to ensure consistency and ease of integration.
+
+---
+
+## Project Tree
+
+Below is the current structure of the repository, reflecting the updated state of the project, including deprecation marks for older guidance and documentation that has been superseded.
 
 ```
 .
 ├── Guidance
 │   ├── Part A_ Introduction and Architecture Overview.md             # Deprecated
 │   ├── Part B_ GPT Code Generation Sessions.md                       # Deprecated
-│   ├── Part C_ Deployment, CI_CD Enhancements, and Custom Logging.md # Deprecated
+│   └── Part C_ Deployment, CI_CD Enhancements, and Custom Logging.md # Deprecated
 ├── Project Report by Date
 │   └── FountainAI Project Report.md                                  # Current project reports
 ├── README.md                                                         # This file
 ├── Use Cases
 │   └── The Role of Context in FountainAI.md                          # Deprecated
 ├── Workbooks
-│   ├── FountainAI Code Generation Workbook.md                        # Active: Central resource for developing FountainAI
-│   ├── FountainAI Visualization Standards.md                         # Active: Standards for visual representations
-│   └── README.md                                                     # Active: Workbook structure and norms
-├── create_new_main_branch.sh                                         # Shell script to manage branches
+│   ├── Documentation_ Prompt First - Productive Approach to Application Development in ChatGPT-4 with Canvas.md # Active
+│   ├── FountainAI Code Generation Workbook.md                        # Active
+│   ├── FountainAI Visualization Standards.md                         # Active
+│   └── README.md                                                     # Active
+├── create_new_main_branch.sh                                         # Active: Shell script to manage branches
 └── openAPI
-    ├── API-Docs-GPT-4o-Paraphrase
-    │   ├── API Documentation - Central Sequence Service API Documentation.md # OpenAPI docs paraphrased via GPT-4
-    │   ├── API Documentation - Character Management API.md                  # OpenAPI docs paraphrased via GPT-4
-    │   ├── API Documentation - Core Script Management.md                    # OpenAPI docs paraphrased via GPT-4
-    │   ├── API Documentation - Session and Context Management API.md        # OpenAPI docs paraphrased via GPT-4
-    │   └── API Documentation - Story Factory API.md                         # OpenAPI docs paraphrased via GPT-4
-    ├── central-sequence-service.yaml                                        # Active: OpenAPI YAML for Central Sequence Service
-    ├── character-management.yaml                                            # Active: OpenAPI YAML for Character Management
-    ├── core-script-management.yaml                                          # Active: OpenAPI YAML for Core Script Management
-    ├── o1-preview-FountainAI-system-description
-    │   ├── Appendix
-    │   │   └── Appendix_ FountainAI Implementation Path Documentation.md    # Extended Implementation Path
-    │   ├── Comprehensive FountainAI Implementation Guide (Extended).md      # Deprecated: Replaced by Workbook Format
-    │   ├── Comprehensive FountainAI Implementation Guide.md                 # Deprecated: Replaced by Workbook Format
-    │   ├── Requirements Engineering
-    │   │   ├── Deprecated - FountainAI System Description.md                # Deprecated
-    │   │   ├── FastAPI Implementation Path for the Official FountainAI System.md # Deprecated
-    │   │   ├── Official FountainAI Implementation Requirements_ Ensuring Compliance with OpenAPI Specifications.md # Deprecated
-    │   │   └── Official FountainAI System Description and Implementation Plan.md # Deprecated
-    │   ├── Step -1-Implementation of the Central Sequence Service API
-    │   │   ├── Continuing the Implementation of the Central Sequence Service API.md # Active: Implementation guide
-    │   │   └── Official FountainAI System Implementation_ Central Sequence Service API.md # Active: Implementation guide
-    │   ├── Step-2-Character Management API
-    │   │   └── Official FountainAI Implementation Path_ Character Management API.md # Active
-    │   ├── Step-3-Core Script Managment API
-    │   │   └── Official FountainAI Implementation Path_ Core Script Management API.md # Active
-    │   ├── Step-4-Session and Context Management API
-    │   │   └── Official FountainAI Implementation Path_ Session and Context Management API.md # Active
-    │   └── Step-5-Story Factory API
-    │       ├── Appendix_ From Mock to Real Implementation of the FountainAI Story Factory Service.md # Active
-    │       └── Official FountainAI Implementation Path_ Story Factory API.md # Active
-    ├── session-and-context.yaml                                            # Active: OpenAPI YAML for Session and Context Management
-    └── story-factory.yaml                                                  # Active: OpenAPI YAML for Story Factory
+    ├── v1
+    │   ├── API-Docs-GPT-4o-Paraphrase
+    │   │   ├── API Documentation - Central Sequence Service API Documentation.md # Deprecated (Paraphrased)
+    │   │   ├── API Documentation - Character Management API.md                  # Deprecated (Paraphrased)
+    │   │   ├── API Documentation - Core Script Management.md                    # Deprecated (Paraphrased)
+    │   │   ├── API Documentation - Session and Context Management API.md        # Deprecated (Paraphrased)
+    │   │   └── API Documentation - Story Factory API.md                         # Deprecated (Paraphrased)
+    │   ├── central-sequence-service.yaml                                        # Active
+    │   ├── character-management.yaml                                            # Active
+    │   ├── core-script-management.yaml                                          # Active
+    │   ├── o1-preview-FountainAI-system-description
+    │   │   ├── Appendix
+    │   │   │   └── Appendix_ FountainAI Implementation Path Documentation.md    # Active
+    │   │   ├── Comprehensive FountainAI Implementation Guide (Extended).md      # Deprecated
+    │   │   ├── Comprehensive FountainAI Implementation Guide.md                 # Deprecated
+    │   │   ├── Requirements Engineering
+    │   │   │   ├── Deprecated - FountainAI System Description.md                # Deprecated
+    │   │   │   ├── FastAPI Implementation Path for the Official FountainAI System.md # Deprecated
+    │   │   │   ├── Official FountainAI Implementation Requirements_ Ensuring Compliance with OpenAPI Specifications.md # Deprecated
+    │   │   │   └── Official FountainAI System Description and Implementation Plan.md # Deprecated
+    │   │   ├── Step-1-Implementation of the Central Sequence Service API
+    │   │   │   ├── Continuing the Implementation of the Central Sequence Service API.md # Active
+    │   │   │   └── Official FountainAI System Implementation_ Central Sequence Service API.md # Active
+    │   │   ├── Step-2-Character Management API
+    │   │   │   └── Official FountainAI Implementation Path_ Character Management API.md # Active
+    │   │   ├── Step-3-Core Script Management API
+    │   │   │   └── Official FountainAI Implementation Path_ Core Script Management API.md # Active
+    │   │   ├── Step-4-Session and Context Management API
+    │   │   │   └── Official FountainAI Implementation Path_ Session and Context Management API.md # Active
+    │   │   └── Step-5-Story Factory API
+    │   │       ├── Appendix_ From Mock to Real Implementation of the FountainAI Story Factory Service.md # Active
+    │   │       └── Official FountainAI Implementation Path_ Story Factory API.md # Active
+    │   ├── session-and-context.yaml                                            # Active
+    │   └── story-factory.yaml                                                  # Active
+    └── v2
+        ├── Documentation_ Critique of v1 - Central Sequence Service API OpenAPI Specification.md
+        ├── Documentation_ Critique of v1 - Character Management API OpenAPI Specification.md
+        ├── Documentation_ Critique of v1 - Core Script Management API OpenAPI Specification.md
+        ├── Documentation_ Critique of v1 - Session and Context Management API OpenAPI Specification.md
+        └── Documentation_ Critique of v1 - Story Factory API OpenAPI Specification.md
 ```
 
-### Deprecation Notices
-
-- The **Guidance** documents (`Part A`, `Part B`, and `Part C`) are now marked as **deprecated** in favor of the workbook-driven approach. These files remain for historical context but should not be referenced for current development.
-- **Use Cases** have shifted away from abstract discussions (previously covered in "The Role of Context in FountainAI.md") and are now embedded into workbook-driven examples for each service.
-
 ---
 
-## Implementation Plan
+## Deprecation Notices
 
-The implementation of FountainAI revolves around OpenAPI-driven code generation and workbook-guided service development. The key steps include:
-
-### 1. Define Service Specifications
-  - Use **OpenAPI** to document the APIs for services such as the **Central Sequence Service**, **Character Management**, and others.
-  - YAML files are stored in the `openAPI` directory and serve as the foundation for automated code generation.
-
-### 2. Code Generation via Workbooks
-  - The **FountainAI Code Generation Workbook** guides developers on interacting with OpenAI GPT-4 to generate FastAPI service code from OpenAPI definitions.
-  - Each service has a specific workbook that provides structured steps to follow, including shell scripts for code generation and modification.
-
-### 3. Modify and Standardize Code
-  - Adhere to FountainAI coding norms by modifying generated code using the provided workbooks and shell scripts.
-  - Ensure consistency in formatting, logging, and environment management.
-
-### 4. Deployment and Security
-  - Services are deployed using **Docker** containers on **AWS** infrastructure (ECS/Fargate).
-  - Use **AWS CloudFormation** and **CI/CD pipelines** for automated deployments.
-  - Implement **HTTPS** across all stages using **AWS Certificate Manager (ACM)**.
-
----
-
-## Development Standards
-
-The **FountainAI Workbook Format** is central to development, ensuring consistency and scalability across all services.
-
-### Workbook Format
-
-- **Introduction**: Overview of the service or task.
-- **Prerequisites**: Tools, libraries, and access needed.
-- **Step-by-Step Instructions**: Detailed walkthrough of tasks, including code snippets and shell scripts.
-- **Shell Scripting**: Idempotent shell scripts following the FountainAI norms, provided for automating various tasks.
-- **Visualization**: ASCII diagrams first, followed by **Graphviz** or **pre-rendered images** for more complex visualizations.
-
-### Visualization Standards
-
-- **ASCII Diagrams** are the primary visualization tool for simplicity.
-- Use **Graphviz DOT** language for more complex diagrams.
-- Store both source and rendered diagrams for version control in the `Diagrams` directory (to be added).
-
-### Shell Scripting Guidelines
-
-- **Modular and Idempotent**: Shell scripts must be reusable and safe to run multiple times.
-- Scripts generate code, configure environments, and manage deployments.
-
-### Security Practices
-
-- **HTTPS Everywhere**: Ensure HTTPS is enforced using SSL/TLS certificates provided by **AWS Certificate Manager**.
-- **Environment Configuration**: Use environment variables to manage sensitive information securely.
-- **Secret Management**: Employ **AWS Secrets Manager** where necessary.
+- The **Guidance** documents (`Part A`, `Part B`, and `Part C`) are marked as **deprecated** in favor of the more structured workbook-driven approach. These files remain available for historical context but should not be referenced for current development.
+- **Use Cases** have transitioned from standalone discussions (previously covered in "The Role of Context in FountainAI.md") to examples embedded within each service's workbook.
 
 ---
 
 ## Getting Started
 
 1. **Clone the Repository**:
-
    ```bash
    git clone https://github.com/Contexter/FountainAI.git
    ```
@@ -179,43 +135,6 @@ The **FountainAI Workbook Format** is central to development, ensuring consisten
 
 ## Contributing
 
-1. **Fork the Repository**.
-2. **Create a New Branch** for your feature or bugfix.
-3. **Make Your Changes** following the workbook format.
-4. **Submit a Pull Request** with a detailed explanation of your changes.
+1. **Submit Issues**: Use GitHub to report issues or make feature requests.
+2. **Pull Requests**: Ensure your pull requests are aligned with the project's goals and adhere to OpenAPI specifications.
 
----
-
-## Additional Resources
-
-- **FountainAI Workbook Guide**: [Workbooks/README.md](Workbooks/README.md)
-- **AWS Documentation**:
-  - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)
-  - [AWS CloudFormation](https://docs.aws.amazon.com/cloudformation/index.html)
-  - [AWS ECS](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html)
-- **OpenAI API Documentation**: [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
-- **FastAPI Documentation**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Docker Documentation**: [Docker Docs](https://docs.docker.com/)
-
----
-
-## Contact and Support
-
-For questions or support:
-
-- **GitHub Issues**: [Submit an Issue](https://github.com/Contexter/FountainAI/issues)
-- **Email**: [mail@benedikt-eickhoff.de](mailto:mail@benedikt-eickhoff.de)
-
----
-
-## License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for more details.
-
----
-
-**Happy Coding!**
-
----
-
-*Note: This README provides a comprehensive overview of the FountainAI project, incorporating its current development focus and transitioning from deprecated guidance to workbook-centric development.*
