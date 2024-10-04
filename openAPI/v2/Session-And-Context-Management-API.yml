@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: Session and Context Management API
+  description: >
+    This API manages sessions and context, allowing for the creation, updating, and retrieval of session-specific data.
+  version: 2.1.0
+servers:
+  - url: https://sessioncontext.fountain.coach
+    description: Production server for Session and Context Management API
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://staging.sessioncontext.fountain.coach
+    description: Staging server
+paths:
+  /sessions:
+    post:
+      summary: Create Session
+      operationId: createSession
+      description: Creates a new session.
+      requestBody:
+        required: true
+        description: Details of the session to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+            examples:
+              example:
+                value:
+                  userId: 123
+                  context: "Initial context"
+      responses:
+        '201':
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                example:
+                  value:
+                    sessionId: 1
+                    userId: 123
+                    context: "Initial context"
+                    createdAt: "2024-01-01T00:00:00Z"
+                    updatedAt: "2024-01-01T00:00:00Z"
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: List Sessions
+      operationId: listSessions
+      description: Retrieves all sessions with pagination support.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: Maximum number of sessions to return.
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of sessions to skip before starting to collect the result set.
+      responses:
+        '200':
+          description: List of sessions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+                  totalCount:
+                    type: integer
+                    description: Total number of sessions available.
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}:
+    patch:
+      summary: Update Session
+      operationId: updateSession
+      description: Updates an existing session partially.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the session to update.
+      requestBody:
+        required: true
+        description: Details of the session to be updated.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUpdateRequest'
+            examples:
+              example:
+                value:
+                  context: "Updated context"
+      responses:
+        '200':
+          description: Session updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                example:
+                  value:
+                    sessionId: 1
+                    userId: 123
+                    context: "Updated context"
+                    updatedAt: "2024-01-01T12:00:00Z"
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/context:
+    get:
+      summary: Get Session Context
+      operationId: getSessionContext
+      description: Retrieves the context of a specific session.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the session to retrieve the context for.
+      responses:
+        '200':
+          description: Context of the session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionContextResponse'
+              examples:
+                example:
+                  value:
+                    sessionId: 1
+                    context: "Current context"
+        '404':
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    SessionRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: Unique identifier of the user.
+        context:
+          type: string
+          description: Initial context of the session.
+      required:
+        - userId
+    SessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+          description: Unique identifier of the session.
+        userId:
+          type: integer
+          description: Unique identifier of the user.
+        context:
+          type: string
+          description: Context of the session.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session was last updated.
+    Session:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+          description: Unique identifier of the session.
+        userId:
+          type: integer
+          description: Unique identifier of the user.
+        context:
+          type: string
+          description: Context of the session.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session was last updated.
+    SessionUpdateRequest:
+      type: object
+      properties:
+        context:
+          type: string
+          description: Updated context of the session.
+    SessionContextResponse:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+          description: Unique identifier of the session.
+        context:
+          type: string
+          description: Context of the session.
+    ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Application-specific error code.
+        message:
+          type: string
+          description: Human-readable error message.
+        details:
+          type: string
+          description: Additional information about the error, if available.
