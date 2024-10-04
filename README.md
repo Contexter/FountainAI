@@ -1,6 +1,8 @@
 
+
 # FountainAI
->Managing Story
+> Managing Story
+
 ## Overview
 
 **FountainAI** is a platform designed to manage and orchestrate storytelling components such as sequences, characters, actions, dialogues, and contexts. Built upon a robust and scalable **OpenAPI** framework, FountainAI supports the development and management of narrative elements across five core services.
@@ -16,7 +18,7 @@ The **Prompt-First Development Approach** is used to break down the complexities
 - **OpenAPI-Driven**: Ensures strict adherence to OpenAPI standards.
 - **Iterative Refinement**: Continuous improvements throughout development.
 
-For more details, see the [Prompt-First Development Documentation](Workbooks/Documentation_%20Prompt%20First%20-%20Productive%20Approach%20to%20Application%20Development%20in%20ChatGPT-4%20with%20Canvas.md).
+For more details, see the [Prompt-First Development Documentation](Workbooks/Documentation_%20Intent%20First%20-%20Productive%20Approach%20to%20Application%20Development%20in%20ChatGPT-4%20with%20Canvas.md).
 
 ---
 
@@ -59,7 +61,7 @@ Below is the current structure of the repository, reflecting the updated state o
 ├── Use Cases
 │   └── The Role of Context in FountainAI.md                          # Deprecated
 ├── Workbooks
-│   ├── Documentation_ Prompt First - Productive Approach to Application Development in ChatGPT-4 with Canvas.md # Active
+│   ├── Documentation_ Intent First - Productive Approach to Application Development in ChatGPT-4 with Canvas.md # Active
 │   ├── FountainAI Code Generation Workbook.md                        # Active
 │   ├── FountainAI Visualization Standards.md                         # Active
 │   └── README.md                                                     # Active
