@@ -2,7 +2,6 @@
 
 # FountainAI
 > Managing Story
-
 ## Overview
 
 **FountainAI** is a platform designed to manage and orchestrate storytelling components such as sequences, characters, actions, dialogues, and contexts. Built upon a robust and scalable **OpenAPI** framework, FountainAI supports the development and management of narrative elements across five core services.
@@ -28,16 +27,16 @@ FountainAI is built on five core services, each playing a crucial role in managi
 
 1. **Central Sequence Service**:
    - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Central%20Sequence%20Service%20API%20OpenAPI%20Specification.md)
-   
+
 2. **Character Management Service**:
    - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Character%20Management%20API%20OpenAPI%20Specification.md)
-   
+
 3. **Core Script Management Service**:
    - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Core%20Script%20Management%20API%20OpenAPI%20Specification.md)
-   
+
 4. **Session and Context Management Service**:
    - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Session%20and%20Context%20Management%20API%20OpenAPI%20Specification.md)
-   
+
 5. **Story Factory Service**:
    - [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Story%20Factory%20API%20OpenAPI%20Specification.md)
 
