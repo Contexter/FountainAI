@@ -1,8 +1,8 @@
 # Documentation: Prompt First - A Productive Approach to Application Development in ChatGPT-4 with Canvas
 
 > No text without context
-Say "I want (...) " first in time
-Before providing the single source of truth
+> Say "I want (...) " first in time
+> Before providing the single source of truth
 
 ## Introduction
 Developing applications can often be a complex and error-prone process, especially when working with specific requirements like an OpenAPI specification. Using ChatGPT-4 with Canvas offers a unique opportunity to accelerate and streamline this process. This documentation outlines a productive approach for building a FastAPI application, detailing the advantages of iterative, prompt-driven development and breaking tasks into manageable steps. It also highlights how this method offers an ideal balance between automation and human oversight, making application development more efficient and reliable.
