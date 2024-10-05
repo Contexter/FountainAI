@@ -1,6 +1,6 @@
 # Documentation: Prompt First - A Productive Approach to Application Development in ChatGPT-4 with Canvas
 
-> Say "I want " in time
+> Say "I want!" in time
 
 
 ## Introduction
