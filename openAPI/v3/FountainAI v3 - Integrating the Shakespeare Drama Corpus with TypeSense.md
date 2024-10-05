@@ -138,7 +138,3 @@ Integrating **TypeSense** into FountainAI provides a scalable, efficient solutio
 - **Dynamic Storytelling**: FountainAI can dynamically assemble stories and sequences, leveraging TypeSense to handle large texts efficiently.
 
 This approach supports future scalability and enhanced storytelling capabilities, making FountainAI a robust platform for creative text management and narrative assembly.
-
----
-
-Let me know if there’s anything else you’d like to adjust!
