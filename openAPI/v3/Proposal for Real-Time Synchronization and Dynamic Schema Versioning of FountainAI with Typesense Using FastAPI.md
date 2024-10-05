@@ -8,6 +8,9 @@ This proposal outlines a solution to integrate **real-time synchronization** and
 The solution will enable real-time reflection of SQLite data in Typesense, ensuring consistency and fast, accurate search results for FountainAI users. The system will also handle dynamic schema changes, automatically updating the Typesense schema without manual intervention when new fields are added or modified in the SQLite database.
 
 ---
+![Event Driven Workflow](https://coach.benedikt-eickhoff.de/koken/storage/originals/bb/19/FoutainAI-System-Architecture-Event-Driven-Workflow-and-FastAPI-Sync-Process.png)
+
+
 
 ## 2. Background
 
