@@ -7,14 +7,13 @@ info:
 servers:
   - url: https://centralsequence.fountain.coach
     description: Production server for Central Sequence Service API
-    - url: https://staging.centralsequence.fountain.coach
+  - url: https://staging.centralsequence.fountain.coach
     description: Staging server
 paths:
   /sequence:
     post:
       summary: Generate Sequence Number
       operationId: generateSequenceNumber
-      summary: Generate a unique sequence number for an element
       tags:
         - Sequence Management
       description: Generates a new sequence number for a specified element type, persists it to an SQLite database, and synchronizes it with Typesense. If synchronization with Typesense fails, a retry mechanism will be triggered automatically.
@@ -63,7 +62,6 @@ paths:
     put:
       summary: Reorder Elements
       operationId: reorderElements
-      summary: Reorder the sequence of elements
       tags:
         - Sequence Management
       description: Reorders elements by updating their sequence numbers, persists the changes to an SQLite database, and synchronizes the changes with Typesense. If synchronization with Typesense fails, a retry mechanism will be triggered automatically.
@@ -120,7 +118,6 @@ paths:
     post:
       summary: Create New Version
       operationId: createVersion
-      summary: Create a new version of an element
       tags:
         - Version Management
       description: Creates a new version of an element, persists it to an SQLite database, and synchronizes it with Typesense. If synchronization with Typesense fails, a retry mechanism will be triggered automatically.
