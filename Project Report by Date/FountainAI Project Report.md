@@ -16,7 +16,7 @@ As of October 7, 2024, FountainAI continues to innovate its AI-driven storytelli
    - This guide introduces streamlined methods for deploying FountainAI services, ensuring efficiency and modularity.
    
 2. **Deprecation of OpenAPI v1 Components**:
-   - FountainAI has deprecated all **OpenAPI v1** components and transitioned fully to **OpenAPI v2** standards. This update ensures enhanced security, consistency, and compliance across all microservices.
+   - FountainAI has deprecated all **OpenAPI v2** components and transitioned fully to **OpenAPI v3** standards. This update ensures enhanced security, consistency, and compliance across all microservices.
    - Updated services include **Central Sequence Service**, **Character Management API**, **Core Script Management**, and more.
 
 3. **Integration of ChatGPT-4 with Canvas**:
