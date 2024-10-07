@@ -28,7 +28,7 @@ As of October 7, 2024, FountainAI continues to innovate its AI-driven storytelli
 ---
 
 ## **Achievements**
-- **OpenAPI v2 Migration**: Successfully transitioned from **OpenAPI v1** to **v2**, improving API documentation, security, and overall system stability.
+- **OpenAPI v3 Migration**: Successfully transitioned from **OpenAPI v2** to **v3**, improving API documentation, security, and overall system stability.
 - **Workbooks and Modular Deployment**: The release of the **FountainAI FastAPI Guide v2** formalizes the modular approach to service deployment, ensuring each component remains independent and easily scalable.
 - **Visual Tools for Orchestration**: Adoption of **ChatGPT-4 with Canvas** has provided developers with real-time, interactive tools to manage workflows, particularly for the orchestration of microservices.
 - **Security Enhancements**: Full implementation of **HTTPS** across services using **AWS ACM**, alongside updates to cost management tools to better predict financial overhead.
