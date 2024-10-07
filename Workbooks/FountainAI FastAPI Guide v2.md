@@ -99,7 +99,7 @@ Each step produces callable shell scripts that generate the specific part of the
 
 ### Step 11: Create Main Shell Script to Orchestrate All Steps
 
-- **Prompt**: "Generate a main shell script (`generate_full_api.sh`) that calls each of the individual creation shell scripts in sequence to generate the entire Character Management API. Ensure that all steps are executed in the correct order and provide feedback for each completed step."
+- **Prompt**: "Generate a main shell script (`generate_full_api.sh`) that calls each of the individual creation shell scripts in sequence to generate the entire API. Ensure that all steps are executed in the correct order and provide feedback for each completed step."
 - **Output**: `generate_full_api.sh`
 - **Goal**: Orchestrate the entire code generation process by calling each of the individual scripts in the correct order, ensuring the complete project is generated with minimal manual intervention.
 
