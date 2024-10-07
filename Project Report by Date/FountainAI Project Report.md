@@ -15,7 +15,7 @@ As of October 7, 2024, FountainAI continues to innovate its AI-driven storytelli
    - The most significant update is the release of the **FastAPI Guide v2**, which provides a modular shell script approach for deploying applications using FastAPI, integrated with GPT-4.
    - This guide introduces streamlined methods for deploying FountainAI services, ensuring efficiency and modularity.
    
-2. **Deprecation of OpenAPI v1 Components**:
+2. **Deprecation of OpenAPI v2 Components**:
    - FountainAI has deprecated all **OpenAPI v2** components and transitioned fully to **OpenAPI v3** standards. This update ensures enhanced security, consistency, and compliance across all microservices.
    - Updated services include **Central Sequence Service**, **Character Management API**, **Core Script Management**, and more.
 
