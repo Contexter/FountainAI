@@ -1,120 +1,124 @@
-# FountainAI
->Managing Story
+# FountainAI  
+> Managing Story
 
-## Overview
+## **Overview** (DRAFT)
 
-**FountainAI** is a platform designed to manage and orchestrate storytelling components such as sequences, characters, actions, dialogues, and contexts. Built upon a robust and scalable **OpenAPI** framework, FountainAI supports the development and management of narrative elements across five core services.
+**FountainAI** is an AI-powered platform designed to generate, manage, and evolve interactive stories in real-time. It leverages artificial intelligence to create dynamic, adaptable narratives where characters, events, and plots shift based on user interactions or predefined inputs.
 
----
+At its core, FountainAI focuses on storytelling that can evolve continuously, making it ideal for applications like video games, virtual storytelling environments, educational simulations, or even interactive fiction. Users can interact with the narrative, and the system responds by adapting characters, actions, and story arcs, offering a unique, ever-changing experience each time.
 
-## Prompt-First Development Approach
+The platform uses advanced AI, such as GPT-4, to creatively handle open-ended story elements, filling in gaps where needed, which allows for more organic and less rigid storytelling. Whether the focus is on characters' development, plot twists, or evolving contexts, FountainAI ensures that the story remains cohesive, engaging, and immersive.
 
-The **Prompt-First Development Approach** is used to break down the complexities of API creation into specific tasks, leveraging **ChatGPT-4 Canvas** for continuous, iterative refinement. This approach ensures that each development phase is structured and consistent with the overall narrative framework.
-
-For more details, see the [Prompt-First Development Documentation](Workbooks/Documentation_%20Intent%20First%20-%20Productive%20Approach%20to%20Application%20Development%20in%20ChatGPT-4%20with%20Canvas.md).
+In short, **FountainAI** is a storytelling engine designed to create flexible, AI-driven narratives that adapt and respond dynamically to inputs, making it ideal for applications where interactivity and adaptability are key.
 
 ---
 
-## Comprehensive OpenAPI Service Group
+## **Core Services Overview**
 
-FountainAI is built on five core services, each playing a crucial role in managing different aspects of storytelling:
+FountainAI is built around several key microservices, each responsible for managing a crucial part of the storytelling process. These services are linked through a unified API system, allowing developers to seamlessly orchestrate dynamic and interactive stories.
 
-1. **Central Sequence Service**:  
-   [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Central%20Sequence%20Service%20API%20OpenAPI%20Specification%20.md)
+### 1. **Action Service**  
+The **Action Service** manages actions performed by characters within the story, such as behaviors, movements, and interactions. This service supports full **CRUD** (Create, Read, Update, Delete) operations, enabling the creation and management of actions while ensuring that they are properly sequenced in the narrative.
 
-2. **Character Management Service**:  
-   [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Character%20Management%20API%20OpenAPI%20Specification%20.md)
-
-3. **Core Script Management Service**:  
-   [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Core%20Script%20Management%20API%20OpenAPI%20Specification%20.md)
-
-4. **Session and Context Management Service**:  
-   [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Session%20and%20Context%20Management%20API%20OpenAPI%20Specification%20.md)
-
-5. **Story Factory Service**:  
-   [OpenAPI Critique Documentation](openAPI/v2/Documentation_%20Critique%20of%20v1%20-%20Story%20Factory%20API%20OpenAPI%20Specification%20.md)
+- [Action Service API (v3)](openAPI/v3/Action-Service.yml)
 
 ---
 
-## Project Tree
+### 2. **Central Sequence Service**  
+The **Central Sequence Service** manages sequence numbers for all storytelling elements like scripts, characters, and actions. It ensures that all components of the story progress in a logical order, maintaining narrative consistency.
 
-Here's the project tree in a more readable format:
+- [Central Sequence Service API (v3)](openAPI/v3/Central-Sequence-Service-API.yml)
 
+---
+
+### 3. **Character Management Service**  
+The **Character Management Service** is responsible for creating, updating, and tracking the development of characters within the story. Characters are linked to their actions, interactions, and evolution within the narrative.
+
+- [Character Service API (v3)](openAPI/v3/Character-Service.yml)
+
+---
+
+### 4. **Core Script Management Service**  
+The **Core Script Management Service** handles the structure and evolution of the overarching story. It dynamically adapts the script based on the characters, actions, and other elements in real-time, ensuring the narrative remains cohesive and engaging.
+
+- [Core Script Management Service API (v3)](openAPI/v3/Core-Script-Management-API.yaml)
+
+---
+
+### 5. **Paraphrase Service**  
+The **Paraphrase Service** allows for dynamic variations in character dialogues, ensuring that characters’ spoken lines can be adapted for different contexts or user inputs. This adds flexibility and diversity to the dialogue system.
+
+- [Paraphrase Service API (v3)](openAPI/v3/Paraphrase-Service.yml)
+
+---
+
+### 6. **Performer Service**  
+The **Performer Service** manages virtual actors or performers within the narrative, tracking their actions and behaviors to ensure they align with the evolving story and interactions. 
+
+- [Performer Service API (v3)](openAPI/v3/Performer-Service.yml)
+
+---
+
+### 7. **Session and Context Management Service**  
+The **Session and Context Management Service** is responsible for preserving the context of storytelling sessions, ensuring that the narrative adapts and evolves as users interact with characters, actions, and events.
+
+- [Session and Context Management API (v3)](openAPI/v3/Session-And-Context-Management-API.yml)
+
+---
+
+### 8. **Spoken Word Service**  
+The **Spoken Word Service** handles the management and sequencing of character dialogues. It ensures that all spoken elements are integrated logically into the narrative, supporting real-time interactions between characters.
+
+- [Spoken Word Service API (v3)](openAPI/v3/Spoken-Word-Service.yml)
+
+---
+
+### 9. **Story Factory Service**  
+The **Story Factory Service** is the central engine of FountainAI, assembling all storytelling elements—characters, actions, contexts—into a cohesive narrative. The service dynamically adjusts the story in real-time based on user inputs and events, ensuring an interactive and evolving experience.
+
+- [Story Factory Service API (v3)](openAPI/v3/Story-Factory-API.yml)
+
+---
+
+## **Security Model**
+
+All services in FountainAI are secured using a **unified API key security** mechanism. This ensures that only authorized users can access the APIs, protecting all storytelling elements such as characters, actions, and scripts from unauthorized manipulation.
+
+---
+
+## **Documentation and Proposals**
+
+In addition to the core services, the **openAPI/v3** directory contains several key documents that outline the refactoring process, integration improvements, and the role of **GPT-4** in enhancing the platform:
+
+1. **Critique of v2 FountainAI OpenAPI Specifications: Towards Enhanced Integration and Consistency**  
+   [Read Document](openAPI/v3/Docs/Critique%20of%20v2%20FountainAI%20OpenAPI%20Specifications_%20Towards%20Enhanced%20Integration%20and%20Consistency.md)
+
+2. **FountainAI v3 - Integrating the Shakespeare Drama Corpus with TypeSense**  
+   [Read Document](openAPI/v3/Docs/FountainAI%20v3%20-%20Integrating%20the%20Shakespeare%20Drama%20Corpus%20with%20TypeSense.md)
+
+3. **FountainAI v3 Documentation: Balancing API Modifications with GPT-4 Reasoning - "What If?"**  
+   [Read Document](openAPI/v3/Docs/FountainAI%20v3%20Documentation_%20Balancing%20API%20Modifications%20with%20GPT-4%20Reasoning%20-%20%E2%80%9CWhat%20If%E2%80%9D.md)
+
+4. **FountainAI v3 OpenAPI Implementation Plan: Enhancing Integration for GPT-4 Compatibility**  
+   [Read Document](openAPI/v3/Docs/FountainAI%20v3%20OpenAPI%20Implementation%20Plan_%20Enhancing%20Integration%20for%20GPT-4%20Compatibility.md)
+
+5. **FountainAI v3: Enhanced Integration and GPT-4 Compatibility**  
+   [Read Document](openAPI/v3/Docs/FountainAI%20v3_%20Enhanced%20Integration%20and%20GPT-4%20Compatibility.md)
+
+6. **Official FountainAI Proposal for Refactoring Character Management API**  
+   [Read Document](openAPI/v3/Docs/Official%20FountainAI%20Proposal%20for%20Refactoring%20Character%20Management%20API.md)
+
+7. **Proposal for Real-Time Synchronization and Dynamic Schema Versioning of FountainAI with Typesense Using FastAPI**  
+   [Read Document](openAPI/v3/Docs/Proposal%20for%20Real-Time%20Synchronization%20and%20Dynamic%20Schema%20Versioning%20of%20FountainAI%20with%20Typesense%20Using%20FastAPI.md)
+
+---
+
+## **Getting Started**
+### **1. Clone the Repository**
+```bash
+git clone https://github.com/Contexter/FountainAI.git
 ```
-.
-├── Guidance
-│   ├── Part A_ Introduction and Architecture Overview.md  # Deprecated
-│   ├── Part B_ GPT Code Generation Sessions.md  # Deprecated
-│   └── Part C_ Deployment, CI_CD Enhancements, and Custom Logging.md  # Deprecated
-├── Project Report by Date
-│   └── FountainAI Project Report.md  # Current
-├── README.md  # This file
-├── Use Cases
-│   └── The Role of Context in FountainAI.md  # Deprecated
-├── Workbooks
-│   ├── Documentation_ Intent First - Productive Approach to Application Development in ChatGPT-4 with Canvas.md  # Active
-│   ├── FountainAI Code Generation Workbook.md  # Active
-│   ├── FountainAI Visualization Standards.md  # Active
-│   └── README.md  # Active
-├── create_new_main_branch.sh  # Active
-└── openAPI
-    ├── v1
-    │   ├── API-Docs-GPT-4o-Paraphrase
-    │   │   ├── API Documentation - Central Sequence Service API Documentation.md  # Deprecated
-    │   │   ├── API Documentation - Character Management API.md  # Deprecated
-    │   │   ├── API Documentation - Core Script Management.md  # Deprecated
-    │   │   ├── API Documentation - Session and Context Management API.md  # Deprecated
-    │   │   └── API Documentation - Story Factory API.md  # Deprecated
-    │   ├── central-sequence-service.yaml  # Active
-    │   ├── character-management.yaml  # Active
-    │   ├── core-script-management.yaml  # Active
-    │   ├── o1-preview-FountainAI-system-description
-    │   │   ├── Appendix_ FountainAI Implementation Path Documentation.md  # Active
-    │   │   ├── Comprehensive FountainAI Implementation Guide (Extended).md  # Deprecated
-    │   │   ├── Comprehensive FountainAI Implementation Guide.md  # Deprecated
-    │   │   ├── Requirements Engineering
-    │   │   │   ├── Deprecated - FountainAI System Description.md  # Deprecated
-    │   │   │   ├── FastAPI Implementation Path for the Official FountainAI System.md  # Deprecated
-    │   │   │   ├── Official FountainAI Implementation Requirements_ Ensuring Compliance with OpenAPI Specifications.md  # Deprecated
-    │   │   │   └── Official FountainAI System Description and Implementation Plan.md  # Deprecated
-    │   ├── session-and-context.yaml  # Active
-    │   └── story-factory.yaml  # Active
-    └── v2
-        ├── Documentation_ Critique of v1 - Central Sequence Service API OpenAPI Specification.md
-        ├── Documentation_ Critique of v1 - Character Management API OpenAPI Specification.md
-        ├── Documentation_ Critique of v1 - Core Script Management API OpenAPI Specification.md
-        ├── Documentation_ Critique of v1 - Session and Context Management API OpenAPI Specification.md
-        └── Documentation_ Critique of v1 - Story Factory API OpenAPI Specification.md
-```
 
----
-
-## Deprecation Notices
-
-- The **Guidance** documents (`Part A`, `Part B`, and `Part C`) are marked as **deprecated** in favor of the more structured workbook-driven approach.
-- **Use Cases** have transitioned from standalone discussions to examples embedded within each service's workbook.
-
----
-
-## Getting Started
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/Contexter/FountainAI.git
-   ```
-
-2. **Review the Workbooks**: Start with the `FountainAI Code Generation Workbook` in the `Workbooks` directory.
-
-3. **Set Up Development Environment**: Install required tools and dependencies as outlined in the workbooks.
-
-4. **Generate Code**: Use the workbooks to interact with GPT-4 for generating service code based on the OpenAPI specs.
-
-5. **Deploy Services**: Follow the deployment guidelines for containerizing and deploying services to AWS.
-
----
-
-## Contributing
-
-1. **Submit Issues**: Use GitHub to report issues or make feature requests.
-2. **Pull Requests**: Ensure your pull requests are aligned with the project's goals and adhere to OpenAPI specifications.
+### **2. Set Up Development Environment**
+Refer to the **FountainAI FastAPI Guide v2** for detailed setup instructions to configure your environment, install dependencies, and start building with the platform.
 
