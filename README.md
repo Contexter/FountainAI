@@ -111,14 +111,5 @@ In addition to the core services, the **openAPI/v3** directory contains several 
 7. **Proposal for Real-Time Synchronization and Dynamic Schema Versioning of FountainAI with Typesense Using FastAPI**  
    [Read Document](openAPI/v3/Docs/Proposal%20for%20Real-Time%20Synchronization%20and%20Dynamic%20Schema%20Versioning%20of%20FountainAI%20with%20Typesense%20Using%20FastAPI.md)
 
----
 
-## **Getting Started**
-### **1. Clone the Repository**
-```bash
-git clone https://github.com/Contexter/FountainAI.git
-```
-
-### **2. Set Up Development Environment**
-Refer to the **FountainAI FastAPI Guide v2** for detailed setup instructions to configure your environment, install dependencies, and start building with the platform.
 
