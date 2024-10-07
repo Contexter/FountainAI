@@ -111,7 +111,7 @@ Each step produces callable shell scripts that generate the specific part of the
 
 ### Step 13: Execute End-to-End Testing and Refinement
 
-- **Prompt**: "Generate a shell script (`run_e2e_tests.sh`) that runs end-to-end tests for the entire Character Management API, ensuring the correct functioning of each component, including API endpoints, database operations, and Typesense synchronization. Ensure the script is callable from the main script."
+- **Prompt**: "Generate a shell script (`run_e2e_tests.sh`) that runs end-to-end tests for the entire API, ensuring the correct functioning of each component, including API endpoints, database operations, and Typesense synchronization. Ensure the script is callable from the main script."
 - **Output**: `run_e2e_tests.sh`
 - **Goal**: Ensure that the entire application functions as expected, providing the intended features with no errors or inconsistencies.
 
