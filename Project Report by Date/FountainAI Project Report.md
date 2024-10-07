@@ -6,7 +6,7 @@
 ---
 
 ## **Executive Summary**
-As of October 7, 2024, FountainAI continues to innovate its AI-driven storytelling platform, achieving several important milestones. The release of the **FountainAI FastAPI Guide v2** has modernized the microservice orchestration and interaction framework, aligning with newly introduced **OpenAPI v2 standards**. Recent deprecations of outdated services have streamlined the architecture, reducing technical debt. By embracing **ChatGPT-4 with Canvas**, the project has also enhanced interactive service management, simplifying workflow orchestration. The next steps focus on expanding **AWS Copilot** deployment integration for seamless scaling.
+As of October 7, 2024, FountainAI continues to innovate its AI-driven storytelling platform, achieving several important milestones. The release of the **FountainAI FastAPI Guide v2** has modernized the microservice orchestration and interaction framework, aligning with newly introduced **OpenAPI v3 standards**. Recent deprecations of outdated services have streamlined the architecture, reducing technical debt. By embracing **ChatGPT-4 with Canvas**, the project has also enhanced interactive service management, simplifying workflow orchestration. The next steps focus on expanding **AWS Copilot** deployment integration for seamless scaling.
 
 ---
 
