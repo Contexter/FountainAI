@@ -111,5 +111,15 @@ In addition to the core services, the **openAPI/v3** directory contains several 
 7. **Proposal for Real-Time Synchronization and Dynamic Schema Versioning of FountainAI with Typesense Using FastAPI**  
    [Read Document](openAPI/v3/Docs/Proposal%20for%20Real-Time%20Synchronization%20and%20Dynamic%20Schema%20Versioning%20of%20FountainAI%20with%20Typesense%20Using%20FastAPI.md)
 
+8. **FountainAI Modes of Enforcement: How GPT Model Orchestration Fosters System Trust Through Democratic Collaboration**  
+   [Read Document](Workbooks/FountainAI%20Modes%20of%20Enforcement_%20How%20GPT%20Model%20Orchestration%20Fosters%20System%20Trust%20Through%20Democratic%20Collaboration.md)
 
+9. **Proposal for Implementing Undo Feature in FountainAI**  
+   [Read Document](Project%20Report%20by%20Date/Proposal/Proposal%20for%20Implementing%20Undo%20Feature%20in%20FountainAI.md)
 
+10. **FountainAI: Addressing Digital Rights Management (DRM) and Company Compliance**  
+   [Read Document](Project%20Report%20by%20Date/Report/FountainAI_%20Addressing%20Digital%20Rights%20Management%20(DRM)%20and%20Company%20Compliance.md)
+
+---
+
+This updated **README.md** now includes the new proposals and documents, reflecting the most recent additions to the repository.
