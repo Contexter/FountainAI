@@ -186,9 +186,7 @@ You **do not have to modify the prompt extensively** to force GPT and FountainAI
 
 ### **1. Default Behaviors**
 
-- **GPT’s natural language understanding**: GPT will naturally detect missing content, file corruption, token limits, and other issues. It can reason and provide helpful
-
- feedback to the user to resolve these problems.
+- **GPT’s natural language understanding**: GPT will naturally detect missing content, file corruption, token limits, and other issues. It can reason and provide helpful feedback to the user to resolve these problems.
 - **FountainAI’s session management and logging**: FountainAI automatically tracks session progress, logs interruptions, and resumes from the last valid point. It ensures no content is lost or skipped, even when irregularities occur.
 - **Collaboration between GPT and FountainAI**: GPT detects issues, while FountainAI ensures smooth progress tracking and content handling. Together, they provide a robust, automated system for managing file irregularities.
 
