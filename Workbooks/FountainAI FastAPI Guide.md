@@ -1,4 +1,4 @@
-# FountainAI FastAPI Guide v2
+# FountainAI FastAPI Guide
 > Prompting a Modular Shell Script Approach for Building FastAPI Applications with ChatGPT-4
 
 ## Introduction
