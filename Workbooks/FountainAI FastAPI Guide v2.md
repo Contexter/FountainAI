@@ -1,13 +1,11 @@
-# FountainAI FastAPI Guide v2 
-> Prompting a Modular Shell Script Approach for Building FastAPI Applications with ChatGPT-4 
+# FountainAI FastAPI Guide v2
+> Prompting a Modular Shell Script Approach for Building FastAPI Applications with ChatGPT-4
 
 ## Introduction
 
-Developing applications can often be a complex and error-prone process, especially when working with specific requirements like an OpenAPI specification. Using ChatGPT-4 with Canvas offers a unique opportunity to accelerate and streamline this process. This guide outlines a productive approach for building a FastAPI application, detailing the advantages of iterative, prompt-driven development and breaking tasks into manageable steps. It also highlights how this method offers an ideal balance between automation and human oversight, making application development more efficient and reliable.
+Developing applications can often be a complex and error-prone process, especially when working with specific requirements like an OpenAPI specification. Given an extensive OpenAPI specification, ensuring that every endpoint, operation, summary, and functionality matches precisely can be challenging. A direct approach might lead to the omission of important attributes, like `operationId`, and the use of placeholders, which results in an incomplete product.
 
-## The Problem
-
-When attempting to develop a complex application, it is easy to miss key details and fail to meet specifications comprehensively. Given an extensive OpenAPI specification, ensuring that every endpoint, operation, summary, and functionality matches precisely can be challenging. A direct approach might lead to the omission of important attributes, like `operationId`, and the use of placeholders, which results in an incomplete product.
+Using ChatGPT-4 with Canvas offers a unique opportunity to accelerate and streamline this process. This guide outlines a productive approach for building a FastAPI application, detailing the advantages of iterative, prompt-driven development and breaking tasks into manageable steps. It also highlights how this method offers an ideal balance between automation and human oversight, making application development more efficient and reliable.
 
 ## Solution: A Structured, Controlled Prompt Sequence
 
@@ -49,35 +47,29 @@ Each step produces callable shell scripts that generate the specific part of the
 - **Output**: `create_schemas.sh`
 - **Goal**: Ensure that request and response validation matches the OpenAPI specification exactly, including any extensions, and that the data is ready for persistence and search.
 
-### Step 4: Implement API Security
-
-- **Prompt**: "Generate a shell script (`add_security.sh`) that adds API key security to all routes in the FastAPI application. The security implementation must align with the OpenAPI specification provided, including defining an API key header (`X-API-KEY`) and applying it to all routes in the application. Ensure the script is callable from a main script."
-- **Output**: `add_security.sh`
-- **Goal**: Implement API key security to ensure compliance with the OpenAPI specification, securing all endpoints from unauthorized access.
-
-### Step 5: Generate Data Models for Schema Validation
-
-- **Prompt**: "Generate a shell script (`create_schemas.sh`) that creates all data models in `schemas/` corresponding to the request and response schemas described in the OpenAPI specification. Include every field, type, and required property. Ensure that custom extensions (`x-*`) are included as comments or metadata. Integrate SQLite as the database for persistence, with Typesense for search synchronization where applicable. Ensure the script is callable from a main script."
-- **Output**: `create_schemas.sh`
-- **Goal**: Ensure that request and response validation matches the OpenAPI specification exactly, including any extensions, and that the data is ready for persistence and search.
-
-### Step 5: Implement API Routes Using OpenAPI Specifications
-
-- **Prompt**: "Generate a shell script (`create_routers.sh`) that creates the API routes in `routers/` with correct `operationId`, `summary`, `description`, response models, and custom extensions (`x-*`) as described in the OpenAPI spec. Ensure the logic adheres to the requirements for functionality described. For each route, implement endpoints like `/performers`, `/characters`, `/scripts`, `/paraphrases`, and `/lines` as specified. Utilize the Central Sequence Service where sequence management is required. Ensure the script is callable from a main script."
-- **Output**: `create_routers.sh`
-- **Goal**: Implement each route comprehensively, making sure all aspects (summaries, descriptions, custom fields, etc.) match the OpenAPI, including the use of external services like the Central Sequence Service.
-
-### Step 6: Create Database Models for Data Representation
+### Step 4: Create Database Models for Data Representation
 
 - **Prompt**: "Generate a shell script (`create_models.sh`) that creates the database models in `models/` to represent the entities defined in the OpenAPI specification. Include all fields, types, and relationships as specified. Document any relevant extensions (`x-*`). Set up SQLite for persistence and ensure data is synchronized with Typesense where specified. Ensure the script is callable from a main script."
 - **Output**: `create_models.sh`
 - **Goal**: Persist the application data in a structured way that corresponds to the OpenAPI requirements, including custom extensions and synchronization with Typesense.
 
-### Step 7: Define Utility Functions for Database Access and Syncing
+### Step 5: Define Utility Functions for Database Access and Syncing
 
 - **Prompt**: "Generate a shell script (`create_utils.sh`) that sets up utility functions in `utils/` for database access and Typesense syncing. Create a `get_db()` function for accessing the database in API routes and a `sync_to_typesense()` utility for syncing changes. Ensure the script is callable from a main script."
 - **Output**: `create_utils.sh`
 - **Goal**: Facilitate database access, ensuring consistency and ease of reuse, and include mechanisms for search synchronization with Typesense, ensuring data consistency between SQLite and Typesense.
+
+### Step 6: Implement API Security
+
+- **Prompt**: "Generate a shell script (`add_security.sh`) that adds API key security to all routes in the FastAPI application. The security implementation must align with the OpenAPI specification provided, including defining an API key header (`X-API-KEY`) and applying it to all routes in the application. Ensure the script is callable from a main script."
+- **Output**: `add_security.sh`
+- **Goal**: Implement API key security to ensure compliance with the OpenAPI specification, securing all endpoints from unauthorized access.
+
+### Step 7: Implement API Routes Using OpenAPI Specifications
+
+- **Prompt**: "Generate a shell script (`create_routers.sh`) that creates the API routes in `routers/` with correct `operationId`, `summary`, `description`, response models, and custom extensions (`x-*`) as described in the OpenAPI spec. Ensure the logic adheres to the requirements for functionality described.  Utilize the Central Sequence Service where sequence management is required. Ensure the script is callable from a main script."
+- **Output**: `create_routers.sh`
+- **Goal**: Implement each route comprehensively, making sure all aspects (summaries, descriptions, custom fields, etc.) match the OpenAPI, including the use of external services like the Central Sequence Service.
 
 ### Step 8: Generate Dockerfile for Containerization
 
@@ -114,8 +106,6 @@ Each step produces callable shell scripts that generate the specific part of the
 - **Prompt**: "Generate a shell script (`run_e2e_tests.sh`) that runs end-to-end tests for the entire API, ensuring the correct functioning of each component, including API endpoints, database operations, and Typesense synchronization. Ensure the script is callable from the main script."
 - **Output**: `run_e2e_tests.sh`
 - **Goal**: Ensure that the entire application functions as expected, providing the intended features with no errors or inconsistencies.
-
-
 
 ### Step 14: Perform Security Scan and Apply Best Practices
 
