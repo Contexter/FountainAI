@@ -1,5 +1,8 @@
+
 # FountainAI FastAPI Guide
 > Prompting a Modular Shell Script Approach for Building FastAPI Applications with ChatGPT-4
+
+![The Prompt Sequence](https://coach.benedikt-eickhoff.de/koken/storage/originals/d2/53/Scatter-Chart.png)
 
 ## Introduction
 
