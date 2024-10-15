@@ -1,6 +1,8 @@
 # FountainAI System Role Prompting: Dynamic Integration with OpenAPI Specifications
 
-![FountainAI Operational Complexity](https://coach.benedikt-eickhoff.de/koken/storage/originals/1d/ca/FountainAI-operational-complexity.png)
+![FountainAI Operational Complexity](https://coach.benedikt-eickhoff.de/koken/storage/cache/images/000/737/FountainAI-operational-complexity,large.1728963071.png)
+
+<img src="https://coach.benedikt-eickhoff.de/koken/storage/cache/images/000/737/FountainAI-operational-complexity,large.1728963071.png" width="1024" height="1024" />
 
 ## Abstract
 
