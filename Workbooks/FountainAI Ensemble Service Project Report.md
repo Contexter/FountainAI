@@ -1,8 +1,9 @@
 
 
 # **FountainAI Ensemble Service Workbook**
-> ( Draft ) 
+> Draft 
 
+![The FountainAI Ensemble Service](https://coach.benedikt-eickhoff.de/koken/storage/cache/images/000/738/Ensemble-Service,xlarge.1729067517.png)
 ## **1. Introduction**
 
 The **FountainAI Ensemble Service** is a crucial part of the **FountainAI ecosystem**, enabling structured interaction between the **user**, the **OpenAI Assistant SDK (The Assistant)**, and various **FountainAI services**. The service relies on an **OpenAPI-first approach**, ensuring that system prompts are dynamically generated based on the OpenAPI specifications of each service.
