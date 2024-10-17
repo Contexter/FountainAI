@@ -1,17 +1,18 @@
-
-
 # **FountainAI Ensemble Service Workbook**
-> Draft 
+
+> Draft 2
 
 ![The FountainAI Ensemble Service](https://coach.benedikt-eickhoff.de/koken/storage/cache/images/000/738/Ensemble-Service,xlarge.1729067517.png)
+
 ## **1. Introduction**
 
-The **FountainAI Ensemble Service** is a crucial part of the **FountainAI ecosystem**, enabling structured interaction between the **user**, the **OpenAI Assistant SDK (The Assistant)**, and various **FountainAI services**. The service relies on an **OpenAPI-first approach**, ensuring that system prompts are dynamically generated based on the OpenAPI specifications of each service.
+The **FountainAI Ensemble Service** is a core component of the **FountainAI ecosystem**, facilitating structured interaction between the **user**, the **OpenAI Assistant SDK (The Assistant)**, and various **FountainAI services**. By leveraging an **OpenAPI-first approach**, this service dynamically generates system prompts based on the OpenAPI specifications of each integrated service.
 
-The key roles of this service are:
-- **Orchestrating dialogue** between users and services via the Assistant.
-- **Generating dynamic system prompts** that guide interactions.
-- **Maintaining logs** of user queries, Assistant responses, and service interactions for transparency.
+The primary roles of the Ensemble Service include:
+
+- **Orchestrating dialogue** between users and services through the Assistant.
+- **Generating dynamic system prompts** that guide these interactions.
+- **Maintaining logs** of user queries, Assistant responses, and service interactions for transparency and traceability.
 
 This workbook provides an overview of the design, key features, and detailed implementation strategy for the **FountainAI Ensemble Service**.
 
@@ -20,43 +21,55 @@ This workbook provides an overview of the design, key features, and detailed imp
 ## **2. Objectives and Scope**
 
 ### **2.1 Key Objectives**
-- **System Prompt Generation**: The service generates dynamic system prompts using OpenAPI definitions of FountainAI services.
-- **Service Interaction Management**: It orchestrates user inputs, Assistant responses, and interactions with FountainAI services.
-- **Interaction Logging**: Logs every interaction, ensuring visibility into how the Assistant processes user queries and interacts with services.
+
+- **System Prompt Generation**: Dynamically generate system prompts using OpenAPI definitions of the FountainAI services.
+- **Service Interaction Management**: Orchestrate user inputs, Assistant responses, and interactions with various FountainAI services.
+- **Interaction Logging**: Log every interaction to ensure visibility into how user queries are processed by the Assistant and FountainAI services.
 
 ### **2.2 Scope of the Service**
-Designed for both **local deployment** (for testing and development) and **cloud-based operations**, the FountainAI Ensemble Service manages queries, processes responses, and coordinates dynamic service interactions. Its architecture allows for easy updates and evolution as new services are added.
+
+The FountainAI Ensemble Service is designed for both **local deployment** (for testing and development) and **cloud-based operations**. It manages queries, processes responses, and coordinates service interactions, allowing for easy updates as new services are added to the ecosystem.
 
 ---
 
 ## **3. Architecture and Design**
 
 ### **3.1 System Overview**
-The FountainAI Ensemble Service acts as a middle layer between:
+
+The FountainAI Ensemble Service functions as a middle layer between:
+
 - **Users**: Who submit queries.
 - **The Assistant (GPT model)**: Which processes user queries and generates responses.
-- **FountainAI Services**: Which provide the data and operations needed for the Assistant to respond.
+- **FountainAI Services**: Which provide data and operations needed for responses.
 
 ### **3.2 Key Components**
-- **System Prompt Factory**: Combines OpenAPI definitions from multiple services into a single system prompt that guides the Assistant’s behavior.
-- **FastAPI Application**: Provides endpoints for user queries, system prompt generation, and service interaction orchestration.
-- **Logging System**: Captures detailed logs of each interaction between the user, Assistant, and services.
+
+- **System Prompt Factory**: Combines OpenAPI definitions from multiple services to create a unified system prompt that guides the Assistant’s behavior.
+- **FastAPI Application**: Provides endpoints for user queries, system prompt generation, and interaction management.
+- **Logging System**: Captures detailed logs of interactions between users, the Assistant, and services.
 
 ### **3.3 Dynamic Orchestration**
-The system dynamically adapts by generating prompts based on which services are active and required during a session. This ensures the Assistant can interact with each service effectively based on their current OpenAPI definitions.
+
+The service dynamically generates prompts based on which services are active and required during a session, ensuring that the Assistant can interact effectively with each service based on its OpenAPI definition.
 
 ---
 
 ## **4. OpenAPI-First Approach**
 
-The **OpenAPI-first approach** is central to the service’s design, ensuring each FountainAI service exposes its capabilities via OpenAPI specifications. These specifications are used to generate system prompts and guide the Assistant’s interactions with services.
+The OpenAPI-first approach ensures that the Assistant can dynamically parse and understand the API specifications of each integrated service. Since OpenAPI definitions are machine-readable by nature, they provide the Assistant with the comprehensive details needed to reason about the available operations and construct appropriate requests accordingly. By using OpenAPI, the Assistant is expected to:
+
+- **Parse and Integrate Definitions**: Automatically parse the OpenAPI specifications to understand all endpoints, parameters, request types, and response formats. This gives the Assistant a complete understanding of each service.
+- **Contextual Awareness of Dependencies**: Infer dependencies between services in real time. For example, if storing a script requires generating sequence numbers first, the Assistant should dynamically understand and respect this dependency.
+- **Automated Validation**: Validate each constructed request against the provided OpenAPI schema to ensure it is correctly formatted before executing the request. If validation fails, the Assistant should adjust its request accordingly.
+- **Dynamic Request Construction**: Based on user input, the Assistant constructs correct API requests, including handling dependencies such as generating sequence numbers, creating or updating entities, and managing interdependent service calls. This minimizes errors related to incorrect request structures or missing data.
+- **Dynamic Workflow Inference**: The Assistant should dynamically infer the sequence of API interactions needed by parsing OpenAPI definitions in real time. This approach enables the Assistant to adapt to different user requests, reason about dependencies, and construct workflows without predefined limitations, thereby maintaining flexibility and ensuring context-aware operations.
 
 ### **4.1 OpenAPI Specification Overview**
 
 Below is the **OpenAPI specification** for the **FountainAI Ensemble Service**:
 
 ```yaml
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: FountainAI Ensemble Service
   description: |
@@ -71,6 +84,7 @@ paths:
     get:
       summary: Generate system prompt for the Assistant based on multiple services
       description: Generates a system prompt for the Assistant using OpenAPI definitions from multiple FountainAI services.
+      operationId: generateSystemPrompt
       parameters:
         - name: services
           in: query
@@ -79,7 +93,7 @@ paths:
             type: array
             items:
               type: string
-            description: List of FountainAI services to include in the system prompt
+          description: List of FountainAI services to include in the system prompt
       responses:
         '200':
           description: System prompt generated successfully
@@ -91,6 +105,9 @@ paths:
                   system_prompt:
                     type: string
                     description: The generated system prompt for the Assistant
+              example:
+                system_prompt: "You are an AI assistant interacting with various FountainAI services through their OpenAPI specifications. Parse each service's OpenAPI definition to determine available operations, required parameters, and response formats. For user queries, identify the appropriate sequence of service calls, including dependencies like sequence number generation from the Central Sequence Service before storing a new section. Validate all requests against the OpenAPI specification before executing. Act as an intermediary, making sure all interactions follow the API logic accurately."
+
         '400':
           description: Bad Request - Invalid service list
         '500':
@@ -100,6 +117,7 @@ paths:
     post:
       summary: Handle user input and dynamically manage dialogue between the Assistant and services
       description: Handles user input, sends it to the Assistant, and manages service requests based on a dynamically generated system prompt.
+      operationId: handleUserInput
       requestBody:
         description: User input to be processed by the Assistant
         required: true
@@ -133,6 +151,13 @@ paths:
                         response:
                           type: string
                           description: Response from the service
+              example:
+                assistant_response: "The character John Doe moves to the door."
+                service_responses:
+                  - service_name: "Character Service"
+                    response: "Character details retrieved successfully."
+                  - service_name: "Action Service"
+                    response: "Action 'move to door' processed successfully."
         '400':
           description: Bad Request
         '500':
@@ -142,6 +167,7 @@ paths:
     get:
       summary: Retrieve logs of system-prompt-driven interactions
       description: Logs past interactions, capturing key variables such as user input, Assistant responses, and service interactions.
+      operationId: retrieveLogs
       responses:
         '200':
           description: Logs retrieved successfully
@@ -175,19 +201,30 @@ paths:
                               response:
                                 type: string
                                 description: Response from the service
+              example:
+                logs:
+                  - timestamp: "2024-10-17T12:34:56Z"
+                    user_input: "Retrieve actions for character John Doe."
+                    assistant_response: "Character John Doe performs an action."
+                    service_responses:
+                      - service_name: "Action Service"
+                        response: "Action 'enter room' retrieved successfully."
 ```
 
 ---
 
 ## **5. Implementation Strategy**
 
-The following steps detail the **implementation strategy** for deploying the **FountainAI Ensemble Service** using shell scripts to automate various components of the system.
+The implementation strategy for the FountainAI Ensemble Service focuses on leveraging **Dynamic Workflow Inference** to ensure seamless, adaptive interaction with multiple APIs. This strategy aims to guide the Assistant in real-time decision-making, based on the OpenAPI specifications of each integrated service, without relying on predefined workflows. The following steps outline the modular approach to creating, deploying, and maintaining the Ensemble Service.
+
+
 
 ### **Step 1: Directory Structure Creation**
 
 **Goal**: Create the necessary directory structure for the service.
 
 **Prompt**:
+
 ```
 Please write a shell script called `create_directory_structure.sh` that will create the following directories for the FountainAI Ensemble Service:
 
@@ -204,6 +241,7 @@ The script should print confirmation for each directory created.
 **Goal**: Set up the FastAPI entry point that handles user queries, generates system prompts, and manages the interaction flow.
 
 **Prompt**:
+
 ```
 Please write a shell script called `generate_main_entry.sh` that creates a FastAPI entry point (`app/main.py`). This script should:
 
@@ -218,18 +256,25 @@ Please write a shell script called `generate_main_entry.sh` that creates a FastA
 **Goal**: Implement the **System Prompt Factory**.
 
 **Prompt**:
+
+**Goal**: Implement the **System Prompt Factory**, which will also include logic from the **Internal Workflow Map** to facilitate efficient API interaction.
+
+**Prompt**:
+
 ```
 Please write a shell script called `generate_prompt_factory.sh` that implements the System Prompt Factory in `/app/prompt_factory`. The script should:
 
 1. Fetch OpenAPI definitions from FountainAI services.
 2. Combine the OpenAPI definitions into a system prompt that guides the Assistant’s behavior.
+3. Integrate the `WorkflowMap` class to determine the correct sequence of API calls based on user requests, ensuring services are invoked in the proper order and dependencies are respected.
 ```
 
 ### **Step 4: Schema Validation for Assistant and Service Interactions**
 
-**Goal**: Create Pydantic schemas to validate the requests and responses between the Assistant and services.
+**Goal**: Create Pydantic schemas to validate requests and responses between the Assistant and services.
 
 **Prompt**:
+
 ```
 Please write a shell script called `generate_schemas.sh` that creates Pydantic schemas in `/app/schemas`. The script should:
 
@@ -242,6 +287,7 @@ Please write a shell script called `generate_schemas.sh` that creates Pydantic s
 **Goal**: Set up logging to capture interactions.
 
 **Prompt**:
+
 ```
 Please write a shell script called `generate_logging.sh` that sets up a logging system in `/app/logs`. The script should:
 
@@ -254,14 +300,13 @@ Please write a shell script called `generate_logging.sh` that sets up a logging 
 **Goal**: Containerize the FountainAI Ensemble Service.
 
 **Prompt**:
+
 ```
 Please write a shell script called `create_dockerfile.sh` that generates a Dockerfile for the FountainAI Ensemble Service. The Dockerfile should:
 
 1. Use a Python 3.9+ base image.
 2. Install FastAPI and the OpenAI SDK.
-3. Copy necessary
-
- app files and run the FastAPI app on port 8000.
+3. Copy necessary app files and run the FastAPI app on port 8000.
 ```
 
 ### **Step 7: Docker Compose for Service Orchestration**
@@ -269,6 +314,7 @@ Please write a shell script called `create_dockerfile.sh` that generates a Docke
 **Goal**: Use Docker Compose to orchestrate the services.
 
 **Prompt**:
+
 ```
 Please write a shell script called `create_docker_compose.sh` that generates a `docker-compose.yml` file. The script should:
 
@@ -281,6 +327,7 @@ Please write a shell script called `create_docker_compose.sh` that generates a `
 **Goal**: Orchestrate the entire system setup.
 
 **Prompt**:
+
 ```
 Please write a shell script called `setup_fountainai_ensemble.sh` that runs all the shell scripts in sequence to set up the FountainAI Ensemble Service.
 ```
@@ -289,5 +336,5 @@ Please write a shell script called `setup_fountainai_ensemble.sh` that runs all 
 
 ## **6. Conclusion**
 
-This project workbook outlines the **FountainAI Ensemble Service** and its **OpenAPI-first design**. Through this detailed architecture and implementation strategy, the service ensures seamless interaction between the user, the Assistant, and the FountainAI services. The accompanying shell scripts allow for easy deployment and configuration, ensuring flexibility in both local and cloud environments.
+This workbook provides a comprehensive overview of the **FountainAI Ensemble Service** and its **OpenAPI-first design**. The detailed architecture and implementation strategy ensure seamless interaction between users, the Assistant, and FountainAI services. The accompanying shell scripts facilitate straightforward deployment and configuration, enabling flexibility in both local and cloud environments.
 
