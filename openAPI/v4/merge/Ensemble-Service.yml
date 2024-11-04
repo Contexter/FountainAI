@@ -1,0 +1,816 @@
+openapi: 3.1.0
+info:
+  title: FountainAI Ensemble Service
+  description: This OpenAPI specification defines the endpoints for the FountainAI Ensemble Service, which acts as an intermediary between users, the OpenAI Assistant, and FountainAI services managed via Kong. All FountainAI services are routed and orchestrated through Kong API Gateway, providing centralized management and control. Kong's rerouting capabilities are leveraged to distribute user input dynamically across multiple services, enabling flexible interaction flows and the implementation of the mediator design pattern for efficient delegation and aggregation of responses.
+  version: 1.1.0
+servers:
+  - url: https://localhost
+    description: Local server for testing and development
+paths:
+  /gui/overview:
+    get:
+      summary: Retrieve overview data
+      description: Retrieves overview data for services, routes, consumers, and plugins from Kong.
+      operationId: retrieveGuiOverview
+      responses:
+        '200':
+          description: Overview data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The ID of the Kong service
+                        name:
+                          type: string
+                          description: The name of the Kong service
+                  routes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The ID of the Kong route
+                        paths:
+                          type: array
+                          items:
+                            type: string
+                          description: The paths configured for the route
+                  consumers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The ID of the Kong consumer
+                        username:
+                          type: string
+                          description: The username of the Kong consumer
+                  plugins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The ID of the Kong plugin
+                        name:
+                          type: string
+                          description: The name of the plugin
+        '500':
+          description: Internal server error
+
+  /gui/metrics:
+    get:
+      summary: Retrieve metrics data
+      description: Retrieves metrics for services and consumers in Kong.
+      operationId: retrieveGuiMetrics
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service_metrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        service_id:
+                          type: string
+                          description: The ID of the Kong service
+                        status:
+                          type: string
+                          description: The status of the service (e.g., active, degraded, down)
+                  consumer_metrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        consumer_id:
+                          type: string
+                          description: The ID of the consumer
+                        requests_handled:
+                          type: integer
+                          description: Number of requests handled by this consumer
+        '500':
+          description: Internal server error
+
+  /kong/consumers:
+    get:
+      summary: Retrieve list of Kong consumers
+      description: Retrieves the list of consumers configured in the Kong API Gateway.
+      operationId: listKongConsumers
+      responses:
+        '200':
+          description: Kong consumers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Kong consumer
+                    username:
+                      type: string
+                      description: The username of the Kong consumer
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new Kong consumer
+      description: Creates a new consumer in the Kong API Gateway.
+      operationId: createKongConsumer
+      requestBody:
+        description: Details of the Kong consumer to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username of the consumer
+                custom_id:
+                  type: string
+                  description: A custom identifier for the consumer
+      responses:
+        '201':
+          description: Kong consumer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created Kong consumer
+        '400':
+          description: Bad request - Invalid consumer data provided
+        '500':
+          description: Internal server error
+
+  /kong/consumers/{consumerId}:
+    patch:
+      summary: Update an existing Kong consumer
+      description: Updates details of a specific Kong consumer by ID.
+      operationId: updateKongConsumer
+      parameters:
+        - name: consumerId
+          in: path
+          required: true
+          description: The ID of the Kong consumer to update
+          schema:
+            type: string
+      requestBody:
+        description: Details of the Kong consumer to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The new username of the consumer
+                custom_id:
+                  type: string
+                  description: The new custom identifier for the consumer
+      responses:
+        '200':
+          description: Kong consumer updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the updated Kong consumer
+        '400':
+          description: Bad request - Invalid consumer data provided
+        '404':
+          description: Consumer not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a Kong consumer
+      description: Deletes a specific Kong consumer by ID.
+      operationId: deleteKongConsumer
+      parameters:
+        - name: consumerId
+          in: path
+          required: true
+          description: The ID of the Kong consumer to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Kong consumer deleted successfully
+        '404':
+          description: Consumer not found
+        '500':
+          description: Internal server error
+
+  /kong/certificates:
+    get:
+      summary: Retrieve list of Kong certificates
+      description: Retrieves the list of SSL certificates configured in the Kong API Gateway.
+      operationId: listKongCertificates
+      responses:
+        '200':
+          description: Kong certificates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the certificate
+                    cert:
+                      type: string
+                      description: The public certificate
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new SSL certificate
+      description: Creates a new SSL certificate in the Kong API Gateway.
+      operationId: createKongCertificate
+      requestBody:
+        description: Details of the SSL certificate to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cert:
+                  type: string
+                  description: The public certificate
+                key:
+                  type: string
+                  description: The private key
+      responses:
+        '201':
+          description: SSL certificate created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created certificate
+        '400':
+          description: Bad request - Invalid certificate data provided
+        '500':
+          description: Internal server error
+
+  /kong/upstreams:
+    get:
+      summary: Retrieve list of Kong upstreams
+      description: Retrieves the list of upstreams configured in the Kong API Gateway for load balancing.
+      operationId: listKongUpstreams
+      responses:
+        '200':
+          description: Kong upstreams retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the upstream
+                    name:
+                      type: string
+                      description: The name of the upstream
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new Kong upstream
+      description: Creates a new upstream in the Kong API Gateway.
+      operationId: createKongUpstream
+      requestBody:
+        description: Details of the upstream to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the upstream
+      responses:
+        '201':
+          description: Kong upstream created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created upstream
+        '400':
+          description: Bad request - Invalid upstream data provided
+        '500':
+          description: Internal server error
+
+  /kong/upstreams/{upstreamId}/targets:
+    get:
+      summary: Retrieve list of targets for an upstream
+      description: Retrieves the list of targets associated with a specific upstream in the Kong API Gateway.
+      operationId: listKongUpstreamTargets
+      parameters:
+        - name: upstreamId
+          in: path
+          required: true
+          description: The ID of the upstream to retrieve targets for
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Kong targets retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the target
+                    target:
+                      type: string
+                      description: The address of the target (e.g., IP:port)
+        '404':
+          description: Upstream not found
+        '500':
+          description: Internal server error
+
+  /kong/routes:
+    get:
+      summary: Retrieve list of Kong routes
+      description: Retrieves the list of routes configured in the Kong API Gateway.
+      operationId: listKongRoutes
+      responses:
+        '200':
+          description: Kong routes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Kong route
+                    service:
+                      type: string
+                      description: The associated service ID
+                    paths:
+                      type: array
+                      items:
+                        type: string
+                      description: The paths configured for the route
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new Kong route
+      description: Creates a new route in the Kong API Gateway.
+      operationId: createKongRoute
+      requestBody:
+        description: Details of the Kong route to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: string
+                  description: The ID of the service to associate the route with
+                paths:
+                  type: array
+                  items:
+                    type: string
+                  description: The paths to be routed
+      responses:
+        '201':
+          description: Kong route created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created Kong route
+        '400':
+          description: Bad request - Invalid route data provided
+        '500':
+          description: Internal server error
+
+  /kong/routes/{routeId}:
+    patch:
+      summary: Update an existing Kong route
+      description: Updates details of a specific Kong route by ID.
+      operationId: updateKongRoute
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          description: The ID of the Kong route to update
+          schema:
+            type: string
+      requestBody:
+        description: Details of the Kong route to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paths:
+                  type: array
+                  items:
+                    type: string
+                  description: The new paths to be routed
+      responses:
+        '200':
+          description: Kong route updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the updated Kong route
+        '400':
+          description: Bad request - Invalid route data provided
+        '404':
+          description: Route not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a Kong route
+      description: Deletes a specific Kong route by ID.
+      operationId: deleteKongRoute
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          description: The ID of the Kong route to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Kong route deleted successfully
+        '404':
+          description: Route not found
+        '500':
+          description: Internal server error
+
+  /kong/plugins:
+    get:
+      summary: Retrieve list of Kong plugins
+      description: Retrieves the list of plugins configured in the Kong API Gateway.
+      operationId: listKongPlugins
+      responses:
+        '200':
+          description: Kong plugins retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Kong plugin
+                    name:
+                      type: string
+                      description: The name of the Kong plugin
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new Kong plugin
+      description: Creates a new plugin in the Kong API Gateway.
+      operationId: createKongPlugin
+      requestBody:
+        description: Details of the Kong plugin to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the plugin
+                config:
+                  type: object
+                  description: Configuration for the plugin
+      responses:
+        '201':
+          description: Kong plugin created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created Kong plugin
+        '400':
+          description: Bad request - Invalid plugin data provided
+        '500':
+          description: Internal server error
+
+  /kong/plugins/{pluginId}:
+    delete:
+      summary: Delete a Kong plugin
+      description: Deletes a specific Kong plugin by ID.
+      operationId: deleteKongPlugin
+      parameters:
+        - name: pluginId
+          in: path
+          required: true
+          description: The ID of the Kong plugin to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Kong plugin deleted successfully
+        '404':
+          description: Plugin not found
+        '500':
+          description: Internal server error
+
+  /kong/services:
+    post:
+      summary: Create a new Kong service
+      description: Creates a new service in the Kong API Gateway.
+      operationId: createKongService
+      requestBody:
+        description: Details of the Kong service to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the service
+                url:
+                  type: string
+                  description: The URL of the upstream service
+      responses:
+        '201':
+          description: Kong service created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the newly created Kong service
+        '400':
+          description: Bad request - Invalid service data provided
+        '500':
+          description: Internal server error
+    get:
+      summary: Retrieve list of Kong services
+      description: Retrieves the list of services configured in the Kong API Gateway.
+      operationId: listKongServices
+      responses:
+        '200':
+          description: Kong services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Kong service
+                    name:
+                      type: string
+                      description: The name of the Kong service
+        '500':
+          description: Internal server error
+
+  /kong/services/{serviceId}:
+    patch:
+      summary: Update an existing Kong service
+      description: Updates details of a specific Kong service by ID.
+      operationId: updateKongService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: The ID of the Kong service to update
+          schema:
+            type: string
+      requestBody:
+        description: Details of the Kong service to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The new name of the service
+                url:
+                  type: string
+                  description: The new URL of the upstream service
+      responses:
+        '200':
+          description: Kong service updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the updated Kong service
+        '400':
+          description: Bad request - Invalid service data provided
+        '404':
+          description: Service not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a Kong service
+      description: Deletes a specific Kong service by ID.
+      operationId: deleteKongService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: The ID of the Kong service to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Kong service deleted successfully
+        '404':
+          description: Service not found
+        '500':
+          description: Internal server error
+
+  /system-prompt:
+    get:
+      summary: Generate system prompt for the Assistant
+      description: Generates a system prompt for the Assistant by integrating specified FountainAI services that are managed through Kong, ensuring the Assistant fully understands the capabilities and interactions within a Kong-managed ecosystem.
+      operationId: generateSystemPrompt
+      parameters:
+        - name: services
+          in: query
+          description: List of FountainAI services to include in the system prompt
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: System prompt generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  system_prompt:
+                    type: string
+                    description: The generated system prompt for the Assistant
+        '400':
+          description: Bad request - Invalid service list provided
+        '500':
+          description: Internal server error
+
+  /interact:
+    post:
+      summary: Handle user input and manage interaction
+      description: Handles user input by delegating requests to relevant FountainAI services for efficient processing.
+      operationId: handleUserInteraction
+      requestBody:
+        description: User input to be processed by the Assistant
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_input:
+                  type: string
+                  description: The user's query or command
+                system_prompt:
+                  type: string
+                  description: The system prompt to use for managing the interaction
+      responses:
+        '200':
+          description: Interaction handled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assistant_response:
+                    type: string
+                    description: The Assistant's response to the user input
+                  service_responses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        service_name:
+                          type: string
+                          description: The name of the FountainAI service invoked
+                        response:
+                          type: array
+                          items:
+                            type: string
+                          description: The responses from the invoked service
+        '400':
+          description: Bad request - Invalid user input
+        '500':
+          description: Internal server error
+
+  /logs:
+    get:
+      summary: Retrieve interaction logs
+      description: Retrieves logs of interactions, including user inputs, Assistant responses, and service responses for transparency and debugging.
+      operationId: retrieveLogs
+      responses:
+        '200':
+          description: Logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      description: Time of interaction in ISO 8601 format
+                    user_input:
+                      type: string
+                      description: The user's input message
+                    assistant_response:
+                      type: string
+                      description: The response generated by the Assistant
+                    service_responses:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          service_name:
+                            type: string
+                            description: The name of the service involved
+                          response:
+                            type: string
+                            description: The responses from the invoked service, which may be aggregated if multiple steps or services are involved
+        '500':
+          description: Internal server error
+
+components:
+  schemas: {}
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
