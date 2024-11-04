@@ -5,7 +5,15 @@ info:
   description: Unified Mock Server API specification
 servers:
 - url: http://localhost:8000
-tags: []
+tags:
+- name: System Prompt Management
+  description: Operations related to generating system prompts
+- name: Interaction Handling
+  description: Operations related to handling user interactions
+- name: Logs Management
+  description: Operations related to retrieving logs
+- name: Service Management
+  description: Operations related to managing services in the registry
 paths:
   /Action-Service/actions:
     get:
@@ -482,15 +490,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardError'
-  /Ensemble-Service/gui/overview:
+  /Ensemble-Service/services:
     get:
-      summary: Retrieve overview data
-      description: Retrieves overview data for services, routes, consumers, and plugins
-        from Kong.
-      operationId: retrieveGuiOverview
+      summary: List available FountainAI services
+      description: 'Retrieves a list of all available FountainAI services with their
+        identifiers and descriptions. The service registry is persisted to an SQLite
+        database and synchronized with Typesense for real-time search and retrieval
+        capabilities.
+
+        '
+      operationId: listServices
+      tags:
+      - Service Management
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: tags
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Filter services by tags
       responses:
         '200':
-          description: Overview data retrieved successfully
+          description: List of services retrieved successfully
           content:
             application/json:
               schema:
@@ -499,682 +524,214 @@ paths:
                   services:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: The ID of the Kong service
-                        name:
-                          type: string
-                          description: The name of the Kong service
-                  routes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: The ID of the Kong route
-                        paths:
-                          type: array
-                          items:
-                            type: string
-                          description: The paths configured for the route
-                  consumers:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: The ID of the Kong consumer
-                        username:
-                          type: string
-                          description: The username of the Kong consumer
-                  plugins:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: The ID of the Kong plugin
-                        name:
-                          type: string
-                          description: The name of the plugin
-        '500':
-          description: Internal server error
-  /Ensemble-Service/gui/metrics:
-    get:
-      summary: Retrieve metrics data
-      description: Retrieves metrics for services and consumers in Kong.
-      operationId: retrieveGuiMetrics
-      responses:
-        '200':
-          description: Metrics retrieved successfully
+                      $ref: '#/components/schemas/ServiceResponse'
+              example:
+                services:
+                - id: character-service
+                  name: Character Service
+                  description: Manages character data and interactions.
+                  openapi_url: https://character-service.fountain.coach/openapi.json
+                  tags:
+                  - core
+                  - stable
+                - id: action-service
+                  name: Action Service
+                  description: Handles actions performed by characters.
+                  openapi_url: https://action-service.fountain.coach/openapi.json
+                  tags:
+                  - core
+                  - stable
+        '400':
+          description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  service_metrics:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        service_id:
-                          type: string
-                          description: The ID of the Kong service
-                        status:
-                          type: string
-                          description: The status of the service (e.g., active, degraded,
-                            down)
-                  consumer_metrics:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        consumer_id:
-                          type: string
-                          description: The ID of the consumer
-                        requests_handled:
-                          type: integer
-                          description: Number of requests handled by this consumer
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/consumers:
-    get:
-      summary: Retrieve list of Kong consumers
-      description: Retrieves the list of consumers configured in the Kong API Gateway.
-      operationId: listKongConsumers
-      responses:
-        '200':
-          description: Kong consumers retrieved successfully
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid API key
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the Kong consumer
-                    username:
-                      type: string
-                      description: The username of the Kong consumer
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /Ensemble-Service/services/register:
     post:
-      summary: Create a new Kong consumer
-      description: Creates a new consumer in the Kong API Gateway.
-      operationId: createKongConsumer
+      summary: Register a new FountainAI service
+      description: 'Registers a new service by adding it to the service registry.
+        The service details are persisted to an SQLite database and synchronized with
+        Typesense. If synchronization with Typesense fails, a retry mechanism will
+        be triggered automatically.
+
+        '
+      operationId: registerService
+      tags:
+      - Service Management
+      security:
+      - adminApiKeyAuth: []
       requestBody:
-        description: Details of the Kong consumer to be created
+        description: Details of the service to register
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                  description: The username of the consumer
-                custom_id:
-                  type: string
-                  description: A custom identifier for the consumer
+              $ref: '#/components/schemas/ServiceRegistration'
       responses:
         '201':
-          description: Kong consumer created successfully
+          description: Service registered successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created Kong consumer
+                $ref: '#/components/schemas/ServiceResponse'
         '400':
-          description: Bad request - Invalid consumer data provided
+          description: Bad Request - Invalid service data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid admin API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
-  /Ensemble-Service/kong/consumers/{consumerId}:
-    patch:
-      summary: Update an existing Kong consumer
-      description: Updates details of a specific Kong consumer by ID.
-      operationId: updateKongConsumer
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /Ensemble-Service/services/update/{service_id}:
+    put:
+      summary: Update an existing FountainAI service
+      description: 'Updates the details of an existing service in the service registry.
+        Changes are persisted to an SQLite database and synchronized with Typesense.
+        If synchronization with Typesense fails, a retry mechanism will be triggered
+        automatically.
+
+        '
+      operationId: updateService
+      tags:
+      - Service Management
+      security:
+      - adminApiKeyAuth: []
       parameters:
-      - name: consumerId
+      - name: service_id
         in: path
         required: true
-        description: The ID of the Kong consumer to update
         schema:
           type: string
+        description: Identifier of the service to update
       requestBody:
-        description: Details of the Kong consumer to be updated
+        description: Updated details of the service
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                  description: The new username of the consumer
-                custom_id:
-                  type: string
-                  description: The new custom identifier for the consumer
+              $ref: '#/components/schemas/ServiceRegistration'
       responses:
         '200':
-          description: Kong consumer updated successfully
+          description: Service updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the updated Kong consumer
+                $ref: '#/components/schemas/ServiceResponse'
         '400':
-          description: Bad request - Invalid consumer data provided
+          description: Bad Request - Invalid service data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid admin API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Consumer not found
+          description: Not Found - Service does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /Ensemble-Service/services/delete/{service_id}:
     delete:
-      summary: Delete a Kong consumer
-      description: Deletes a specific Kong consumer by ID.
-      operationId: deleteKongConsumer
+      summary: Delete a FountainAI service
+      description: 'Removes a service from the service registry. The deletion is persisted
+        in the SQLite database and synchronized with Typesense. If synchronization
+        with Typesense fails, a retry mechanism will be triggered automatically.
+
+        '
+      operationId: deleteService
+      tags:
+      - Service Management
+      security:
+      - adminApiKeyAuth: []
       parameters:
-      - name: consumerId
+      - name: service_id
         in: path
         required: true
-        description: The ID of the Kong consumer to delete
         schema:
           type: string
+        description: Identifier of the service to delete
       responses:
-        '204':
-          description: Kong consumer deleted successfully
+        '200':
+          description: Service deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized - Invalid admin API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Consumer not found
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/certificates:
-    get:
-      summary: Retrieve list of Kong certificates
-      description: Retrieves the list of SSL certificates configured in the Kong API
-        Gateway.
-      operationId: listKongCertificates
-      responses:
-        '200':
-          description: Kong certificates retrieved successfully
+          description: Not Found - Service does not exist
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the certificate
-                    cert:
-                      type: string
-                      description: The public certificate
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
-    post:
-      summary: Create a new SSL certificate
-      description: Creates a new SSL certificate in the Kong API Gateway.
-      operationId: createKongCertificate
-      requestBody:
-        description: Details of the SSL certificate to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                cert:
-                  type: string
-                  description: The public certificate
-                key:
-                  type: string
-                  description: The private key
-      responses:
-        '201':
-          description: SSL certificate created successfully
+          description: Internal Server Error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created certificate
-        '400':
-          description: Bad request - Invalid certificate data provided
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/upstreams:
-    get:
-      summary: Retrieve list of Kong upstreams
-      description: Retrieves the list of upstreams configured in the Kong API Gateway
-        for load balancing.
-      operationId: listKongUpstreams
-      responses:
-        '200':
-          description: Kong upstreams retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the upstream
-                    name:
-                      type: string
-                      description: The name of the upstream
-        '500':
-          description: Internal server error
-    post:
-      summary: Create a new Kong upstream
-      description: Creates a new upstream in the Kong API Gateway.
-      operationId: createKongUpstream
-      requestBody:
-        description: Details of the upstream to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: The name of the upstream
-      responses:
-        '201':
-          description: Kong upstream created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created upstream
-        '400':
-          description: Bad request - Invalid upstream data provided
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/upstreams/{upstreamId}/targets:
-    get:
-      summary: Retrieve list of targets for an upstream
-      description: Retrieves the list of targets associated with a specific upstream
-        in the Kong API Gateway.
-      operationId: listKongUpstreamTargets
-      parameters:
-      - name: upstreamId
-        in: path
-        required: true
-        description: The ID of the upstream to retrieve targets for
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Kong targets retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the target
-                    target:
-                      type: string
-                      description: The address of the target (e.g., IP:port)
-        '404':
-          description: Upstream not found
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/routes:
-    get:
-      summary: Retrieve list of Kong routes
-      description: Retrieves the list of routes configured in the Kong API Gateway.
-      operationId: listKongRoutes
-      responses:
-        '200':
-          description: Kong routes retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the Kong route
-                    service:
-                      type: string
-                      description: The associated service ID
-                    paths:
-                      type: array
-                      items:
-                        type: string
-                      description: The paths configured for the route
-        '500':
-          description: Internal server error
-    post:
-      summary: Create a new Kong route
-      description: Creates a new route in the Kong API Gateway.
-      operationId: createKongRoute
-      requestBody:
-        description: Details of the Kong route to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                service_id:
-                  type: string
-                  description: The ID of the service to associate the route with
-                paths:
-                  type: array
-                  items:
-                    type: string
-                  description: The paths to be routed
-      responses:
-        '201':
-          description: Kong route created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created Kong route
-        '400':
-          description: Bad request - Invalid route data provided
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/routes/{routeId}:
-    patch:
-      summary: Update an existing Kong route
-      description: Updates details of a specific Kong route by ID.
-      operationId: updateKongRoute
-      parameters:
-      - name: routeId
-        in: path
-        required: true
-        description: The ID of the Kong route to update
-        schema:
-          type: string
-      requestBody:
-        description: Details of the Kong route to be updated
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                paths:
-                  type: array
-                  items:
-                    type: string
-                  description: The new paths to be routed
-      responses:
-        '200':
-          description: Kong route updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the updated Kong route
-        '400':
-          description: Bad request - Invalid route data provided
-        '404':
-          description: Route not found
-        '500':
-          description: Internal server error
-    delete:
-      summary: Delete a Kong route
-      description: Deletes a specific Kong route by ID.
-      operationId: deleteKongRoute
-      parameters:
-      - name: routeId
-        in: path
-        required: true
-        description: The ID of the Kong route to delete
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Kong route deleted successfully
-        '404':
-          description: Route not found
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/plugins:
-    get:
-      summary: Retrieve list of Kong plugins
-      description: Retrieves the list of plugins configured in the Kong API Gateway.
-      operationId: listKongPlugins
-      responses:
-        '200':
-          description: Kong plugins retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the Kong plugin
-                    name:
-                      type: string
-                      description: The name of the Kong plugin
-        '500':
-          description: Internal server error
-    post:
-      summary: Create a new Kong plugin
-      description: Creates a new plugin in the Kong API Gateway.
-      operationId: createKongPlugin
-      requestBody:
-        description: Details of the Kong plugin to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: The name of the plugin
-                config:
-                  type: object
-                  description: Configuration for the plugin
-      responses:
-        '201':
-          description: Kong plugin created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created Kong plugin
-        '400':
-          description: Bad request - Invalid plugin data provided
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/plugins/{pluginId}:
-    delete:
-      summary: Delete a Kong plugin
-      description: Deletes a specific Kong plugin by ID.
-      operationId: deleteKongPlugin
-      parameters:
-      - name: pluginId
-        in: path
-        required: true
-        description: The ID of the Kong plugin to delete
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Kong plugin deleted successfully
-        '404':
-          description: Plugin not found
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/services:
-    post:
-      summary: Create a new Kong service
-      description: Creates a new service in the Kong API Gateway.
-      operationId: createKongService
-      requestBody:
-        description: Details of the Kong service to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: The name of the service
-                url:
-                  type: string
-                  description: The URL of the upstream service
-      responses:
-        '201':
-          description: Kong service created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the newly created Kong service
-        '400':
-          description: Bad request - Invalid service data provided
-        '500':
-          description: Internal server error
-    get:
-      summary: Retrieve list of Kong services
-      description: Retrieves the list of services configured in the Kong API Gateway.
-      operationId: listKongServices
-      responses:
-        '200':
-          description: Kong services retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: The ID of the Kong service
-                    name:
-                      type: string
-                      description: The name of the Kong service
-        '500':
-          description: Internal server error
-  /Ensemble-Service/kong/services/{serviceId}:
-    patch:
-      summary: Update an existing Kong service
-      description: Updates details of a specific Kong service by ID.
-      operationId: updateKongService
-      parameters:
-      - name: serviceId
-        in: path
-        required: true
-        description: The ID of the Kong service to update
-        schema:
-          type: string
-      requestBody:
-        description: Details of the Kong service to be updated
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: The new name of the service
-                url:
-                  type: string
-                  description: The new URL of the upstream service
-      responses:
-        '200':
-          description: Kong service updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the updated Kong service
-        '400':
-          description: Bad request - Invalid service data provided
-        '404':
-          description: Service not found
-        '500':
-          description: Internal server error
-    delete:
-      summary: Delete a Kong service
-      description: Deletes a specific Kong service by ID.
-      operationId: deleteKongService
-      parameters:
-      - name: serviceId
-        in: path
-        required: true
-        description: The ID of the Kong service to delete
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Kong service deleted successfully
-        '404':
-          description: Service not found
-        '500':
-          description: Internal server error
+                $ref: '#/components/schemas/ErrorResponse'
   /Ensemble-Service/system-prompt:
     get:
-      summary: Generate system prompt for the Assistant
-      description: Generates a system prompt for the Assistant by integrating specified
-        FountainAI services that are managed through Kong, ensuring the Assistant
-        fully understands the capabilities and interactions within a Kong-managed
-        ecosystem.
+      summary: Generate system prompt for the Assistant based on multiple services
+      description: 'Generates a system prompt for the Assistant using OpenAPI definitions
+        from multiple FountainAI services. The services are specified by their identifiers
+        from the service registry.
+
+        '
       operationId: generateSystemPrompt
+      tags:
+      - System Prompt Management
       parameters:
-      - name: services
+      - name: service_ids
         in: query
-        description: List of FountainAI services to include in the system prompt
         required: true
         schema:
           type: array
           items:
             type: string
+        description: List of FountainAI service identifiers to include in the system
+          prompt
+      security:
+      - apiKeyAuth: []
       responses:
         '200':
           description: System prompt generated successfully
@@ -1186,16 +743,39 @@ paths:
                   system_prompt:
                     type: string
                     description: The generated system prompt for the Assistant
+              example:
+                system_prompt: You are an AI assistant interacting with various FountainAI
+                  services through their OpenAPI specifications...
         '400':
-          description: Bad request - Invalid service list provided
+          description: Bad Request - Invalid service identifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /Ensemble-Service/interact:
     post:
-      summary: Handle user input and manage interaction
-      description: Handles user input by delegating requests to relevant FountainAI
-        services for efficient processing.
-      operationId: handleUserInteraction
+      summary: Handle user input and dynamically manage dialogue between the Assistant
+        and services
+      description: 'Handles user input, sends it to the Assistant, and manages service
+        requests based on a dynamically generated system prompt. Interactions are
+        logged and persisted to an SQLite database, which is synchronized with Typesense.
+
+        '
+      operationId: handleUserInput
+      tags:
+      - Interaction Handling
       requestBody:
         description: User input to be processed by the Assistant
         required: true
@@ -1206,13 +786,12 @@ paths:
               properties:
                 user_input:
                   type: string
-                  description: The user's query or command
-                system_prompt:
-                  type: string
-                  description: The system prompt to use for managing the interaction
+                  description: The user's query or instruction
+      security:
+      - apiKeyAuth: []
       responses:
         '200':
-          description: Interaction handled successfully
+          description: Assistant and service interaction response
           content:
             application/json:
               schema:
@@ -1220,7 +799,7 @@ paths:
                 properties:
                   assistant_response:
                     type: string
-                    description: The Assistant's response to the user input
+                    description: The Assistant's response
                   service_responses:
                     type: array
                     items:
@@ -1228,56 +807,134 @@ paths:
                       properties:
                         service_name:
                           type: string
-                          description: The name of the FountainAI service invoked
+                          description: FountainAI service invoked
                         response:
-                          type: array
-                          items:
-                            type: string
-                          description: The responses from the invoked service
+                          type: string
+                          description: Response from the service
+              example:
+                assistant_response: The character John Doe moves to the door.
+                service_responses:
+                - service_name: Character Service
+                  response: Character details retrieved successfully.
+                - service_name: Action Service
+                  response: Action 'move to door' processed successfully.
         '400':
-          description: Bad request - Invalid user input
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /Ensemble-Service/logs:
     get:
-      summary: Retrieve interaction logs
-      description: Retrieves logs of interactions, including user inputs, Assistant
-        responses, and service responses for transparency and debugging.
+      summary: Retrieve logs of system-prompt-driven interactions
+      description: 'Logs past interactions, capturing key variables such as user input,
+        Assistant responses, and service interactions. The logs are persisted to an
+        SQLite database and synchronized with Typesense for real-time search and retrieval
+        capabilities. If synchronization with Typesense fails, a retry mechanism will
+        be triggered automatically.
+
+        '
       operationId: retrieveLogs
+      tags:
+      - Logs Management
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 1000
+        description: Number of log entries to retrieve
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+        description: Offset for pagination
+      security:
+      - apiKeyAuth: []
       responses:
         '200':
           description: Logs retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    timestamp:
-                      type: string
-                      description: Time of interaction in ISO 8601 format
-                    user_input:
-                      type: string
-                      description: The user's input message
-                    assistant_response:
-                      type: string
-                      description: The response generated by the Assistant
-                    service_responses:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          service_name:
-                            type: string
-                            description: The name of the service involved
-                          response:
-                            type: string
-                            description: The responses from the invoked service, which
-                              may be aggregated if multiple steps or services are
-                              involved
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                          description: Time of interaction
+                        user_input:
+                          type: string
+                          description: User's input
+                        assistant_response:
+                          type: string
+                          description: Assistant's response
+                        service_responses:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              service_name:
+                                type: string
+                                description: FountainAI service invoked
+                              response:
+                                type: string
+                                description: Response from the service
+              example:
+                logs:
+                - timestamp: '2024-10-17T12:34:56Z'
+                  user_input: Retrieve actions for character John Doe.
+                  assistant_response: Character John Doe performs an action.
+                  service_responses:
+                  - service_name: Action Service
+                    response: Action 'enter room' retrieved successfully.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Failed to synchronize with Typesense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypesenseErrorResponse'
         '500':
-          description: Internal server error
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /Performer-Service/performers:
     get:
       operationId: listPerformers
@@ -2665,6 +2322,86 @@ components:
           description: Updated title of the section.
       required:
       - title
+    ServiceRegistration:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the service
+        name:
+          type: string
+          description: Name of the service
+        description:
+          type: string
+          description: Description of the service
+        openapi_url:
+          type: string
+          format: uri
+          description: URL to the OpenAPI specification of the service
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags or categories associated with the service
+      required:
+      - id
+      - name
+      - description
+      - openapi_url
+    ServiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the service
+        name:
+          type: string
+          description: Name of the service
+        description:
+          type: string
+          description: Description of the service
+        openapi_url:
+          type: string
+          format: uri
+          description: URL to the OpenAPI specification of the service
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags or categories associated with the service
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+    Ensemble-Service_ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Application-specific error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: string
+          description: Additional information about the error, if available
+    TypesenseErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Error code related to Typesense synchronization
+        retryAttempt:
+          type: integer
+          description: Number of retry attempts made to synchronize with Typesense
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: string
+          description: Additional information about the Typesense error, if available
     Performer:
       type: object
       properties:
@@ -2856,13 +2593,13 @@ components:
           type: string
           description: Contextual explanation generated dynamically by the GPT model,
             explaining why the new version was created.
-    SuccessResponse:
+    Central-Sequence-Service_SuccessResponse:
       type: object
       properties:
         message:
           type: string
           description: Success message.
-    TypesenseErrorResponse:
+    Central-Sequence-Service_TypesenseErrorResponse:
       type: object
       properties:
         errorCode:
