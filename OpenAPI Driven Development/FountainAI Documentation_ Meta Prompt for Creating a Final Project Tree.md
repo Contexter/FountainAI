@@ -1,6 +1,7 @@
 # FountainAI Documentation: Meta Prompt for Creating a Final Project Tree
 
 #### **Objective**
+
 Design a modular and maintainable **project tree** for a Swift Vapor-based application that integrates the **Swift OpenAPI Generator plugin**. The structure should facilitate clean separation of generated and handwritten code while supporting scalability, extensibility, and adherence to Swift and Vapor conventions.
 
 ---
@@ -11,14 +12,17 @@ Design a modular and maintainable **project tree** for a Swift Vapor-based appli
 Create a **project tree** for a Swift Vapor application using the **Swift OpenAPI Generator plugin**. The solution must:
 
 1. **Gather Necessary Inputs**:
+
    - Ask the user to provide a specific OpenAPI specification file (`openapi.yaml`) that defines the API contract.
    - Confirm the OpenAPI contract to be implemented and validate its core structure.
 
 2. **Meet the Overall Goal**:
+
    - Facilitate a clean and maintainable project structure.
    - Integrate generated files (`Server.swift`, `Types.swift`) seamlessly with handwritten logic.
 
 3. **Follow Swift Package and Vapor Conventions**:
+
    - Organize code under `Sources/` for modularity.
    - Include directories for:
      - **Handlers**: Implements business logic for API operations.
@@ -27,14 +31,66 @@ Create a **project tree** for a Swift Vapor application using the **Swift OpenAP
      - **Services**: Encapsulates reusable business logic.
 
 4. **Integrate the Plugin Setup**:
+
    - Include `openapi-generator-config.yaml` to guide code generation.
    - Place generated files (`Server.swift`, `Types.swift`) where they integrate seamlessly.
 
-5. **Support Development and Testing**:
+5. **Incorporate OpenAPIVapor Use Case**:
+
+   - Use the [swift-openapi-vapor](https://github.com/swift-server/swift-openapi-vapor.git) library to simplify the integration of OpenAPI-generated code with Vapor.
+   - The `OpenAPIVapor` target enables direct routing and request/response handling by leveraging the OpenAPI specification, ensuring alignment with defined API contracts and reducing boilerplate code.
+   - Example:
+     ```swift
+     import OpenAPIVapor
+     import Vapor
+
+     func registerRoutes(_ app: Application) throws {
+         let openAPIRoutes = OpenAPIRoutes(
+             server: Generated.Server(),
+             handler: CustomHandler()
+         )
+         app.register(openAPIRoutes)
+     }
+     ```
+   - This library streamlines the transition from OpenAPI schema to a fully operational API by offering pre-defined routing and middleware patterns that adhere to OpenAPI standards.
+
+6. **Integrate Typesense Client Use Case**:
+
+   - Use the [Typesense Swift Client](https://github.com/typesense/typesense-swift.git) to integrate fast and typo-tolerant search capabilities within the application.
+   - This client enables seamless indexing, querying, and searching of data, making it suitable for scenarios requiring real-time search features.
+   - Example:
+     ```swift
+     import Typesense
+
+     func configureSearch() throws {
+         let client = try Typesense.Client(configuration: Configuration(
+             nodes: [Node(protocol: "http", host: "localhost", port: 8108)],
+             apiKey: "api-key",
+             connectionTimeoutSeconds: 2
+         ))
+
+         // Create an example schema
+         let schema = Schema(name: "documents", fields: [
+             Field(name: "title", type: "string"),
+             Field(name: "content", type: "string")
+         ])
+
+         try client.createSchema(schema: schema)
+
+         // Index a document
+         let document = ["title": "Example Document", "content": "This is a test."]
+         try client.indexDocument(document, schemaName: "documents")
+     }
+     ```
+   - Incorporate Typesense into service layers to provide efficient search functionality for indexed data.
+
+7. **Support Development and Testing**:
+
    - Provide directories for unit and integration tests.
    - Allow space for future configurations and extensions.
 
-6. **Ensure Generated Route Registration Supports Modularity**:
+8. **Ensure Generated Route Registration Supports Modularity**:
+
    - Leverage the structure of `Server.swift` to modularly register routes that are implemented in specific handlers.
    - Configure handlers in a way that focuses on incremental API development without disrupting the generated route bindings.
 
@@ -43,6 +99,7 @@ Create a **project tree** for a Swift Vapor application using the **Swift OpenAP
 ### **Inputs**
 
 1. **Specific OpenAPI Specification**:
+
    - The user must provide a concrete OpenAPI specification file (`openapi.yaml`) that defines the API contract to be implemented.
    - Example:
      ```yaml
@@ -59,13 +116,14 @@ Create a **project tree** for a Swift Vapor application using the **Swift OpenAP
                description: Success
      ```
 
-2. **Constant `Package.swift`**:
+2. **Templated `Package.swift`**:
+
 ```swift
 // swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
-    name: "MyVaporApp",
+    name: "{{ProjectName}}", // Replace with your project's name
     platforms: [
         .macOS(.v10_15)
     ],
@@ -73,22 +131,30 @@ let package = Package(
         // OpenAPI Generator
         .package(url: "https://github.com/apple/swift-openapi-generator.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.5.0"),
+        .package(url: "https://github.com/swift-server/swift-openapi-vapor.git", from: "1.0.1"),
+
+        // Vapor
         .package(url: "https://github.com/vapor/vapor.git", from: "4.89.0"),
 
         // Fluent and SQLite Driver
         .package(url: "https://github.com/vapor/fluent.git", from: "4.9.0"),
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.3.0"),
+
+        // Typesense Client
+        .package(url: "https://github.com/typesense/typesense-swift.git", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
-            name: "MyVaporApp",
+            name: "{{ProjectName}}", // Replace with your target name
             dependencies: [
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "OpenAPIVapor", package: "swift-openapi-vapor"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
+                .product(name: "Typesense", package: "typesense-swift"),
             ],
-            path: "Sources",
+            path: "Sources/{{ProjectName}}", // Replace with your project's source path
             plugins: [
                 .plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")
             ]
@@ -97,11 +163,19 @@ let package = Package(
 )
 ```
 
+   **Instructions for Templating**:
+
+   - Replace `{{ProjectName}}` with the actual name of your project.
+   - Update the `path` field (`Sources/{{ProjectName}}`) to reflect your source directory structure.
+   - Ensure that the target name matches the `name` field in your Swift Package.
+
 3. **Expected Plugin Outputs**:
+
    - `Types.swift`: Defines models for OpenAPI schemas.
    - `Server.swift`: Contains server stubs for OpenAPI-defined operations.
 
 4. **Requirements**:
+
    - Include space for handwritten code such as handlers, routes, models, and services.
    - Ensure modularity and extensibility.
 
@@ -110,10 +184,10 @@ let package = Package(
 ### **Example Project Tree**
 
 ```
-MyVaporApp/
+{{ProjectName}}/
 ├── Package.swift                              # Swift package manager configuration
 ├── Sources/
-│   ├── MyVaporApp/                            # Main application module
+│   ├── {{ProjectName}}/                      # Main application module
 │   │   ├── main.swift                         # Entry point for the Vapor application
 │   │   ├── configure.swift                    # Application setup (routes, middleware)
 │   │   ├── Routes/                            # Route registration
@@ -138,7 +212,7 @@ MyVaporApp/
 │   ├── Server.swift                           # Server stubs for OpenAPI operations
 │   ├── Types.swift                            # Models for OpenAPI schemas
 ├── Tests/
-│   ├── MyVaporAppTests/
+│   ├── {{ProjectName}}Tests/
 │   │   ├── ResourceTests.swift                # Tests for resource operations
 │   │   ├── MiddlewareTests.swift              # Tests for middleware
 │   │   └── IntegrationTests.swift             # End-to-end tests
@@ -150,10 +224,12 @@ MyVaporApp/
 ### **Integration Instructions**
 
 1. **Set Up the Plugin in `Package.swift`**:
+
    - Ensure `Package.swift` includes the Swift OpenAPI Generator plugin.
 
 2. **Create Configuration Files**:
-   - Place `openapi.yaml` in `Sources/MyVaporApp/` as the OpenAPI specification.
+
+   - Place `openapi.yaml` in `Sources/{{ProjectName}}/` as the OpenAPI specification.
    - Add `openapi-generator-config.yaml` in the same directory with content such as:
      ```yaml
      generate:
@@ -164,27 +240,29 @@ MyVaporApp/
      ```
 
 3. **Generate Code**:
+
    - Run the following command to trigger code generation:
      ```bash
      swift build
      ```
-   - Verify that `Server.swift` and `Types.swift` are generated in the `Generated/` directory.
+   - Verify that `Server.swift` and `Types.swift` are generated in the `Generated/` directory. Easiest is to copy them manually out of compiler interference into the /a  "Generated" directory. 
 
 4. **Integrate Generated Routes**:
+
    - Use `Server.swift` to modularly register generated routes in `Routes/Routes.swift`:
      ```swift
      import Vapor
-     import Generated
 
      func registerRoutes(_ app: Application) throws {
          // Generated routes
-         try app.register(collection: Generated.Server())
+         try app.register(collection: Server())
 
          // Additional custom route registrations
      }
      ```
 
 5. **Implement Modular Handlers**:
+
    - Focus on creating modular handlers in `Handlers/`. Each handler should implement only the business logic and interface with the generated types.
    - Example:
      ```swift
@@ -200,6 +278,7 @@ MyVaporApp/
      ```
 
 6. **Add Middleware and Services**:
+
    - Configure error handling or preprocessing using custom middleware in `MiddlewareRoutes.swift`:
      ```swift
      struct CustomErrorMiddleware: Middleware {
@@ -214,7 +293,8 @@ MyVaporApp/
    - Reuse components for database access, Typesense interactions, etc., in `Services/`.
 
 7. **Testing**:
-   - Write tests in `Tests/MyVaporAppTests/` to validate both generated routes and handwritten logic.
+
+   - Write tests in `Tests/{{ProjectName}}Tests/` to validate both generated routes and handwritten logic.
    - Example:
      ```swift
      import XCTVapor
@@ -237,5 +317,6 @@ MyVaporApp/
 ---
 
 ### **Conclusion**
+
 This meta prompt facilitates the creation of a modular, maintainable project tree that integrates the Swift OpenAPI Generator plugin seamlessly. It ensures generated route registration aligns with modular handlers, providing scalability and ease of incremental API development. Use this as a comprehensive guide for structuring similar Vapor-based projects while focusing on the continuous development of your OpenAPI contract.
 
