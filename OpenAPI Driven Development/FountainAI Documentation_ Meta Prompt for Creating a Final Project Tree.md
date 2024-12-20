@@ -193,6 +193,7 @@ let package = Package(
 │   │   ├── Routes/                            # Route registration
 │   │   │   ├── Routes.swift                   # Registers all routes
 │   │   │   ├── ResourceRoutes.swift           # Routes for specific resources
+│   │   │   ├── GeneratedRoutes.swift          # Automatically generated OpenAPI routes
 │   │   │   └── MiddlewareRoutes.swift         # Middleware-related routes
 │   │   ├── Handlers/                          # Implements API logic
 │   │   │   ├── ResourceHandler.swift
@@ -245,19 +246,25 @@ let package = Package(
      ```bash
      swift build
      ```
-   - Verify that `Server.swift` and `Types.swift` are generated in the `Generated/` directory. Easiest is to copy them manually out of compiler interference into the /a  "Generated" directory. 
+   - Verify that `Server.swift` and `Types.swift` are placed in the `Generated/` directory.
 
 4. **Integrate Generated Routes**:
 
-   - Use `Server.swift` to modularly register generated routes in `Routes/Routes.swift`:
+   - **Hybrid Approach**:
+     Use a combination of automatically generated OpenAPI routes and manually registered custom routes. Example:
      ```swift
      import Vapor
+     import OpenAPIVapor
 
-     func registerRoutes(_ app: Application) throws {
-         // Generated routes
-         try app.register(collection: Server())
+     func routes(_ app: Application) throws {
+         // Automatically register OpenAPI-generated routes
+         let openAPIRoutes = OpenAPIRoutes(server: Generated.Server(), handler: CustomHandler())
+         app.register(openAPIRoutes)
 
-         // Additional custom route registrations
+         // Manually register additional routes
+         let api = app.grouped("api", "v1")
+         api.get("custom-endpoint", use: CustomHandler.customLogic)
+         api.post("another-endpoint", use: AnotherHandler.anotherLogic)
      }
      ```
 
@@ -318,5 +325,5 @@ let package = Package(
 
 ### **Conclusion**
 
-This meta prompt facilitates the creation of a modular, maintainable project tree that integrates the Swift OpenAPI Generator plugin seamlessly. It ensures generated route registration aligns with modular handlers, providing scalability and ease of incremental API development. Use this as a comprehensive guide for structuring similar Vapor-based projects while focusing on the continuous development of your OpenAPI contract.
+This meta prompt facilitates the creation of a modular, maintainable project tree that integrates the Swift OpenAPI Generator plugin seamlessly. By adopting a hybrid approach to route registration, it ensures generated route registration aligns with modular handlers while allowing for customization and scalability. Use this as a comprehensive guide for structuring similar Vapor-based projects while focusing on the continuous development of your OpenAPI contract.
 
