@@ -2,7 +2,7 @@
 
 ## **Objective**
 
-Design a **modular and maintainable project tree** for a Swift Vapor-based application that integrates the **Swift OpenAPI Generator plugin**. The structure must facilitate clean separation of generated and handwritten code while supporting **scalability**, **extensibility**, and adherence to **Swift and Vapor conventions**.
+Design a **modular and maintainable project tree** for a Swift Vapor-based application that integrates the **Swift OpenAPI Generator plugin**. The structure must facilitate clean separation of **generated** and **handwritten code** while supporting **scalability**, **extensibility**, and adherence to **Swift and Vapor conventions**.
 
 ---
 
@@ -16,15 +16,26 @@ Create a **project tree** for a Swift Vapor application using the **Swift OpenAP
 
 ### **1. Gather Necessary Inputs:**
 
-- Request a **specific OpenAPI specification file** (`openapi.yaml`) to define the API contract.
-- Validate and confirm the **OpenAPI contract structure** aligns with the implementation.
+**Setup Steps:**
+
+1. **Provide Input Files:**
+   - Upload the **OpenAPI specification file** (`openapi.yaml`) as the contract.
+   - Upload the **generated code** (`Server.swift` and `Types.swift`) if too large for direct integration.
+
+2. **Generate Code (if needed):**
+   - Use the **Swift OpenAPI Generator plugin** to produce the code.
+   - Place generated files (`Server.swift` and `Types.swift`) in the `Generated/` directory.
+
+3. **Validate Inputs:**
+   - Confirm the OpenAPI specification aligns with requirements.
+   - Analyze the generated code for schema definitions, routes, and serialization.
 
 ---
 
 ### **2. Meet the Overall Goals:**
 
 - **Clean and Maintainable Structure:** Design scalable and modular code components.
-- **Seamless Integration:** Combine **generated files** (`Server.swift`, `Types.swift`) with **custom logic**.
+- **Seamless Integration:** Combine **generated files** (`Server.swift`, `Types.swift`) with **custom logic** using a **hybrid approach**.
 - **Incremental Development:** Ensure each milestone **extends the previous state** and supports progressive development.
 
 ---
@@ -41,17 +52,29 @@ Create a **project tree** for a Swift Vapor application using the **Swift OpenAP
 
 ---
 
-### **4. Plugin Setup and OpenAPI Integration:**
+### **4. Plugin Configuration and Integration (Hybrid Approach):**
 
 - Include `openapi-generator-config.yaml` to guide code generation.
-- Place generated files (`Server.swift`, `Types.swift`) where they integrate seamlessly.
-- Use **OpenAPIVapor** to simplify route registration based on generated schemas.
+- Place generated files (`Server.swift`, `Types.swift`) into the `Generated/` directory.
+
+> **Note:** The generated code eliminates much of the **ceremonial code**—serialization, deserialization, and schema compliance—allowing developers to focus on **business logic**. This hybrid approach ensures transparency and supports extending functionality with custom workflows.
+
+- **Leverage Generated Code** for:
+  - **Schemas and Models:** Ensure compliance with OpenAPI definitions.
+  - **Routes and Serialization:** Utilize auto-generated handlers for basic API functionality.
+
+- **Extend with Manual Logic** for:
+  - **Custom Workflows:** Add services for database sync, external APIs, and custom operations.
+  - **Error Handling and Middleware:** Implement additional layers for specific cases.
+
+Ensure generated code remains the **source of truth** for schema validation, with manual code providing enhancements where required.
 
 ---
 
 ### **5. Typesense Integration:**
 
 - Integrate the [Typesense Swift Client](https://github.com/typesense/typesense-swift.git) for **fast, typo-tolerant search capabilities**.
+- Implement **manual sync logic** where needed, ensuring compliance with the OpenAPI-defined schemas.
 
 ---
 
@@ -140,14 +163,12 @@ let package = Package(
 ├── Tests/
 └── README.md
 ```
-_Note: At each milestone, this tree view is updated to reflect the current state of implementation, showing incremental progress until the full implementation is complete._
+
+*Note: At each milestone, this tree view is updated to reflect the current state of implementation, showing incremental progress until the full implementation is complete.*
 
 ---
 
-
-
-
 ## **Conclusion**
 
-This meta prompt ensures a **modular, test-driven, and scalable design** for a Swift Vapor application. Each milestone progressively builds functionality while verifying compliance with the **OpenAPI contract**. Use this framework as a guide for building extensible API-driven applications.
+This meta prompt ensures a **modular, test-driven, and scalable design** for a Swift Vapor application. Each milestone progressively builds functionality while verifying compliance with the **OpenAPI contract**. Use this framework as a guide for building extensible API-driven applications with a **hybrid approach** that blends **automation** and **manual programming flexibility**.
 
