@@ -1,0 +1,175 @@
+openapi: 3.1.0
+info:
+  title: GitHub API Proxy - Labels Management
+  description: Proxy to GitHub REST API endpoints for full CRUD operations on labels.
+  version: 1.0.0
+  contact:
+    name: Support
+    email: support@pm.fountain.coach
+servers:
+  - url: https://labels.pm.fountain.coach
+    description: Proxy server for GitHub REST API (Labels).
+
+paths:
+  /repos/{owner}/{repo}/labels:
+    post:
+      operationId: createLabel
+      summary: Create a Label
+      description: Creates a new label in the specified repository.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                color:
+                  type: string
+      responses:
+        '201':
+          description: Label created successfully.
+        '401':
+          description: Unauthorized.
+        '422':
+          description: Validation failed.
+
+    get:
+      operationId: listLabels
+      summary: List Labels
+      description: Retrieves a list of labels in the repository.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of labels retrieved successfully.
+        '401':
+          description: Unauthorized.
+
+  /repos/{owner}/{repo}/labels/{name}:
+    get:
+      operationId: getLabel
+      summary: Get a Label
+      description: Retrieves details of a specific label by name.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Label retrieved successfully.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Label not found.
+
+    patch:
+      operationId: updateLabel
+      summary: Update a Label
+      description: Updates an existing label.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_name:
+                  type: string
+                color:
+                  type: string
+      responses:
+        '200':
+          description: Label updated successfully.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Label not found.
+
+    delete:
+      operationId: deleteLabel
+      summary: Delete a Label
+      description: Deletes a specific label.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Label deleted successfully.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Label not found.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
+
