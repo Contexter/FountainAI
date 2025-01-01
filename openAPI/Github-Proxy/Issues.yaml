@@ -181,6 +181,7 @@ paths:
           description: Issue not found.
 
 components:
+  schemas: {}
   securitySchemes:
     BearerAuth:
       type: http
@@ -189,4 +190,3 @@ components:
 
 security:
   - BearerAuth: []
-

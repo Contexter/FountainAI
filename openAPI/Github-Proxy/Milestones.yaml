@@ -176,6 +176,7 @@ paths:
           description: Milestone not found.
 
 components:
+  schemas: {}
   securitySchemes:
     BearerAuth:
       type: http
@@ -184,4 +185,3 @@ components:
 
 security:
   - BearerAuth: []
-
