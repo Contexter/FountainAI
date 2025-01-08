@@ -1,0 +1,208 @@
+openapi: 3.0.1
+info:
+  title: FountainAI AV-Management API
+  description: >-
+    FountainAI AV-Management API for handling and managing audiovisual assets optimized for Hugo and Jekyll publishing workflows integrated into AI-driven workflows.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /assets:
+    get:
+      operationId: getAssets
+      summary: Retrieve a list of assets.
+      description: Retrieve a list of all available assets with optional filtering and pagination.
+      parameters:
+        - name: type
+          in: query
+          description: Filter assets by type (image, audio, video).
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Pagination - page number.
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Pagination - results per page.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of assets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asset'
+    post:
+      operationId: uploadAsset
+      summary: Upload a new asset with metadata.
+      description: Uploads an asset (image, audio, or video) along with metadata.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  type: string
+      responses:
+        '201':
+          description: Asset created successfully.
+  /audio:
+    post:
+      operationId: generateAudio
+      summary: Generate an audio file using CSound.
+      description: Generates an audio file using CSound with specified parameters such as frequency and duration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  example: { frequency: 440, duration: 5 }
+      responses:
+        '200':
+          description: Audio generated successfully.
+  /markdown/generate:
+    post:
+      operationId: generateMarkdown
+      summary: Generate Hugo-compatible Markdown snippets for embedding AV assets.
+      description: Generates preformatted Markdown code for embedding images, audio, or video assets in Hugo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asset_id:
+                  type: string
+                type:
+                  type: string
+                  enum: [image, audio, video]
+      responses:
+        '200':
+          description: Markdown snippet generated.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /metadata:
+    get:
+      operationId: getMetadata
+      summary: Query metadata associated with AV files.
+      description: Retrieves metadata such as captions, tags, and descriptions for a specific asset.
+      parameters:
+        - name: asset_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Metadata retrieved successfully.
+    post:
+      operationId: addMetadata
+      summary: Add metadata to existing assets.
+      description: Adds new metadata tags and descriptions to an existing asset.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asset_id:
+                  type: string
+                metadata:
+                  $ref: '#/components/schemas/Metadata'
+      responses:
+        '201':
+          description: Metadata added successfully.
+  /batch/process:
+    post:
+      operationId: processBatch
+      summary: Batch process assets for resizing, compression, and embedding into Markdown.
+      description: Processes multiple assets in a single request for optimization and embedding into Hugo-compatible Markdown.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      asset_id:
+                        type: string
+                      process_type:
+                        type: string
+      responses:
+        '200':
+          description: Batch processing completed.
+  /ai/process:
+    post:
+      operationId: processAI
+      summary: Process an AV asset using AI tools.
+      description: AI-powered processing for tagging, transcription, enhancement, summarization, and classification of assets.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIProcess'
+      responses:
+        '200':
+          description: AI processing completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  result:
+                    type: object
+components:
+  schemas:
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+    Metadata:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+    AIProcess:
+      type: object
+      properties:
+        process_type:
+          type: string
+          enum: [tagging, transcription, enhancement, summary, classification]
+        parameters:
+          type: object
