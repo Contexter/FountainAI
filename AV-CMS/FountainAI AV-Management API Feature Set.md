@@ -41,28 +41,35 @@ This system is an integral component of FountainAI and is designed to integrate 
    - Allows customizable metadata fields for AV assets.
    - REST endpoints for querying, updating, and managing metadata.
 
-5. **REST API Design:**
+5. **AI-Driven Enhancements:**
+
+   - AI-based content analysis and tagging for images and audio.
+   - Audio transcription and text-to-speech features.
+   - Automated metadata generation and classification.
+   - Dynamic summarization and enhancement features.
+
+6. **REST API Design:**
 
    - RESTful endpoints for seamless integration.
    - Designed to be future-proof with OpenAPI 3.0.1 standards.
 
-6. **Database and Storage:**
+7. **Database and Storage:**
 
    - SQLite-powered local storage with Docker container support.
    - CLI tools for database management and maintenance.
    - RESTful endpoints for asset queries and bulk imports.
 
-7. **Batch Processing and Workflow Support:**
+8. **Batch Processing and Workflow Support:**
 
    - Batch processing and automation via CLI tools.
    - Script-based workflows for AV and Markdown generation.
 
-8. **Versioning and Context Management:**
+9. **Versioning and Context Management:**
 
    - Supports multiple versions of assets and metadata.
    - Context-aware tagging and categorization for Hugo content.
 
-9. **Future Enhancements:**
+10. **Future Enhancements:**
 
    - Full OpenAPI 3.0.1 schema adoption.
    - Extended support for video processing and rendering.
@@ -93,6 +100,39 @@ This system is an integral component of FountainAI and is designed to integrate 
 ### Endpoint: `/batch/process`
 
 - **POST**: Batch process assets for resizing, compression, and embedding into Markdown.
+
+### Endpoint: `/ai/process`
+
+- **POST**: Process an AV asset using AI tools.
+
+  **Request Body:**
+  ```json
+  {
+    "asset_id": "12345",
+    "process_type": "tagging",
+    "parameters": {
+      "language": "en",
+      "quality": "high"
+    }
+  }
+  ```
+
+  **Response:**
+  ```json
+  {
+    "status": "success",
+    "tags": ["landscape", "nature"],
+    "transcription": "This is an example audio transcription.",
+    "enhanced_audio_url": "/audio/enhanced_example.mp3"
+  }
+  ```
+
+  **Process Types:**
+  - **"tagging"**: AI generates metadata tags based on content analysis.
+  - **"transcription"**: Audio-to-text conversion for captions.
+  - **"enhancement"**: Image or audio quality improvement.
+  - **"summary"**: Generate textual summaries for Markdown content.
+  - **"classification"**: Categorize content into predefined types.
 
 ## Markdown & Hugo Integration
 
