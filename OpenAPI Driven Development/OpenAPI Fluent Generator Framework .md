@@ -1,6 +1,6 @@
 Here’s the comprehensive project document designed to provide all the necessary context, instructions, and background information to bring a new contextless GPT-4 session into this specific project effectively. This document includes all relevant details, guiding principles, and implementation steps, ensuring seamless continuity.
 
-Project Paper: OpenAPI Fluent Generator Framework
+# Project Paper: OpenAPI Fluent Generator Framework
 
 Project Overview
 
