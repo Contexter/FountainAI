@@ -1,17 +1,5 @@
-Below is a **comprehensive** documentation of the **FountainAI Two-Factor Authentication (2FA) Service** as a standalone **FastAPI** microservice, reflecting **OpenAPI 3.1.0** compliance and incorporating every detailed feature discussed in this thread. This documentation is intended to serve as a single reference covering:
 
-- Complete project structure
-- Core design choices (decoupled architecture, “to whom it may concern” usage)
-- Integration with other FountainAI services (e.g., Key Management Service, KMS)
-- Environment variable configurations
-- OTP generation and verification
-- Delivery mechanisms (email, SMS)
-- Logging, models, and schemas
-- Dockerization
-- End-to-end usage flow
-- Implementation of **OpenAPI 3.1.0** overrides in FastAPI
 
----
 
 # **FountainAI Two-Factor Authentication (2FA) Service**
 
