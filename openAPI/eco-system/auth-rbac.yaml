@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: Authentication & RBAC Service API
+  description: "Handles user authentication, token management, and role-based access control."
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8001
+    description: Local development server
+
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      description: "Creates a new user with assigned roles."
+      operationId: register_user
+      tags: ["Users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          description: "User successfully created."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "User already exists."
+
+  /login:
+    post:
+      summary: User login
+      description: "Authenticates a user and returns an access token."
+      operationId: login_user
+      tags: ["Users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        "200":
+          description: "Login successful."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+        "401":
+          description: "Invalid credentials."
+
+  /token/refresh:
+    post:
+      summary: Refresh an access token
+      description: "Generates a new access token using a refresh token."
+      operationId: refresh_token
+      tags: ["Users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRefresh"
+      responses:
+        "200":
+          description: "New token issued."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+        "401":
+          description: "Invalid or expired refresh token."
+
+  /users:
+    get:
+      summary: List all users
+      description: "Requires admin privileges."
+      operationId: list_users
+      tags: ["Users"]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "List of users."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "403":
+          description: "Admin access required."
+
+  /users/{username}:
+    get:
+      summary: Retrieve user details
+      operationId: get_user
+      tags: ["Users"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "User details retrieved."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "404":
+          description: "User not found."
+
+    patch:
+      summary: Update user information
+      operationId: update_user
+      tags: ["Users"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: "User updated."
+        "404":
+          description: "User not found."
+
+    delete:
+      summary: Delete a user
+      operationId: delete_user
+      tags: ["Users"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: "User deleted."
+        "403":
+          description: "Admin access required."
+        "404":
+          description: "User not found."
+
+components:
+  schemas:
+    UserCreate:
+      type: object
+      required: [username, password, roles]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        roles:
+          type: string
+          description: "Comma-separated roles."
+
+    UserResponse:
+      type: object
+      properties:
+        username:
+          type: string
+        roles:
+          type: string
+
+    UserLogin:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        password:
+          type: string
+        roles:
+          type: string
+
+    Token:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+
+    TokenRefresh:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+

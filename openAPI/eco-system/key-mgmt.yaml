@@ -1,0 +1,118 @@
+openapi: 3.1.0
+info:
+  title: Key Management Service API
+  description: "Centralized service for managing API keys."
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8002
+    description: Local development server
+
+paths:
+  /keys:
+    post:
+      summary: Create an API key
+      description: "Requires admin privileges."
+      operationId: create_api_key
+      tags: ["Keys"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyCreate"
+      responses:
+        "201":
+          description: "API key created."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+        "403":
+          description: "Admin access required."
+
+  /keys/{service_name}:
+    get:
+      summary: Retrieve an API key
+      operationId: get_api_key
+      tags: ["Keys"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "API key retrieved."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+        "404":
+          description: "Key not found."
+
+    delete:
+      summary: Revoke an API key
+      operationId: revoke_api_key
+      tags: ["Keys"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: "API key revoked."
+
+  /keys/{service_name}/rotate:
+    post:
+      summary: Rotate an API key
+      operationId: rotate_api_key
+      tags: ["Keys"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "API key rotated."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+
+components:
+  schemas:
+    KeyCreate:
+      type: object
+      required: [service_name]
+      properties:
+        service_name:
+          type: string
+
+    KeyResponse:
+      type: object
+      properties:
+        service_name:
+          type: string
+        api_key:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
